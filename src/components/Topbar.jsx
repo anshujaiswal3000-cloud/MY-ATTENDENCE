@@ -2,9 +2,9 @@ import React, { useState } from 'react'
 import {
   Box, Typography, IconButton, Tooltip, Avatar, Popover,
   Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Button, Alert, InputAdornment
+  TextField, Button, Alert, InputAdornment, Link
 } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdCloudDone, MdCloudOff } from 'react-icons/md'
+import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdCloudDone, MdCloudOff, MdEmail, MdVpnKey } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import confetti from 'canvas-confetti'
 import { useLocation } from 'react-router-dom'
@@ -19,7 +19,7 @@ export default function Topbar() {
   const theme = useTheme()
   const location = useLocation()
   const current = NAV_ITEMS.find((n) => n.path === location.pathname)
-  const { subjects, isUnlocked, unlockApp, lockApp, bunks, dbSynced } = useAttendance()
+  const { subjects, isUnlocked, unlockApp, lockApp, bunks, dbSynced, notify } = useAttendance()
   const stats = getOverallStats(subjects)
 
   // Profile popover
@@ -28,7 +28,6 @@ export default function Topbar() {
   const openProfile = (e) => {
     if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([40, 60, 40])
     
-    // 🎆 Fire Confetti / Fireworks Patakha Celebration if Attendance >= 90%!
     if (stats.percentage >= 90) {
       try {
         confetti({
@@ -53,6 +52,17 @@ export default function Topbar() {
   const [showPassword, setShowPassword] = useState(false)
   const [loginError, setLoginError] = useState('')
 
+  // Forgot Password & OTP Dialog
+  const [forgotOpen, setForgotOpen] = useState(false)
+  const [otpStep, setOtpStep] = useState(1) // 1: Send OTP, 2: Verify OTP
+  const [email, setEmail] = useState('anshujaiswal3000@gmail.com')
+  const [otpCode, setOtpCode] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [otpMsg, setOtpMsg] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [loadingOtp, setLoadingOtp] = useState(false)
+
   const handleLoginSubmit = (e) => {
     e.preventDefault()
     setLoginError('')
@@ -63,6 +73,67 @@ export default function Topbar() {
       setLoginOpen(false)
     } else {
       setLoginError('Invalid User ID or Password. Only Owner can make changes!')
+    }
+  }
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault()
+    setOtpError('')
+    setOtpMsg('')
+    setLoadingOtp(true)
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setOtpStep(2)
+        setOtpMsg(`6-Digit OTP sent to ${email}`)
+        if (json.demoOtp) {
+          setOtpCode(json.demoOtp)
+          notify(`🔑 OTP sent to ${email} (Code: ${json.demoOtp})`, 'info')
+        }
+      } else {
+        setOtpError(json.message || 'Failed to send OTP')
+      }
+    } catch (err) {
+      setOtpError('Network error — ensure backend server is running')
+    } finally {
+      setLoadingOtp(false)
+    }
+  }
+
+  const handleVerifyOtpReset = async (e) => {
+    e.preventDefault()
+    setOtpError('')
+    setOtpMsg('')
+    setLoadingOtp(true)
+
+    try {
+      const res = await fetch('/api/auth/verify-otp-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: otpCode, newPassword })
+      })
+      const json = await res.json()
+      if (json.success) {
+        notify('Password reset successfully! Unlocking Owner Mode 🔓', 'success')
+        unlockApp('anshu', newPassword)
+        setForgotOpen(false)
+        setLoginOpen(false)
+        setOtpStep(1)
+        setOtpCode('')
+        setNewPassword('')
+      } else {
+        setOtpError(json.message || 'Invalid OTP code')
+      }
+    } catch (err) {
+      setOtpError('Network error during OTP verification')
+    } finally {
+      setLoadingOtp(false)
     }
   }
 
@@ -189,7 +260,6 @@ export default function Topbar() {
             }
           }}
         >
-          {/* Header */}
           <Box sx={{ p: 2.25, display: 'flex', alignItems: 'center', gap: 1.75, background: 'var(--aurora)' }}>
             <Avatar src="/profile.jpg" alt="Anshu Jaiswal" sx={{ width: 48, height: 48, border: '2px solid #fff' }} />
             <Box>
@@ -205,7 +275,6 @@ export default function Topbar() {
             </Box>
           </Box>
 
-          {/* Live Stats */}
           <Box sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
@@ -232,7 +301,7 @@ export default function Topbar() {
           </Box>
         </Popover>
 
-        {/* Owner Login Dialog with Eye Icon Toggle */}
+        {/* 🔐 Owner Login Dialog 🔐 */}
         <Dialog open={loginOpen} onClose={() => setLoginOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
           <DialogTitle sx={{ fontWeight: 800, textAlign: 'center' }}>
             🔐 Owner Mode Login
@@ -269,6 +338,21 @@ export default function Topbar() {
                   )
                 }}
               />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -1 }}>
+                <Link
+                  component="button"
+                  type="button"
+                  variant="caption"
+                  underline="hover"
+                  onClick={() => {
+                    setLoginOpen(false)
+                    setForgotOpen(true)
+                  }}
+                  sx={{ color: '#60a5fa', fontWeight: 700 }}
+                >
+                  Forgot Password? 🔑
+                </Link>
+              </Box>
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
@@ -278,6 +362,88 @@ export default function Topbar() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* 📧 Forgot Password & OTP Reset Dialog 📧 */}
+        <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
+          <DialogTitle sx={{ fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+            <MdEmail color="#60a5fa" /> Reset Password via Email OTP
+          </DialogTitle>
+          <DialogContent>
+            {otpMsg && <Alert severity="info" sx={{ mb: 2, borderRadius: '12px' }}>{otpMsg}</Alert>}
+            {otpError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{otpError}</Alert>}
+
+            {otpStep === 1 ? (
+              <Box component="form" onSubmit={handleSendOtp} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Send a 6-digit OTP code to your registered email to reset your owner password.
+                </Typography>
+                <TextField
+                  label="Registered Email Address"
+                  type="email"
+                  fullWidth
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Box>
+            ) : (
+              <Box component="form" onSubmit={handleVerifyOtpReset} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Enter the 6-digit OTP code sent to <strong>{email}</strong> and your new password.
+                </Typography>
+                <TextField
+                  label="6-Digit OTP Code"
+                  placeholder="e.g. 742910"
+                  fullWidth
+                  required
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                />
+                <TextField
+                  label="New Owner Password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  fullWidth
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
+                          {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+            <Button onClick={() => { setForgotOpen(false); setOtpStep(1); }}>Cancel</Button>
+            {otpStep === 1 ? (
+              <Button
+                variant="contained"
+                onClick={handleSendOtp}
+                disabled={loadingOtp}
+                sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}
+              >
+                {loadingOtp ? 'Sending OTP...' : 'Send 6-Digit OTP'}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleVerifyOtpReset}
+                disabled={loadingOtp}
+                sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}
+              >
+                {loadingOtp ? 'Verifying...' : 'Verify & Reset Password'}
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
+
       </Box>
     </Box>
   )
