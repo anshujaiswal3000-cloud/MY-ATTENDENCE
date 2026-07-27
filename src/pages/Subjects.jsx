@@ -1,0 +1,118 @@
+import React, { useState, useMemo } from 'react'
+import { Box, Typography, Grid, TextField, InputAdornment, MenuItem, Fab } from '@mui/material'
+import { FaSearch, FaPlus } from 'react-icons/fa'
+import { useTheme } from '@mui/material/styles'
+import SubjectCard from '../components/SubjectCard'
+import EmptyState from '../components/EmptyState'
+import AddSubjectDialog from '../components/AddSubjectDialog'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { useAttendance } from '../context/AttendanceContext'
+import { getPercentage, getStatus } from '../utils/attendanceUtils'
+
+export default function Subjects() {
+  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject } = useAttendance()
+  const theme = useTheme()
+
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+  const [sort, setSort] = useState('name')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [toDelete, setToDelete] = useState(null)
+
+  const filtered = useMemo(() => {
+    let list = subjects.filter((s) =>
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.code.toLowerCase().includes(search.toLowerCase())
+    )
+    if (filter !== 'all') {
+      list = list.filter((s) => getStatus(getPercentage(s.present, s.total)) === filter)
+    }
+    if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
+    if (sort === 'attendance-desc') list = [...list].sort((a, b) => getPercentage(b.present, b.total) - getPercentage(a.present, a.total))
+    if (sort === 'attendance-asc') list = [...list].sort((a, b) => getPercentage(a.present, a.total) - getPercentage(b.present, b.total))
+    return list
+  }, [subjects, search, filter, sort])
+
+  const handleSave = (data) => {
+    if (editing) updateSubject(editing.id, data)
+    else addSubject(data)
+    setEditing(null)
+  }
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3, alignItems: 'center' }}>
+        <TextField
+          size="small"
+          placeholder="Search subject or code..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{ startAdornment: <InputAdornment position="start"><FaSearch size={13} /></InputAdornment> }}
+          sx={{ flex: 1, minWidth: 200 }}
+        />
+        <TextField select size="small" label="Filter" value={filter} onChange={(e) => setFilter(e.target.value)} sx={{ minWidth: 140 }}>
+          <MenuItem value="all">All</MenuItem>
+          <MenuItem value="safe">Safe</MenuItem>
+          <MenuItem value="warning">Warning</MenuItem>
+          <MenuItem value="critical">Critical</MenuItem>
+        </TextField>
+        <TextField select size="small" label="Sort by" value={sort} onChange={(e) => setSort(e.target.value)} sx={{ minWidth: 170 }}>
+          <MenuItem value="name">Name (A–Z)</MenuItem>
+          <MenuItem value="attendance-desc">Attendance (High–Low)</MenuItem>
+          <MenuItem value="attendance-asc">Attendance (Low–High)</MenuItem>
+        </TextField>
+      </Box>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon="📚"
+          title={subjects.length === 0 ? 'No subjects yet' : 'No matches'}
+          subtitle={subjects.length === 0 ? 'Add your first subject to start tracking attendance.' : 'Try a different search or filter.'}
+          actionLabel={subjects.length === 0 ? 'Add Subject' : undefined}
+          onAction={() => setDialogOpen(true)}
+        />
+      ) : (
+        <Grid container spacing={2.5}>
+          {filtered.map((s, i) => (
+            <Grid item xs={12} sm={6} lg={4} key={s.id}>
+              <SubjectCard
+                subject={s}
+                variant="full"
+                delay={i * 0.04}
+                onPresent={(id) => markAttendance(id, 'present')}
+                onAbsent={(id) => markAttendance(id, 'absent')}
+                onEdit={(subj) => { setEditing(subj); setDialogOpen(true); }}
+                onDelete={(subj) => setToDelete(subj)}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      <Fab
+        onClick={() => { setEditing(null); setDialogOpen(true); }}
+        sx={{ position: 'fixed', bottom: { xs: 84, md: 28 }, right: 96, zIndex: 30, background: theme.custom.aurora, color: '#fff' }}
+      >
+        <FaPlus size={18} />
+      </Fab>
+
+      <AddSubjectDialog
+        open={dialogOpen}
+        initialData={editing}
+        onClose={() => { setDialogOpen(false); setEditing(null); }}
+        onSave={handleSave}
+      />
+
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        title="Delete subject?"
+        message={`This will permanently remove "${toDelete?.name}" and all of its attendance history.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => deleteSubject(toDelete.id)}
+        onClose={() => setToDelete(null)}
+      />
+    </Box>
+  )
+}

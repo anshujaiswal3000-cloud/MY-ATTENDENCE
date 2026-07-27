@@ -1,0 +1,130 @@
+// Core attendance math shared across the app.
+
+export const STATUS_THRESHOLDS = { safe: 85, warning: 75 }
+
+/** Attendance % = (Present / Total) × 100 */
+export function getPercentage(present, total) {
+  if (!total) return 0
+  return (present / total) * 100
+}
+
+export function formatPercent(value, decimals = 2) {
+  return `${value.toFixed(decimals)}%`
+}
+
+/** Safe / Warning / Critical classification used for chips, bars, borders */
+export function getStatus(percentage) {
+  if (percentage >= STATUS_THRESHOLDS.safe) return 'safe'
+  if (percentage >= STATUS_THRESHOLDS.warning) return 'warning'
+  return 'critical'
+}
+
+export const STATUS_COLORS = {
+  safe: '#10b981',
+  warning: '#f59e0b',
+  critical: '#f43f5e',
+}
+
+export const STATUS_LABELS = {
+  safe: 'Safe',
+  warning: 'Warning',
+  critical: 'Critical',
+}
+
+/**
+ * "Can I Bunk" calculator.
+ * Given current present/total, determines, for a target percentage:
+ *  - if currently above target: how many more classes can be missed and stay >= target
+ *  - if currently below target: how many consecutive classes must be attended to reach target
+ * Returns { canBunk: number, mustAttend: number, message }
+ */
+export function calculateBunkAdvice(present, total, targetPercent) {
+  const target = targetPercent / 100
+
+  if (total === 0) {
+    return { canBunk: 0, mustAttend: 0, message: 'Mark a class to see advice.' }
+  }
+
+  const currentPct = present / total
+
+  if (currentPct >= target) {
+    // Max x such that present / (total + x) >= target  =>  x <= present/target - total
+    const rawBunk = target > 0 ? present / target - total : Infinity
+    const canBunk = Math.max(0, Math.floor(rawBunk))
+    return {
+      canBunk,
+      mustAttend: 0,
+      message: canBunk > 0
+        ? `You can safely miss ${canBunk} more class${canBunk === 1 ? '' : 'es'}.`
+        : `Right at the edge — missing another class will drop you below ${targetPercent}%.`,
+    }
+  }
+
+  // Min y such that (present + y) / (total + y) >= target => y >= (target*total - present) / (1 - target)
+  if (target >= 1) {
+    return { canBunk: 0, mustAttend: Infinity, message: 'Target of 100% requires attending every remaining class.' }
+  }
+  const rawAttend = (target * total - present) / (1 - target)
+  const mustAttend = Math.max(0, Math.ceil(rawAttend))
+  return {
+    canBunk: 0,
+    mustAttend,
+    message: `Attend the next ${mustAttend} class${mustAttend === 1 ? '' : 'es'} to reach ${targetPercent}%.`,
+  }
+}
+
+/** Overall stats across all subjects */
+export function getOverallStats(subjects) {
+  const present = subjects.reduce((sum, s) => sum + s.present, 0)
+  const total = subjects.reduce((sum, s) => sum + s.total, 0)
+  const absent = total - present
+  return { present, absent, total, percentage: getPercentage(present, total) }
+}
+
+export function getHighestLowestAverage(subjects) {
+  const withClasses = subjects.filter((s) => s.total > 0)
+  if (withClasses.length === 0) {
+    return { highest: null, lowest: null, average: 0 }
+  }
+  const withPct = withClasses.map((s) => ({ ...s, pct: getPercentage(s.present, s.total) }))
+  const highest = withPct.reduce((a, b) => (b.pct > a.pct ? b : a))
+  const lowest = withPct.reduce((a, b) => (b.pct < a.pct ? b : a))
+  const average = withPct.reduce((sum, s) => sum + s.pct, 0) / withPct.length
+  return { highest, lowest, average }
+}
+
+export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+export function getTodayName() {
+  const idx = new Date().getDay() // 0 = Sunday
+  const map = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  return map[idx]
+}
+
+/** Computes current attendance streak (consecutive most-recent days marked Present across any subject) */
+export function computeStreak(history) {
+  if (!history || history.length === 0) return 0
+  const byDate = {}
+  history.forEach((h) => {
+    byDate[h.date] = byDate[h.date] || []
+    byDate[h.date].push(h.status)
+  })
+  const dates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a))
+  let streak = 0
+  for (const date of dates) {
+    const statuses = byDate[date]
+    const allPresent = statuses.every((s) => s === 'present')
+    if (allPresent) streak += 1
+    else break
+  }
+  return streak
+}
+
+/** Weekly / monthly summary counts from history log */
+export function getSummary(history, days) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+  const relevant = history.filter((h) => h.timestamp >= cutoff)
+  const present = relevant.filter((h) => h.status === 'present').length
+  const absent = relevant.filter((h) => h.status === 'absent').length
+  return { present, absent, total: present + absent }
+}
