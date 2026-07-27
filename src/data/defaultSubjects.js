@@ -1,8 +1,7 @@
 // UCER CSE 2nd Year (Sec B) Official Timetable & Subject Data
 // Facilitator: AJAI KUMAR MAURYA (Room D104, W.E.F 26/07/2026)
-// Aligned with official ERP Portal data (student.icampuserp.in)
-// Classes Start Date: 14/07/2026 (Tue)
-// Holidays: Every Sunday, 1st & 3rd Saturday of the month
+// Date Range for History: 20/07/2026 to 27/07/2026 (Excluding Sundays)
+// Lab classes = 2 attendance count per session
 
 export const DEFAULT_TIMETABLE_HEADER = {
   title: 'United College CSE 2nd Year (Sec B) Timetable',
@@ -19,7 +18,7 @@ export const defaultSubjects = [
     faculty: 'Chitranjan Dwivedi',
     icon: 'cpu',
     color: ['#10b981', '#3b82f6'],
-    present: 8, total: 8,
+    present: 7, total: 7,
     timetable: [
       { day: 'Monday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' },
       { day: 'Tuesday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' },
@@ -34,6 +33,7 @@ export const defaultSubjects = [
     code: 'BCS352',
     faculty: 'Manoj Yadav',
     icon: 'code',
+    isLab: true,
     color: ['#8b5cf6', '#3b82f6'],
     present: 4, total: 4,
     timetable: [
@@ -46,7 +46,7 @@ export const defaultSubjects = [
     faculty: 'Sunil Kumar Khare',
     icon: 'book',
     color: ['#3b82f6', '#8b5cf6'],
-    present: 9, total: 9,
+    present: 7, total: 7,
     timetable: [
       { day: 'Monday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' },
       { day: 'Tuesday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' },
@@ -61,8 +61,9 @@ export const defaultSubjects = [
     code: 'BCS351',
     faculty: 'Shyam B. Verma & Sunil K. Khare',
     icon: 'flask',
+    isLab: true,
     color: ['#3b82f6', '#10b981'],
-    present: 4, total: 4,
+    present: 2, total: 2,
     timetable: [
       { day: 'Tuesday', period: 'P4-P5', periodOrder: 4, time: '11:30 AM - 01:10 PM' }
     ]
@@ -73,7 +74,7 @@ export const defaultSubjects = [
     faculty: 'Santosh Dubey',
     icon: 'chip',
     color: ['#10b981', '#8b5cf6'],
-    present: 13, total: 13,
+    present: 8, total: 8,
     timetable: [
       { day: 'Monday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
       { day: 'Tuesday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' },
@@ -90,7 +91,7 @@ export const defaultSubjects = [
     faculty: 'Dharmendra Kumar',
     icon: 'logic',
     color: ['#8b5cf6', '#10b981'],
-    present: 10, total: 10,
+    present: 7, total: 7,
     timetable: [
       { day: 'Monday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' },
       { day: 'Tuesday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
@@ -132,7 +133,7 @@ export const defaultSubjects = [
     faculty: 'Shivanand Dubey',
     icon: 'calc',
     color: ['#3b82f6', '#10b981'],
-    present: 2, total: 2,
+    present: 1, total: 1,
     timetable: [
       { day: 'Wednesday', period: 'P8', periodOrder: 8, time: '02:50 PM - 03:40 PM' }
     ]
@@ -143,7 +144,7 @@ export const defaultSubjects = [
     faculty: 'Gaurav Goswami',
     icon: 'brain',
     color: ['#8b5cf6', '#3b82f6'],
-    present: 1, total: 1,
+    present: 2, total: 2,
     timetable: [
       { day: 'Monday', period: 'P8', periodOrder: 8, time: '02:50 PM - 03:40 PM' }
     ]
@@ -154,7 +155,7 @@ export const defaultSubjects = [
     faculty: 'Nishat Bano',
     icon: 'robot',
     color: ['#8b5cf6', '#10b981'],
-    present: 1, total: 1,
+    present: 2, total: 2,
     timetable: [
       { day: 'Thursday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' },
       { day: 'Friday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' }
@@ -165,8 +166,9 @@ export const defaultSubjects = [
     code: 'BCS353',
     faculty: 'Nitish Kumar & Sachin Sonkar',
     icon: 'globe',
+    isLab: true,
     color: ['#8b5cf6', '#10b981'],
-    present: 4, total: 4,
+    present: 2, total: 2,
     timetable: [
       { day: 'Friday', period: 'P8-P9', periodOrder: 8, time: '02:50 PM - 04:30 PM' }
     ]
@@ -180,6 +182,7 @@ export function buildSubject(seed, idOverride) {
     code: seed.code,
     faculty: seed.faculty || '',
     icon: seed.icon || 'book',
+    isLab: seed.isLab || false,
     color: seed.color || ['#3b82f6', '#8b5cf6'],
     present: seed.present !== undefined ? seed.present : 0,
     total: seed.total !== undefined ? seed.total : 0,
@@ -188,48 +191,44 @@ export function buildSubject(seed, idOverride) {
   }
 }
 
-/** Generates realistic ERP date-wise attendance logs from 14/07/2026 onwards */
+/** Generates realistic ERP date-wise attendance logs from 20/07/2026 to 27/07/2026 (Labs = 2 count) */
 export function generateSeedHistory(subjectsList) {
   const logs = []
-  const startDate = new Date(2026, 6, 14) // 14 July 2026 (Month 6 = July)
+  const startDate = new Date(2026, 6, 20) // 20 July 2026
   const endDate = new Date(2026, 6, 27)   // 27 July 2026
 
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     const dayName = DAY_NAMES[d.getDay()]
-    const dateNum = d.getDate()
     const dayOfWeek = d.getDay()
 
-    // Skip Sunday
+    // Exclude Sundays
     if (dayOfWeek === 0) continue
-
-    // Check 1st & 3rd Saturday holidays
-    if (dayOfWeek === 6) {
-      const weekOfMonth = Math.ceil(dateNum / 7)
-      if (weekOfMonth === 1 || weekOfMonth === 3) continue // 1st or 3rd Saturday holiday
-    }
 
     const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
 
-    // Add entries for scheduled subjects on this day
     subjectsList.forEach((subj) => {
       ;(subj.timetable || []).forEach((slot) => {
         if (slot.day === dayName) {
-          logs.push({
-            id: `log_${subj.code}_${formattedDate.replace(/\//g, '')}_${slot.period || 'P1'}`,
-            subjectId: subj.id,
-            subjectName: subj.name,
-            code: subj.code,
-            status: 'present',
-            date: formattedDate, // Format: 14/07/2026
-            timestamp: d.getTime()
-          })
+          // If Lab subject, create 2 attendance entries (count = 2)
+          const count = subj.isLab || (slot.period && slot.period.includes('-')) ? 2 : 1
+          for (let c = 1; c <= count; c++) {
+            logs.push({
+              id: `log_${subj.code}_${formattedDate.replace(/\//g, '')}_${slot.period || 'P1'}_${c}`,
+              subjectId: subj.id,
+              subjectName: subj.name,
+              code: subj.code,
+              status: 'present',
+              date: formattedDate, // Date only e.g. 20/07/2026
+              timestamp: d.getTime()
+            })
+          }
         }
       })
     })
   }
 
-  // Reverse so newest date comes first
+  // Reverse so newest date (27/07/2026) comes first
   return logs.reverse()
 }
