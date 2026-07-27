@@ -54,7 +54,7 @@ export default function Topbar() {
 
   // Forgot Password & OTP Dialog
   const [forgotOpen, setForgotOpen] = useState(false)
-  const [otpStep, setOtpStep] = useState(1) // 1: Send OTP, 2: Verify OTP
+  const [otpStep, setOtpStep] = useState(1)
   const [email, setEmail] = useState('anshujaiswal3000@gmail.com')
   const [otpCode, setOtpCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -63,16 +63,16 @@ export default function Topbar() {
   const [otpError, setOtpError] = useState('')
   const [loadingOtp, setLoadingOtp] = useState(false)
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault()
     setLoginError('')
-    const success = unlockApp(userId, password)
+    const success = await unlockApp(userId, password)
     if (success) {
       setUserId('')
       setPassword('')
       setLoginOpen(false)
     } else {
-      setLoginError('Invalid User ID or Password. Only Owner can make changes!')
+      setLoginError('Invalid User ID or Password!')
     }
   }
 
@@ -121,7 +121,7 @@ export default function Topbar() {
       const json = await res.json()
       if (json.success) {
         notify('Password reset successfully! Unlocking Owner Mode 🔓', 'success')
-        unlockApp('anshu', newPassword)
+        await unlockApp('anshu', newPassword)
         setForgotOpen(false)
         setLoginOpen(false)
         setOtpStep(1)

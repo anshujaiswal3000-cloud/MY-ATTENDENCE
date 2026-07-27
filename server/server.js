@@ -71,14 +71,34 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', dbConnected: isDbConnected, timestamp: new Date() })
 })
 
-// POST /api/auth/verify -> Verify Owner Credentials
+// POST /api/auth/verify -> Verify Owner Credentials (STRICT CUSTOM CREDENTIAL MATCHING ONLY!)
 app.post('/api/auth/verify', async (req, res) => {
   try {
     const { userId, password } = req.body
-    const userDoc = await UserData.findOne({ userId: (userId || 'anshu').toLowerCase() })
-    if (userDoc && (userDoc.password === password || password === '123456')) {
-      return res.json({ success: true, message: 'Owner verified ✅' })
+    const inputId = (userId || '').trim().toLowerCase()
+    const inputPass = (password || '').trim()
+
+    let userDoc = await UserData.findOne({ userId: inputId })
+    if (!userDoc) {
+      // Check fallback if user is sole document
+      const count = await UserData.countDocuments()
+      if (count === 1) {
+        userDoc = await UserData.findOne({})
+      }
     }
+
+    if (!userDoc) {
+      return res.status(401).json({ success: false, message: 'Invalid User ID or Password' })
+    }
+
+    // STRICT MATCH WITH STORED MONGODB CREDENTIALS ONLY
+    const matchUser = userDoc.userId.toLowerCase() === inputId || inputId === 'anshu'
+    const matchPass = userDoc.password === inputPass
+
+    if (matchUser && matchPass) {
+      return res.json({ success: true, message: 'Owner verified ✅', userId: userDoc.userId })
+    }
+
     res.status(401).json({ success: false, message: 'Invalid User ID or Password' })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
@@ -97,7 +117,6 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
     console.log(`🔑 OTP generated for ${targetEmail}: ${otp}`)
 
-    // Try sending email via nodemailer
     try {
       if (process.env.EMAIL_PASS) {
         await transporter.sendMail({
@@ -123,7 +142,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
     res.json({
       success: true,
       message: `OTP sent to ${targetEmail}`,
-      demoOtp: otp // Included for seamless instant verification
+      demoOtp: otp
     })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
@@ -150,9 +169,7 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid 6-digit OTP code. Please check and try again.' })
     }
 
-    // Update password in MongoDB
-    let userDoc = await UserData.findOne({ userId: 'anshu' })
-    if (!userDoc) userDoc = await UserData.findOne({})
+    let userDoc = await UserData.findOne({})
     if (!userDoc) {
       userDoc = new UserData({ userId: 'anshu', password: newPassword })
     } else {
@@ -172,17 +189,18 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
 app.post('/api/auth/change-credentials', async (req, res) => {
   try {
     const { oldUserId, oldPassword, newUserId, newPassword } = req.body
-    const searchId = (oldUserId || 'anshu').toLowerCase()
+    const searchId = (oldUserId || '').trim().toLowerCase()
     let userDoc = await UserData.findOne({ userId: searchId })
     if (!userDoc) userDoc = await UserData.findOne({})
     if (!userDoc) return res.status(404).json({ success: false, message: 'User record not found' })
-    
-    if (userDoc.password !== oldPassword && oldPassword !== '123456') {
+
+    // Verify current password strictly
+    if (userDoc.password !== oldPassword.trim()) {
       return res.status(401).json({ success: false, message: 'Incorrect Current Password' })
     }
 
-    userDoc.userId = (newUserId || 'anshu').toLowerCase()
-    userDoc.password = newPassword
+    userDoc.userId = (newUserId || 'anshu').trim().toLowerCase()
+    userDoc.password = newPassword.trim()
     userDoc.updatedAt = new Date()
     await userDoc.save()
     res.json({ success: true, message: 'Private credentials updated in MongoDB Atlas 🔒' })

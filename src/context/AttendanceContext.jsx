@@ -132,15 +132,27 @@ export function AttendanceProvider({ children }) {
     return () => clearInterval(timer)
   }, [])
 
-  // Lock / Unlock Owner access
-  const unlockApp = useCallback((userId, password) => {
-    if ((userId.toLowerCase() === 'anshu' && password === '123456') || password === '123456') {
-      setIsUnlocked(true)
-      notify('Welcome Anshu! Editing mode unlocked 🔓')
-      return true
+  // Strict Async Owner Authentication with MongoDB Cloud
+  const unlockApp = useCallback(async (userIdInput, passwordInput) => {
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userIdInput, password: passwordInput })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setIsUnlocked(true)
+        notify('Welcome Anshu! Editing mode unlocked 🔓')
+        return true
+      } else {
+        notify('Invalid User ID or Password!', 'error')
+        return false
+      }
+    } catch (err) {
+      notify('Network error during verification', 'error')
+      return false
     }
-    notify('Login to make any change', 'error')
-    return false
   }, [setIsUnlocked, notify])
 
   const lockApp = useCallback(() => {
@@ -151,7 +163,7 @@ export function AttendanceProvider({ children }) {
   /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
 
@@ -195,7 +207,7 @@ export function AttendanceProvider({ children }) {
 
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
 
@@ -226,7 +238,7 @@ export function AttendanceProvider({ children }) {
 
   const deleteBunkClass = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     let newBunks = []
@@ -293,7 +305,7 @@ export function AttendanceProvider({ children }) {
 
   const addSubject = useCallback((data) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return null
     }
     const subject = buildSubject(data)
@@ -308,7 +320,7 @@ export function AttendanceProvider({ children }) {
 
   const updateSubject = useCallback((id, updates) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     setSubjects((prev) => {
@@ -321,7 +333,7 @@ export function AttendanceProvider({ children }) {
 
   const deleteSubject = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     setSubjects((prev) => {
@@ -335,7 +347,7 @@ export function AttendanceProvider({ children }) {
 
   const addNote = useCallback((noteData) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     const newNote = {
@@ -353,7 +365,7 @@ export function AttendanceProvider({ children }) {
 
   const toggleNoteComplete = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     setNotes((prev) => {
@@ -365,7 +377,7 @@ export function AttendanceProvider({ children }) {
 
   const deleteNote = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     setNotes((prev) => {
@@ -378,7 +390,7 @@ export function AttendanceProvider({ children }) {
 
   const resetAttendance = useCallback(() => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     setSubjects((prev) => prev.map((s) => ({ ...s, present: 0, total: 0 })))
@@ -391,7 +403,7 @@ export function AttendanceProvider({ children }) {
 
   const updateTimetable = useCallback((subjectId, timetable) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     setSubjects((prev) => {
@@ -410,7 +422,7 @@ export function AttendanceProvider({ children }) {
 
   const importData = useCallback((data) => {
     if (!isUnlocked) {
-      notify('Login to make any change', 'warning')
+      notify('Login to make any change 🔒', 'warning')
       return
     }
     applyImportedData(data)
