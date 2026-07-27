@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
-import { Box, Typography, Button, Switch, TextField, MenuItem, Grid, Divider, Alert } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload, MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock, MdKey } from 'react-icons/md'
+import { Box, Typography, Button, Switch, TextField, MenuItem, Grid, Divider, Alert, Slider } from '@mui/material'
+import { MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload, MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock, MdVpnKey, MdVibration, MdAutoAwesome } from 'react-icons/md'
 import GlassCard from '../components/GlassCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useThemeMode } from '../context/ThemeContext'
@@ -50,8 +50,8 @@ export default function Settings() {
   }
 
   const addSemester = () => {
-    const name = `Semester ${settings.semesters.length + 1}`
-    setSettings((s) => ({ ...s, semesters: [...s.semesters, name] }))
+    const name = `Semester ${(settings.semesters || []).length + 1}`
+    setSettings((s) => ({ ...s, semesters: [...(s.semesters || []), name] }))
   }
 
   const handleChangeCredentials = async (e) => {
@@ -78,11 +78,11 @@ export default function Settings() {
   }
 
   return (
-    <Box sx={{ maxWidth: 640 }}>
+    <Box sx={{ maxWidth: 640, pb: 4 }}>
       {/* ── Owner Credentials Security Card ── */}
       <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.3)' }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MdKey color="#60a5fa" /> Owner Security Credentials (MongoDB Cloud)
+          <MdVpnKey color="#60a5fa" /> Owner Security Credentials (MongoDB Cloud)
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
           Set your private secret User ID & Password saved in MongoDB Atlas. Nobody else (including developers) can unlock your app without these.
@@ -130,31 +130,77 @@ export default function Settings() {
             disabled={!isUnlocked}
             sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700 }}
           >
-            {isUnlocked ? 'Save Secret Credentials to MongoDB' : 'Login Required to Change Credentials 🔒'}
+            {isUnlocked ? 'Save Secret Credentials to MongoDB' : 'Login to make any change 🔒'}
           </Button>
         </Box>
       </GlassCard>
 
+      {/* ── App Preferences & Automation ── */}
       <GlassCard sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Appearance</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Preferences & Automation</Typography>
+        
         <SettingRow
           icon={mode === 'dark' ? <MdDarkMode /> : <MdLightMode />}
           title="Dark Mode"
           subtitle={mode === 'dark' ? 'Currently on' : 'Currently off — using Light Mode'}
           action={<Switch checked={mode === 'dark'} onChange={toggleMode} />}
         />
+        <Divider sx={{ opacity: 0.3 }} />
+        <SettingRow
+          icon={<MdAutoAwesome color="#34d399" />}
+          title="Auto-Attendance Engine"
+          subtitle="Automatically marks classes Present when lecture end-time passes"
+          action={
+            <Switch
+              checked={Boolean(settings.autoAttendance)}
+              onChange={(e) => setSettings((s) => ({ ...s, autoAttendance: e.target.checked }))}
+            />
+          }
+        />
+        <Divider sx={{ opacity: 0.3 }} />
+        <SettingRow
+          icon={<MdVibration color="#a78bfa" />}
+          title="Haptic Touch Vibration"
+          subtitle="Vibrate on tab switches, profile tap, and attendance clicks"
+          action={
+            <Switch
+              checked={settings.hapticFeedback !== false}
+              onChange={(e) => setSettings((s) => ({ ...s, hapticFeedback: e.target.checked }))}
+            />
+          }
+        />
       </GlassCard>
 
+      {/* ── Target Goal & Semester ── */}
       <GlassCard delay={0.05} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Semester</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Target Attendance Goal</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Current Target Goal: <strong>{settings.targetPercentage || 75}%</strong>
+        </Typography>
+        <Slider
+          value={settings.targetPercentage || 75}
+          onChange={(_, v) => setSettings((s) => ({ ...s, targetPercentage: v }))}
+          step={5}
+          marks
+          min={60}
+          max={95}
+          valueLabelDisplay="auto"
+          sx={{ mb: 2 }}
+        />
+
+        <Divider sx={{ opacity: 0.3, my: 2 }} />
+
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Active Semester</Typography>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={8}>
             <TextField
               select fullWidth size="small" label="Active semester"
-              value={settings.semester}
+              value={settings.semester || 'Semester 3'}
               onChange={(e) => setSettings((s) => ({ ...s, semester: e.target.value }))}
             >
-              {settings.semesters.map((sem) => <MenuItem key={sem} value={sem}>{sem}</MenuItem>)}
+              {(settings.semesters || ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4']).map((sem) => (
+                <MenuItem key={sem} value={sem}>{sem}</MenuItem>
+              ))}
             </TextField>
           </Grid>
           <Grid item xs={4}>
@@ -163,8 +209,9 @@ export default function Settings() {
         </Grid>
       </GlassCard>
 
+      {/* ── Data Export & Backup ── */}
       <GlassCard delay={0.1} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Data</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Data Management</Typography>
         <Divider sx={{ opacity: 0.3 }} />
         <SettingRow
           icon={<MdFileDownload />}
@@ -196,6 +243,7 @@ export default function Settings() {
         />
       </GlassCard>
 
+      {/* ── Danger Zone ── */}
       <GlassCard delay={0.15} sx={{ p: 3, borderColor: 'rgba(244,63,94,0.3)' }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#f43f5e' }}>Danger Zone</Typography>
         <SettingRow
