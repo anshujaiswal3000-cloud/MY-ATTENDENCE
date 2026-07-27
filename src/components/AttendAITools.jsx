@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react'
 import {
-  Box, Typography, TextField, Button, Chip, Grid, Divider, Alert, LinearProgress
+  Box, Typography, TextField, Button, Chip, Grid, Divider, Alert, Collapse, IconButton
 } from '@mui/material'
 import {
   MdSmartToy, MdSend, MdTrendingUp, MdDoorBack, MdCheckCircle,
-  MdWarning, MdFunctions, MdAnalytics, MdLibraryBooks, MdAutoAwesome
+  MdWarning, MdFunctions, MdAnalytics, MdLibraryBooks, MdAutoAwesome,
+  MdExpandMore, MdExpandLess
 } from 'react-icons/md'
 import GlassCard from './GlassCard'
 import { useAttendance } from '../context/AttendanceContext'
@@ -21,7 +22,7 @@ function findMatchingSubject(queryStr, subjectsList) {
   )
   if (exact) return exact
 
-  // 2. Alias / Keyword match
+  // 2. Comprehensive Alias & Keyword match
   for (const s of subjectsList) {
     const name = s.name.toLowerCase()
     const code = (s.code || '').toLowerCase()
@@ -29,16 +30,22 @@ function findMatchingSubject(queryStr, subjectsList) {
     if ((q.includes('digital') || q.includes('dld') || q.includes('electronic')) && (name.includes('digital') || code.includes('dld') || name.includes('electronic'))) {
       return s
     }
-    if (q.includes('python') && name.includes('python')) {
+    if ((q.includes('discrete') || q.includes('dstl') || q.includes('structures theory')) && (name.includes('discrete') || code.includes('dstl'))) {
       return s
     }
-    if ((q.includes('computer organization') || q.includes(' co ') || q.endsWith(' co') || q.startsWith('co ')) && (name.includes('computer organization') || code.includes('co'))) {
+    if ((q.includes('web') || q.includes('wdw') || q.includes('designing')) && (name.includes('web') || code.includes('wdw'))) {
+      return s
+    }
+    if ((q.includes('python')) && name.includes('python')) {
+      return s
+    }
+    if ((q.includes('computer organization') || q.includes(' co ') || q.endsWith(' co') || q.startsWith('co ') || q.includes('co_lab')) && (name.includes('computer organization') || code.includes('co'))) {
       return s
     }
     if ((q.includes('math') || q.includes('m1') || q.includes('m2') || q.includes('m3')) && name.includes('math')) {
       return s
     }
-    if ((q.includes('structure') || q.includes('dsa') || q.includes(' ds ')) && (name.includes('structure') || name.includes('ds'))) {
+    if ((q.includes('structure') || q.includes('dsa') || q.includes(' ds ') || q.includes('ds_lab')) && (name.includes('structure') || name.includes('ds'))) {
       return s
     }
     if ((q.includes('chem') || q.includes('chemistry')) && name.includes('chemistry')) {
@@ -50,7 +57,7 @@ function findMatchingSubject(queryStr, subjectsList) {
   }
 
   // 3. Fallback token inclusion match
-  const words = q.split(' ').filter(w => w.length > 2 && !['class', 'aaj', 'kal', 'toh', 'kitne', 'percent', 'attendance', 'ho', 'jayega', 'kru', 'na', 'kare', 'karein', 'karu', 'drop', 'miss', 'bunk', 'if', 'not'].includes(w))
+  const words = q.split(' ').filter(w => w.length > 2 && !['class', 'aaj', 'kal', 'toh', 'kitne', 'percent', 'attendance', 'ho', 'jayega', 'kru', 'na', 'kare', 'karein', 'karu', 'drop', 'miss', 'bunk', 'if', 'not', 'mera', 'meri', 'kya', 'hai', 'kaise'].includes(w))
   
   for (const w of words) {
     const match = subjectsList.find(s => s.name.toLowerCase().includes(w) || (s.code && s.code.toLowerCase().includes(w)))
@@ -71,6 +78,9 @@ export default function AttendAITools() {
   const [query, setQuery] = useState('')
   const [aiResponse, setAiResponse] = useState(null)
   const [loadingAi, setLoadingAi] = useState(false)
+
+  // Collapsible Matrix State
+  const [matrixExpanded, setMatrixExpanded] = useState(false)
 
   // Live Subject Analytics Breakdown (0 Fake Data)
   const subjectAnalytics = useMemo(() => {
@@ -122,7 +132,7 @@ export default function AttendAITools() {
     return librarySubjects.reduce((acc, curr) => acc + (curr.present || 0), 0)
   }, [librarySubjects])
 
-  // Ultra-Accurate Natural Language Simulation Handler
+  // Universal Powerful AI Engine
   const handleAiAsk = (e) => {
     e?.preventDefault()
     if (!query.trim()) return
@@ -131,7 +141,7 @@ export default function AttendAITools() {
     setLoadingAi(true)
 
     setTimeout(() => {
-      const q = query.toLowerCase()
+      const q = query.toLowerCase().trim()
       const matchedSubject = findMatchingSubject(q, subjects)
 
       const isBunkAction = q.includes('na') || q.includes('nhi') || q.includes('bunk') || q.includes('miss') || q.includes('absent') || q.includes('chhod') || q.includes('skip') || q.includes('leave')
@@ -141,7 +151,6 @@ export default function AttendAITools() {
         const count = isLab ? 2 : 1
 
         if (isBunkAction) {
-          // Bunk / Miss scenario calculation
           const newSubjP = matchedSubject.present
           const newSubjT = matchedSubject.total + count
           const curSubjPct = getPercentage(matchedSubject.present, matchedSubject.total)
@@ -166,7 +175,6 @@ export default function AttendAITools() {
             safe: newOverallPct >= targetGoal
           })
         } else {
-          // Attend / Present scenario calculation
           const newSubjP = matchedSubject.present + count
           const newSubjT = matchedSubject.total + count
           const curSubjPct = getPercentage(matchedSubject.present, matchedSubject.total)
@@ -196,10 +204,10 @@ export default function AttendAITools() {
         setAiResponse({
           type: 'text',
           content: safeSubj.length > 0
-            ? `🤖 **AttendAI Bunk Analysis**: Aap in subjects mein safely bunk kar sakte ho: ${safeSubj.map(s => `${s.name} (${s.safeBunks} classes)`).join(', ')} while keeping attendance above ${targetGoal}%!`
+            ? `🤖 **AttendAI Bunk Analysis**: Aap in subjects mein safely bunk kar sakte ho: ${safeSubj.map(s => `${s.name} (${s.safeBunks} classes)`).join(', ')} while keeping overall attendance above ${targetGoal}%!`
             : `🤖 **AttendAI Warning**: Abhi kisi subject mein extra bunk safe nahi hai. Current attendance ${stats.percentage.toFixed(1)}% hai, target goal ${targetGoal}% tak pahocho!`
         })
-      } else if (q.includes('target') || q.includes('75') || q.includes('80') || q.includes('reach')) {
+      } else if (q.includes('target') || q.includes('75') || q.includes('80') || q.includes('reach') || q.includes('goal')) {
         const lowSubj = subjectAnalytics.filter(s => !s.isIgnored && s.requiredLectures > 0)
         setAiResponse({
           type: 'text',
@@ -212,10 +220,26 @@ export default function AttendAITools() {
           type: 'text',
           content: `📚 **Library Attendance Summary**: Abhi tak total **${libraryTotalSessions} Library Sessions** record huye hain (${libraryPresentSessions} Attended) across ${librarySubjects.length} library slots.`
         })
+      } else if (q.includes('lowest') || q.includes('kam') || q.includes('worst')) {
+        const lowestSub = [...subjects].filter(s => !s.isIgnored && s.total > 0).sort((a, b) => getPercentage(a.present, a.total) - getPercentage(b.present, b.total))[0]
+        setAiResponse({
+          type: 'text',
+          content: lowestSub
+            ? `🤖 **AttendAI Alert**: Aapka lowest attendance subject **${lowestSub.name}** hai at **${getPercentage(lowestSub.present, lowestSub.total).toFixed(1)}%** (${lowestSub.present}/${lowestSub.total}).`
+            : `🤖 All subjects are in good standing!`
+        })
+      } else if (q.includes('highest') || q.includes('best') || q.includes('accha')) {
+        const highestSub = [...subjects].filter(s => !s.isIgnored && s.total > 0).sort((a, b) => getPercentage(b.present, b.total) - getPercentage(a.present, a.total))[0]
+        setAiResponse({
+          type: 'text',
+          content: highestSub
+            ? `🤖 **AttendAI Top Subject**: Aapka highest attendance subject **${highestSub.name}** hai at **${getPercentage(highestSub.present, highestSub.total).toFixed(1)}%** (${highestSub.present}/${highestSub.total})!`
+            : `🤖 All subjects are doing great!`
+        })
       } else {
         setAiResponse({
           type: 'text',
-          content: `🤖 **AttendAI Live Overview**: Total Attendance ${stats.percentage.toFixed(1)}% (${stats.present}/${stats.total} lectures) in ${activeSemester}. Overall Status: ${stats.percentage >= targetGoal ? '✅ On Track' : '⚠️ Warning Area'}.`
+          content: `🤖 **AttendAI Live Overview**: Total Attendance ${stats.percentage.toFixed(1)}% (${stats.present}/${stats.total} lectures) in ${activeSemester}. Target Goal: ${targetGoal}%. Overall Status: ${stats.percentage >= targetGoal ? '✅ On Track' : '⚠️ Warning Area'}.`
         })
       }
 
@@ -234,7 +258,7 @@ export default function AttendAITools() {
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-              AttendAI Real-Time Assistant & Predictor
+              AttendAI Universal Assistant & Predictor
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Poocho: "agr mai digital electronic ki class aaj na kru toh kitne % attendance ho jayega?"
@@ -422,51 +446,81 @@ export default function AttendAITools() {
         </Grid>
       </GlassCard>
 
-      {/* 📊 Real-Time Bunk Predictor Matrix (0 Fake Data) 📊 */}
-      <GlassCard sx={{ p: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MdAnalytics color="#60a5fa" size={20} /> Real-Time Bunk & Goal Predictor Matrix
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          Live mathematical analysis calculated against your {targetGoal}% target goal
-        </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {subjectAnalytics.filter(s => !s.isIgnored).map((s) => (
-            <Box key={s.id} sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(148,163,184,0.08)', border: '1px solid rgba(148,163,184,0.12)' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-                    {s.name} ({s.code})
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Present: {s.present}/{s.total} • Current: <strong>{s.pct.toFixed(1)}%</strong>
-                  </Typography>
-                </Box>
-                <Chip
-                  label={s.pct >= targetGoal ? `Safe (${s.pct.toFixed(1)}%)` : `Warning (${s.pct.toFixed(1)}%)`}
-                  size="small"
-                  sx={{
-                    fontWeight: 800, fontSize: '.68rem',
-                    bgcolor: s.pct >= targetGoal ? 'rgba(16,185,129,0.18)' : 'rgba(244,63,94,0.18)',
-                    color: s.pct >= targetGoal ? '#34d399' : '#fb7185'
-                  }}
-                />
-              </Box>
-
-              {/* Status Message */}
-              {s.pct >= targetGoal ? (
-                <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 700, display: 'block' }}>
-                  ✓ You can safely bunk {s.safeBunks} class{s.safeBunks > 1 ? 'es' : ''} continuously while staying above {targetGoal}%!
-                </Typography>
-              ) : (
-                <Typography variant="caption" sx={{ color: '#fb7185', fontWeight: 700, display: 'block' }}>
-                  ⚠️ Attend next {s.requiredLectures} continuous lecture{s.requiredLectures > 1 ? 's' : ''} to reach {targetGoal}% target goal!
-                </Typography>
-              )}
+      {/* 📊 Collapsible Real-Time Bunk Predictor Matrix (Inside a Clean Tab) 📊 */}
+      <GlassCard sx={{ p: 2.5, border: '1px solid rgba(96,165,250,0.3)' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setMatrixExpanded(!matrixExpanded)
+          }}
+          sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer', userSelect: 'none'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: 'rgba(96,165,250,0.18)', color: '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 22 }}>
+              <MdAnalytics />
             </Box>
-          ))}
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                Real-Time Bunk & Goal Predictor Matrix
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Tap to expand full subject-wise safe bunks & required lectures
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton size="small" sx={{ color: '#60a5fa' }}>
+            {matrixExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
         </Box>
+
+        {/* Collapsible Content Body */}
+        <Collapse in={matrixExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Live mathematical analysis calculated against your {targetGoal}% target goal:
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {subjectAnalytics.filter(s => !s.isIgnored).map((s) => (
+                <Box key={s.id} sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(148,163,184,0.08)', border: '1px solid rgba(148,163,184,0.12)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                        {s.name} ({s.code})
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Present: {s.present}/{s.total} • Current: <strong>{s.pct.toFixed(1)}%</strong>
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={s.pct >= targetGoal ? `Safe (${s.pct.toFixed(1)}%)` : `Warning (${s.pct.toFixed(1)}%)`}
+                      size="small"
+                      sx={{
+                        fontWeight: 800, fontSize: '.68rem',
+                        bgcolor: s.pct >= targetGoal ? 'rgba(16,185,129,0.18)' : 'rgba(244,63,94,0.18)',
+                        color: s.pct >= targetGoal ? '#34d399' : '#fb7185'
+                      }}
+                    />
+                  </Box>
+
+                  {s.pct >= targetGoal ? (
+                    <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 700, display: 'block' }}>
+                      ✓ You can safely bunk {s.safeBunks} class{s.safeBunks > 1 ? 'es' : ''} continuously while staying above {targetGoal}%!
+                    </Typography>
+                  ) : (
+                    <Typography variant="caption" sx={{ color: '#fb7185', fontWeight: 700, display: 'block' }}>
+                      ⚠️ Attend next {s.requiredLectures} continuous lecture{s.requiredLectures > 1 ? 's' : ''} to reach {targetGoal}% target goal!
+                    </Typography>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Collapse>
       </GlassCard>
 
     </Box>
