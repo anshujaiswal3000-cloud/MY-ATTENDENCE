@@ -1,13 +1,13 @@
 // UCER CSE 2nd Year (Sec B) Official Timetable & Subject Data
-// Facilitator: AJAI KUMAR MAURYA (Mobile: 9335833415, Room D104, W.E.F 13/07/2026)
-// Aligned with official Timetable PDF (Screenshot 1)
+// Facilitator: AJAI KUMAR MAURYA (Mobile: 9335833415, Room D104, W.E.F 26/07/2026)
+// Aligned with official Timetable PDF
 // Classes Start Date: 14/07/2026 (Tue)
-// Holidays: Every Sunday, 1st & 3rd Saturday of the month
+// Holidays: Every Sunday, 1st & 3rd Saturday of the month (Strictly Excluded!)
 
 export const DEFAULT_TIMETABLE_HEADER = {
   title: 'United College CSE 2nd Year (Sec B) Timetable',
   room: 'Room D104',
-  wef: '13/07/2026',
+  wef: '26/07/2026',
   facilitator: 'Ajai Kumar Maurya',
   facilitatorMobile: '9335833415'
 }
@@ -268,7 +268,7 @@ export function buildSubject(seed, idOverride) {
   }
 }
 
-/** Generates realistic ERP date-wise attendance logs from 14/07/2026 to 27/07/2026 (Labs = 2 count, LIB = 0) */
+/** Generates realistic ERP date-wise attendance logs from 14/07/2026 to 27/07/2026 (Excludes ALL Sundays & 1st/3rd Saturdays) */
 export function generateSeedHistory(subjectsList) {
   const logs = []
   const startDate = new Date(2026, 6, 14) // 14 July 2026
@@ -281,10 +281,10 @@ export function generateSeedHistory(subjectsList) {
     const dateNum = d.getDate()
     const dayOfWeek = d.getDay()
 
-    // Exclude Sundays
+    // ❌ EXCLUDE ALL SUNDAYS
     if (dayOfWeek === 0) continue
 
-    // 1st & 3rd Saturday holidays (18 July = 3rd Sat holiday)
+    // ❌ EXCLUDE 1st & 3rd SATURDAYS
     if (dayOfWeek === 6) {
       const weekOfMonth = Math.ceil(dateNum / 7)
       if (weekOfMonth === 1 || weekOfMonth === 3) continue
@@ -293,7 +293,7 @@ export function generateSeedHistory(subjectsList) {
     const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
 
     subjectsList.forEach((subj) => {
-      // Ignore Library
+      // Exclude LIBRARY
       if (subj.isIgnored || subj.code === 'LIBRARY-2') return
 
       ;(subj.timetable || []).forEach((slot) => {

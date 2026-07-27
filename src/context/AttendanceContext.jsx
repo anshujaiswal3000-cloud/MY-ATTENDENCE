@@ -49,15 +49,17 @@ export function AttendanceProvider({ children }) {
   const [history, setHistory] = useLocalStorage(STORAGE_KEYS.history, seedHistory())
   const [bunks, setBunks] = useLocalStorage('attendx_bunks', [])
   const [autoLoggedSlots, setAutoLoggedSlots] = useLocalStorage('attendx_auto_logged_slots', [])
-  const [isUnlocked, setIsUnlocked] = useLocalStorage('attendx_is_unlocked', true)
+  
+  // DEFAULT TO FALSE (SCREEN LOCKED IN VIEW-ONLY MODE UNTIL OWNER LOGS IN)
+  const [isUnlocked, setIsUnlocked] = useLocalStorage('attendx_is_unlocked', false)
   const [timetableHeader, setTimetableHeader] = useLocalStorage('attendx_timetable_header', DEFAULT_TIMETABLE_HEADER)
 
   const [notes, setNotes] = useLocalStorage(STORAGE_KEYS.notes, [
     {
       id: 'note_1',
       title: 'Digital Logic Design Assignment',
-      subjectId: 'dld',
-      subjectName: 'Digital Logic Design (BOE-310)',
+      subjectId: 'subj_dld',
+      subjectName: 'DIGITAL LOGIC DESIGN (DLD)',
       category: 'Assignment',
       content: 'Complete K-Map minimization problems 1 to 5.',
       date: '26/07/2026',
@@ -133,10 +135,10 @@ export function AttendanceProvider({ children }) {
   const unlockApp = useCallback((userId, password) => {
     if ((userId.toLowerCase() === 'anshu' && password === '123456') || password === '123456') {
       setIsUnlocked(true)
-      notify('Welcome back Anshu! Owner access granted 🔓')
+      notify('Welcome back Anshu! Owner editing mode unlocked 🔓')
       return true
     }
-    notify('Invalid User ID or Password', 'error')
+    notify('Invalid User ID or Password. Only Owner can make changes!', 'error')
     return false
   }, [setIsUnlocked, notify])
 
@@ -145,8 +147,13 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent - Instant Cloud Sync */
+  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED */
   const markAttendance = useCallback((subjectId, status) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner to mark attendance 🔒', 'warning')
+      return
+    }
+
     let subjectName = ''
     let newSubjects = []
     setSubjects((prev) => {
@@ -183,10 +190,15 @@ export function AttendanceProvider({ children }) {
 
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
     pushToCloud({ subjects: newSubjects, history: newHistory })
-  }, [setSubjects, setHistory, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, setHistory, notify, pushToCloud])
 
-  // Log a Bunked Class (Personal opinion tracker - Instant Cloud Sync)
+  // Log a Bunked Class (STRICT OWNER PERMISSION REQUIRED)
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner to log bunks 🔒', 'warning')
+      return
+    }
+
     let subjectName = ''
     const sub = subjects.find(s => s.id === subjectId)
     if (sub) subjectName = sub.name
@@ -210,9 +222,13 @@ export function AttendanceProvider({ children }) {
 
     notify(`Personal Bunk logged for ${subjectName || 'Class'} 🚪`, 'info')
     pushToCloud({ bunks: newBunks })
-  }, [subjects, setBunks, notify, pushToCloud])
+  }, [isUnlocked, subjects, setBunks, notify, pushToCloud])
 
   const deleteBunkClass = useCallback((id) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner to delete bunks 🔒', 'warning')
+      return
+    }
     let newBunks = []
     setBunks((prev) => {
       newBunks = prev.filter((b) => b.id !== id)
@@ -220,7 +236,7 @@ export function AttendanceProvider({ children }) {
     })
     notify('Bunk record removed', 'info')
     pushToCloud({ bunks: newBunks })
-  }, [setBunks, notify, pushToCloud])
+  }, [isUnlocked, setBunks, notify, pushToCloud])
 
   // ── AUTO ATTENDANCE ENGINE ──
   useEffect(() => {
@@ -276,6 +292,10 @@ export function AttendanceProvider({ children }) {
   }, [subjects, autoLoggedSlots, settings.autoAttendance, setSubjects, setHistory, setAutoLoggedSlots, notify, pushToCloud])
 
   const addSubject = useCallback((data) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner to add subjects 🔒', 'warning')
+      return null
+    }
     const subject = buildSubject(data)
     setSubjects((prev) => {
       const next = [...prev, subject]
@@ -284,18 +304,26 @@ export function AttendanceProvider({ children }) {
     })
     notify('Subject added')
     return subject.id
-  }, [setSubjects, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, notify, pushToCloud])
 
   const updateSubject = useCallback((id, updates) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     setSubjects((prev) => {
       const next = prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
       pushToCloud({ subjects: next })
       return next
     })
     notify('Subject updated')
-  }, [setSubjects, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, notify, pushToCloud])
 
   const deleteSubject = useCallback((id) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     setSubjects((prev) => {
       const next = prev.filter((s) => s.id !== id)
       pushToCloud({ subjects: next })
@@ -303,9 +331,13 @@ export function AttendanceProvider({ children }) {
     })
     setHistory((prev) => prev.filter((h) => h.subjectId !== id))
     notify('Subject deleted', 'info')
-  }, [setSubjects, setHistory, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, setHistory, notify, pushToCloud])
 
   const addNote = useCallback((noteData) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     const newNote = {
       id: `note_${Math.random().toString(36).slice(2, 10)}`,
       completed: false,
@@ -317,42 +349,58 @@ export function AttendanceProvider({ children }) {
       return next
     })
     notify('Note added')
-  }, [setNotes, notify, pushToCloud])
+  }, [isUnlocked, setNotes, notify, pushToCloud])
 
   const toggleNoteComplete = useCallback((id) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     setNotes((prev) => {
       const next = prev.map((n) => (n.id === id ? { ...n, completed: !n.completed } : n))
       pushToCloud({ notes: next })
       return next
     })
-  }, [setNotes, pushToCloud])
+  }, [isUnlocked, setNotes, pushToCloud])
 
   const deleteNote = useCallback((id) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     setNotes((prev) => {
       const next = prev.filter((n) => n.id !== id)
       pushToCloud({ notes: next })
       return next
     })
     notify('Note deleted', 'info')
-  }, [setNotes, notify, pushToCloud])
+  }, [isUnlocked, setNotes, notify, pushToCloud])
 
   const resetAttendance = useCallback(() => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     setSubjects((prev) => prev.map((s) => ({ ...s, present: 0, total: 0 })))
     setHistory([])
     setBunks([])
     setAutoLoggedSlots([])
     notify('Attendance reset', 'info')
     pushToCloud({ subjects: defaultSubjects.map(s => buildSubject(s, s.id)), history: [], bunks: [] })
-  }, [setSubjects, setHistory, setBunks, setAutoLoggedSlots, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, setHistory, setBunks, setAutoLoggedSlots, notify, pushToCloud])
 
   const updateTimetable = useCallback((subjectId, timetable) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     setSubjects((prev) => {
       const next = prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
       pushToCloud({ subjects: next })
       return next
     })
     notify('Timetable updated')
-  }, [setSubjects, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, notify, pushToCloud])
 
   const exportData = useCallback(() => {
     const data = collectAllData()
@@ -361,6 +409,10 @@ export function AttendanceProvider({ children }) {
   }, [notify])
 
   const importData = useCallback((data) => {
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      return
+    }
     applyImportedData(data)
     if (data.subjects) setSubjects(data.subjects)
     if (data.history) setHistory(data.history)
@@ -368,7 +420,7 @@ export function AttendanceProvider({ children }) {
     if (data.notes) setNotes(data.notes)
     notify('Data imported — reloaded from backup')
     pushToCloud(data)
-  }, [setSubjects, setHistory, setSettings, setNotes, notify, pushToCloud])
+  }, [isUnlocked, setSubjects, setHistory, setSettings, setNotes, notify, pushToCloud])
 
   const value = useMemo(() => ({
     subjects,
