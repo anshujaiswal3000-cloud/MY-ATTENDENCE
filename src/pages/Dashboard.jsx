@@ -45,13 +45,14 @@ export default function Dashboard() {
     return logs.length ? Math.max(18, (logs.filter((entry) => entry.status === 'present').length / logs.length) * 100) : 20
   }), [history])
 
-  // Top 4 subjects (by %)
+  // ALL subjects sorted by % descending
   const topSubjects = useMemo(() =>
-    [...subjects]
-      .sort((a, b) => getPercentage(b.present, b.total) - getPercentage(a.present, a.total))
-      .slice(0, 6),
+    [...subjects].sort((a, b) => getPercentage(b.present, b.total) - getPercentage(a.present, a.total)),
     [subjects]
   )
+
+  // Bunk advice
+  const bunkAdvice = useMemo(() => calculateBunkAdvice(stats.present, stats.total, 75), [stats])
 
   // Recent critical subjects (< 75%)
   const criticalSubjects = useMemo(() =>
@@ -172,14 +173,24 @@ export default function Dashboard() {
               />
             </Grid>
             <Grid item xs={6} sm={3}>
-              <StatCard
-                icon={<MdEventAvailable />}
-                label="Safe bunks"
-                value={safeBunks}
-                description="At 75% target"
-                accent={attendanceSafe ? '#8b5cf6' : '#f59e0b'}
-                delay={.2}
-              />
+              <GlassCard delay={.2} sx={{ p: 2.25, minHeight: 122 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#fff', background: attendanceSafe ? 'linear-gradient(135deg,#8b5cf6,#7c3aed)' : 'linear-gradient(135deg,#f59e0b,#d97706)', flexShrink: 0 }}>
+                    <MdEventAvailable />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ opacity: 0.65 }} noWrap>
+                      {attendanceSafe ? 'Can Bunk' : 'Must Attend'}
+                    </Typography>
+                    <Typography className="mono-num" variant="h5" sx={{ fontWeight: 700 }}>
+                      {attendanceSafe ? bunkAdvice.canBunk : bunkAdvice.mustAttend}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.52, display: 'block', mt: 0.2 }} noWrap>
+                      {attendanceSafe ? 'more classes safely' : 'classes to reach 75%'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </GlassCard>
             </Grid>
 
             {/* Weekly Trend */}
