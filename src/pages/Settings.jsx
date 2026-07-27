@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react'
 import {
   Box, Typography, Button, Switch, TextField, MenuItem, Grid,
-  Divider, Alert, Slider, InputAdornment, IconButton, Collapse, Chip
+  Divider, Alert, Slider, InputAdornment, IconButton, Collapse, Dialog,
+  DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
 import {
   MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
@@ -44,6 +45,13 @@ export default function Settings() {
   const [newUserId, setNewUserId] = useState('')
   const [newPassword, setNewPassword] = useState('')
 
+  // Password Prompt Modal for Sensitive Data Operations
+  const [authDialogOpen, setAuthDialogOpen] = useState(false)
+  const [authPassword, setAuthPassword] = useState('')
+  const [showAuthPass, setShowAuthPass] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [pendingAction, setPendingAction] = useState(null)
+
   // Show/Hide password toggles
   const [showOldUser, setShowOldUser] = useState(false)
   const [showOldPass, setShowOldPass] = useState(false)
@@ -67,6 +75,36 @@ export default function Settings() {
       notify('Import failed — invalid file', 'error')
     } finally {
       e.target.value = ''
+    }
+  }
+
+  // Password verification wrapper for sensitive actions
+  const requirePasswordThen = (actionFn) => {
+    setPendingAction(() => actionFn)
+    setAuthPassword('')
+    setAuthError('')
+    setAuthDialogOpen(true)
+  }
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError('')
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 'anshu', password: authPassword })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setAuthDialogOpen(false)
+        if (pendingAction) pendingAction()
+        setPendingAction(null)
+      } else {
+        setAuthError('Incorrect password! Operation denied.')
+      }
+    } catch (err) {
+      setAuthError('Network error during verification')
     }
   }
 
@@ -320,22 +358,38 @@ export default function Settings() {
         />
       </GlassCard>
 
-      {/* ── Data Export & Backup ── */}
+      {/* 🔒 Data Export & Backup (PASSWORD PROTECTED) 🔒 */}
       <GlassCard delay={0.1} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Data Management</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Data Management (Password Protected)</Typography>
         <Divider sx={{ opacity: 0.3 }} />
         <SettingRow
           icon={<MdFileDownload />}
           title="Export Data (JSON)"
           subtitle="Download a full backup of subjects, history, and settings"
-          action={<Button variant="outlined" onClick={exportData} sx={{ borderRadius: '12px' }}>Export</Button>}
+          action={
+            <Button
+              variant="outlined"
+              onClick={() => requirePasswordThen(exportData)}
+              sx={{ borderRadius: '12px' }}
+            >
+              Export
+            </Button>
+          }
         />
         <Divider sx={{ opacity: 0.3 }} />
         <SettingRow
           icon={<MdFileUpload />}
           title="Import Data (JSON)"
           subtitle="Restore from a previously exported file"
-          action={<Button variant="outlined" onClick={handleImportClick} sx={{ borderRadius: '12px' }}>Import</Button>}
+          action={
+            <Button
+              variant="outlined"
+              onClick={() => requirePasswordThen(handleImportClick)}
+              sx={{ borderRadius: '12px' }}
+            >
+              Import
+            </Button>
+          }
         />
         <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={handleFileChange} />
         <Divider sx={{ opacity: 0.3 }} />
@@ -343,27 +397,91 @@ export default function Settings() {
           icon={<MdBackup />}
           title="Backup Local Storage"
           subtitle="Save a snapshot inside this browser"
-          action={<Button variant="outlined" onClick={backup} sx={{ borderRadius: '12px' }}>Backup</Button>}
+          action={
+            <Button
+              variant="outlined"
+              onClick={() => requirePasswordThen(backup)}
+              sx={{ borderRadius: '12px' }}
+            >
+              Backup
+            </Button>
+          }
         />
         <Divider sx={{ opacity: 0.3 }} />
         <SettingRow
           icon={<MdSettingsBackupRestore />}
           title="Restore Backup"
           subtitle="Load the most recent local snapshot"
-          action={<Button variant="outlined" onClick={() => setConfirmRestore(true)} sx={{ borderRadius: '12px' }}>Restore</Button>}
+          action={
+            <Button
+              variant="outlined"
+              onClick={() => requirePasswordThen(() => setConfirmRestore(true))}
+              sx={{ borderRadius: '12px' }}
+            >
+              Restore
+            </Button>
+          }
         />
       </GlassCard>
 
-      {/* ── Danger Zone ── */}
+      {/* ── Danger Zone (PASSWORD PROTECTED) ── */}
       <GlassCard delay={0.15} sx={{ p: 3, borderColor: 'rgba(244,63,94,0.3)' }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#f43f5e' }}>Danger Zone</Typography>
         <SettingRow
           icon={<MdRestartAlt />}
           title="Reset Attendance"
           subtitle="Clears all present/absent counters and history — subjects remain"
-          action={<Button variant="contained" color="error" onClick={() => setConfirmReset(true)} sx={{ borderRadius: '12px' }}>Reset</Button>}
+          action={
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => requirePasswordThen(() => setConfirmReset(true))}
+              sx={{ borderRadius: '12px' }}
+            >
+              Reset
+            </Button>
+          }
         />
       </GlassCard>
+
+      {/* 🔐 Password Authorization Dialog 🔐 */}
+      <Dialog open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          <MdLock color="#60a5fa" /> Enter Owner Password
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+            Please enter your Owner Password to perform this data operation.
+          </Typography>
+          {authError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{authError}</Alert>}
+          <Box component="form" onSubmit={handleAuthSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Owner Password"
+              type={showAuthPass ? 'text' : 'password'}
+              fullWidth
+              required
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              placeholder="Enter password"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowAuthPass(!showAuthPass)} edge="end">
+                      {showAuthPass ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+          <Button onClick={() => setAuthDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleAuthSubmit} sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}>
+            Verify & Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ConfirmDialog
         open={confirmReset}
