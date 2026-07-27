@@ -22,7 +22,7 @@ function SettingRow({ icon, title, subtitle, action }) {
 
 export default function Settings() {
   const { mode, toggleMode } = useThemeMode()
-  const { exportData, importData, resetAttendance, backup, restoreBackup, settings, setSettings, notify, isUnlocked } = useAttendance()
+  const { exportData, importData, resetAttendance, backup, restoreBackup, settings = {}, setSettings, notify, isUnlocked } = useAttendance()
   const fileInputRef = useRef(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
@@ -35,6 +35,9 @@ export default function Settings() {
   const [secErr, setSecErr] = useState('')
 
   const handleImportClick = () => fileInputRef.current?.click()
+
+  const semestersList = Array.isArray(settings?.semesters) ? settings.semesters : ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4']
+  const activeSemester = settings?.semester || 'Semester 3'
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
@@ -50,8 +53,8 @@ export default function Settings() {
   }
 
   const addSemester = () => {
-    const name = `Semester ${(settings.semesters || []).length + 1}`
-    setSettings((s) => ({ ...s, semesters: [...(s.semesters || []), name] }))
+    const name = `Semester ${semestersList.length + 1}`
+    setSettings((s) => ({ ...s, semesters: [...(s?.semesters || semestersList), name] }))
   }
 
   const handleChangeCredentials = async (e) => {
@@ -85,7 +88,7 @@ export default function Settings() {
           <MdVpnKey color="#60a5fa" /> Owner Security Credentials (MongoDB Cloud)
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          Set your private secret User ID & Password saved in MongoDB Atlas. Nobody else (including developers) can unlock your app without these.
+          Set your private secret User ID & Password saved in MongoDB Atlas. Nobody else can unlock your app without these.
         </Typography>
 
         {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
@@ -152,7 +155,7 @@ export default function Settings() {
           subtitle="Automatically marks classes Present when lecture end-time passes"
           action={
             <Switch
-              checked={Boolean(settings.autoAttendance)}
+              checked={settings?.autoAttendance !== false}
               onChange={(e) => setSettings((s) => ({ ...s, autoAttendance: e.target.checked }))}
             />
           }
@@ -164,7 +167,7 @@ export default function Settings() {
           subtitle="Vibrate on tab switches, profile tap, and attendance clicks"
           action={
             <Switch
-              checked={settings.hapticFeedback !== false}
+              checked={settings?.hapticFeedback !== false}
               onChange={(e) => setSettings((s) => ({ ...s, hapticFeedback: e.target.checked }))}
             />
           }
@@ -175,10 +178,10 @@ export default function Settings() {
       <GlassCard delay={0.05} sx={{ p: 3, mb: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Target Attendance Goal</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Current Target Goal: <strong>{settings.targetPercentage || 75}%</strong>
+          Current Target Goal: <strong>{settings?.targetPercentage || 75}%</strong>
         </Typography>
         <Slider
-          value={settings.targetPercentage || 75}
+          value={settings?.targetPercentage || 75}
           onChange={(_, v) => setSettings((s) => ({ ...s, targetPercentage: v }))}
           step={5}
           marks
@@ -195,10 +198,10 @@ export default function Settings() {
           <Grid item xs={8}>
             <TextField
               select fullWidth size="small" label="Active semester"
-              value={settings.semester || 'Semester 3'}
+              value={activeSemester}
               onChange={(e) => setSettings((s) => ({ ...s, semester: e.target.value }))}
             >
-              {(settings.semesters || ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4']).map((sem) => (
+              {semestersList.map((sem) => (
                 <MenuItem key={sem} value={sem}>{sem}</MenuItem>
               ))}
             </TextField>
