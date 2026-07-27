@@ -7,11 +7,12 @@ import {
 import {
   MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
   MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock,
-  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdExpandMore, MdExpandLess, MdSchool
+  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdExpandMore, MdExpandLess, MdSchool, MdSmartToy
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
 import ConfirmDialog from '../components/ConfirmDialog'
+import AttendAITools from '../components/AttendAITools'
 import { useThemeMode } from '../context/ThemeContext'
 import { useAttendance } from '../context/AttendanceContext'
 import { readJSONFile } from '../utils/storageUtils'
@@ -38,6 +39,7 @@ export default function Settings() {
   const [confirmRestore, setConfirmRestore] = useState(false)
 
   // Collapsible states
+  const [attendAiExpanded, setAttendAiExpanded] = useState(true)
   const [semesterExpanded, setSemesterExpanded] = useState(false)
   const [securityExpanded, setSecurityExpanded] = useState(false)
 
@@ -64,7 +66,6 @@ export default function Settings() {
 
   const handleImportClick = () => fileInputRef.current?.click()
 
-  const semestersList = Array.isArray(settings?.semesters) ? settings.semesters : ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4']
   const activeSemester = settings?.semester || 'Semester 3'
 
   const handleFileChange = async (e) => {
@@ -140,7 +141,49 @@ export default function Settings() {
   }
 
   return (
-    <Box sx={{ maxWidth: 640, pb: 4 }}>
+    <Box sx={{ maxWidth: 680, pb: 4 }}>
+
+      {/* 🤖 NEW TAB: AttendAI Doctor & Real-Time Analytics Tools 🤖 */}
+      <GlassCard sx={{ p: 2.5, mb: 3, border: '2px solid rgba(99,102,241,0.45)', background: 'linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.92))' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setAttendAiExpanded(!attendAiExpanded)
+          }}
+          sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer', userSelect: 'none'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 44, height: 44, borderRadius: '14px', display: 'grid', placeItems: 'center',
+              bgcolor: 'rgba(99,102,241,0.22)', color: '#818cf8', fontSize: 24
+            }}>
+              <MdSmartToy />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
+                AttendAI — Real-Time AI Doctor & Library Counter
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#a5b4fc' }}>
+                Tap to expand real-time bunk analysis, goal predictor & library class tracking
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton size="small" sx={{ color: '#818cf8' }}>
+            {attendAiExpanded ? <MdExpandLess size={26} /> : <MdExpandMore size={26} />}
+          </IconButton>
+        </Box>
+
+        {/* Collapsible AttendAI Body */}
+        <Collapse in={attendAiExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <AttendAITools />
+          </Box>
+        </Collapse>
+      </GlassCard>
 
       {/* 🎓 Collapsible Select Semester Card 🎓 */}
       <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
