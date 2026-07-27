@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { Box, Typography, Chip, Button, LinearProgress, Tooltip, Grid } from '@mui/material'
-import { MdCheckCircle, MdCancel, MdSchedule, MdChevronLeft, MdChevronRight, MdToday } from 'react-icons/md'
+import { Box, Typography, Chip, Button, LinearProgress, Tooltip, IconButton } from '@mui/material'
+import { MdCheckCircle, MdCancel, MdSchedule, MdChevronLeft, MdChevronRight, MdToday, MdLock, MdLockOpen, MdSchool, MdPhone } from 'react-icons/md'
 import GlassCard from '../components/GlassCard'
 import EmptyState from '../components/EmptyState'
 import { getSubjectIcon } from '../utils/iconRegistry'
@@ -8,7 +8,7 @@ import { useAttendance } from '../context/AttendanceContext'
 import { WEEKDAYS, getTodayName, getPercentage } from '../utils/attendanceUtils'
 
 export default function Timetable() {
-  const { subjects, markAttendance } = useAttendance()
+  const { subjects, markAttendance, isUnlocked, lockApp, timetableHeader } = useAttendance()
   const today = getTodayName()
   const defaultTab = WEEKDAYS.includes(today) ? WEEKDAYS.indexOf(today) : 0
   const [tab, setTab] = useState(defaultTab)
@@ -31,6 +31,36 @@ export default function Timetable() {
 
   return (
     <Box>
+      {/* ── Official Timetable Header Banner (as in screenshot) ── */}
+      <GlassCard sx={{ p: { xs: 2.5, sm: 3 }, mb: 3, position: 'relative', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-.01em', color: 'text.primary' }}>
+            {timetableHeader.title}
+          </Typography>
+
+          {/* Locked / Editing Toggle Status */}
+          <Chip
+            icon={isUnlocked ? <MdLockOpen size={14} /> : <MdLock size={14} />}
+            label={isUnlocked ? 'Editing' : 'Locked'}
+            size="small"
+            onClick={isUnlocked ? lockApp : undefined}
+            sx={{
+              bgcolor: isUnlocked ? 'rgba(96,165,250,.18)' : 'rgba(148,163,184,.14)',
+              color: isUnlocked ? '#60a5fa' : 'text.secondary',
+              fontWeight: 700, fontSize: '.72rem', px: .5
+            }}
+          />
+        </Box>
+
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span>{timetableHeader.room}</span>
+          <span>•</span>
+          <span>W.E.F {timetableHeader.wef}</span>
+          <span>•</span>
+          <span>Facilitator: <strong>{timetableHeader.facilitator}</strong></span>
+        </Typography>
+      </GlassCard>
+
       {/* ── Day Selector Header ── */}
       <GlassCard sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
@@ -65,7 +95,7 @@ export default function Timetable() {
                     {d.slice(0, 3)}
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 800, color: isActive ? '#fff' : isTodayDay ? '#60a5fa' : 'text.primary', fontSize: '.88rem' }}>
-                    Day {i + 1}
+                    {d}
                   </Typography>
                   {isTodayDay && (
                     <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: isActive ? '#fff' : '#60a5fa', mt: .2 }} />
@@ -92,7 +122,7 @@ export default function Timetable() {
             </Typography>
             {isToday && <Chip label="Today" size="small" sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 700, fontSize: '.68rem' }} />}
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-              • {daySlots.length === 0 ? 'No lectures' : `${daySlots.length} lecture${daySlots.length > 1 ? 's' : ''}`}
+              • {daySlots.length === 0 ? 'No lectures' : `${daySlots.length} lecture${daySlots.length > 1 ? 's' : ''} scheduled`}
             </Typography>
           </Box>
           {!isToday && (
@@ -103,9 +133,9 @@ export default function Timetable() {
         </Box>
       </GlassCard>
 
-      {/* ── Lecture Cards Grid ── */}
+      {/* ── Lecture Cards List ── */}
       {daySlots.length === 0 ? (
-        <EmptyState icon="🗓️" title={`No lectures on ${activeDay}`} subtitle="Add lecture slots from a subject's edit dialog." />
+        <EmptyState icon="🗓️" title={`No lectures on ${activeDay}`} subtitle="Enjoy your free time or revise subject notes!" />
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           {daySlots.map(({ subject, time }, i) => {
@@ -116,9 +146,8 @@ export default function Timetable() {
 
             return (
               <GlassCard key={`${subject.id}-${time}`} delay={i * 0.05} sx={{ p: 0, overflow: 'hidden' }}>
-                {/* Colored top accent bar */}
                 <Box sx={{ height: 4, background: `linear-gradient(90deg, ${colorStart}, ${colorEnd})` }} />
-                <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
+                <Box sx={{ p: { xs: 2.25, sm: 2.75 } }}>
                   
                   {/* Top row: Subject Code & Time */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
@@ -128,29 +157,29 @@ export default function Timetable() {
                         label={time}
                         size="small"
                         className="mono-num"
-                        sx={{ fontSize: '.72rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.16)', color: '#818cf8', px: .5 }}
+                        sx={{ fontSize: '.74rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.16)', color: '#818cf8', px: .5 }}
                       />
                       <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                         {subject.code}
                       </Typography>
                     </Box>
-                    <Typography variant="caption" sx={{ fontWeight: 800, color: statusColor }}>
-                      Attendance: {subject.present}/{subject.total} ({pct.toFixed(0)}%)
+                    <Typography variant="caption" sx={{ fontWeight: 800, color: statusColor, fontSize: '.82rem' }}>
+                      Attendance {subject.present}/{subject.total} ({pct.toFixed(0)}%)
                     </Typography>
                   </Box>
 
-                  {/* Main row: Icon + Subject & Faculty + Actions */}
+                  {/* Main row: Icon + Subject Name & Faculty + Actions */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0, flex: 1 }}>
-                      <Box sx={{ width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`, color: '#fff', fontSize: 22, flexShrink: 0 }}>
+                      <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`, color: '#fff', fontSize: 22, flexShrink: 0 }}>
                         <Icon />
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.25 }} noWrap>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.25 }}>
                           {subject.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: .2 }}>
-                          Prof. {subject.faculty || 'N/A'}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: .3, fontWeight: 600 }}>
+                          Prof. {subject.faculty || 'Faculty'}
                         </Typography>
                       </Box>
                     </Box>
@@ -161,24 +190,24 @@ export default function Timetable() {
                         <IconButton
                           onClick={() => markAttendance(subject.id, 'present')}
                           sx={{
-                            width: 40, height: 40, borderRadius: '12px',
+                            width: 42, height: 42, borderRadius: '12px',
                             background: 'rgba(16,185,129,.18)', color: '#10b981',
                             '&:hover': { background: 'rgba(16,185,129,.35)' }
                           }}
                         >
-                          <MdCheckCircle size={22} />
+                          <MdCheckCircle size={24} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Mark Absent">
                         <IconButton
                           onClick={() => markAttendance(subject.id, 'absent')}
                           sx={{
-                            width: 40, height: 40, borderRadius: '12px',
+                            width: 42, height: 42, borderRadius: '12px',
                             background: 'rgba(244,63,94,.18)', color: '#f43f5e',
                             '&:hover': { background: 'rgba(244,63,94,.35)' }
                           }}
                         >
-                          <MdCancel size={22} />
+                          <MdCancel size={24} />
                         </IconButton>
                       </Tooltip>
                     </Box>
