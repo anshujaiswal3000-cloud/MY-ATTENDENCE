@@ -60,7 +60,7 @@ export default function Topbar() {
       setPassword('')
       setLoginOpen(false)
     } else {
-      setLoginError('Invalid User ID or Password. Try ID: anshu / Pass: 123456')
+      setLoginError('Invalid User ID or Password. Only Owner can make changes!')
     }
   }
 
@@ -86,27 +86,26 @@ export default function Topbar() {
       </Box>
 
       {/* Right Actions */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
 
-        {/* MongoDB Cloud Sync Indicator */}
-        <Tooltip title={dbSynced ? "Live MongoDB Cloud Synced (Phone & Laptop connected)" : "Local Storage Mode"}>
-          <Chip
-            icon={dbSynced ? <MdCloudDone size={14} color="#10b981" /> : <MdCloudOff size={14} color="#f59e0b" />}
-            label={dbSynced ? "Cloud Live" : "Local"}
-            size="small"
-            sx={{
-              bgcolor: dbSynced ? 'rgba(16,185,129,.16)' : 'rgba(245,158,11,.16)',
-              color: dbSynced ? '#10b981' : '#f59e0b',
-              fontWeight: 700, fontSize: '.68rem', px: .3
-            }}
-          />
-        </Tooltip>
-
-        {/* Lock / Unlock Toggle Button */}
-        {isUnlocked ? (
-          <Tooltip title="Owner Mode Active (Click to Lock)">
+        {/* Stacked Cloud Status + Lock/Login Chip */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: .3 }}>
+          <Tooltip title={dbSynced ? "Live MongoDB Cloud Synced" : "Local Storage Mode"}>
             <Chip
-              icon={<MdLockOpen size={14} color="#34d399" />}
+              icon={dbSynced ? <MdCloudDone size={12} color="#10b981" /> : <MdCloudOff size={12} color="#f59e0b" />}
+              label={dbSynced ? "Cloud Live" : "Local"}
+              size="small"
+              sx={{
+                bgcolor: dbSynced ? 'rgba(16,185,129,.16)' : 'rgba(245,158,11,.16)',
+                color: dbSynced ? '#10b981' : '#f59e0b',
+                fontWeight: 700, fontSize: '.62rem', height: 18, px: .2
+              }}
+            />
+          </Tooltip>
+
+          {isUnlocked ? (
+            <Chip
+              icon={<MdLockOpen size={12} color="#34d399" />}
               label="Editing"
               onClick={() => {
                 if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
@@ -115,15 +114,13 @@ export default function Topbar() {
               size="small"
               sx={{
                 bgcolor: 'rgba(16,185,129,.16)', color: '#34d399', fontWeight: 700,
-                fontSize: '.7rem', cursor: 'pointer', border: '1px solid rgba(16,185,129,.3)'
+                fontSize: '.62rem', height: 18, cursor: 'pointer', border: '1px solid rgba(16,185,129,.3)'
               }}
             />
-          </Tooltip>
-        ) : (
-          <Tooltip title="View-Only Mode (Click to Login)">
+          ) : (
             <Chip
-              icon={<MdLock size={14} color="#60a5fa" />}
-              label="Login"
+              icon={<MdLock size={12} color="#60a5fa" />}
+              label="Owner Login"
               onClick={() => {
                 if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
                 setLoginOpen(true)
@@ -131,19 +128,19 @@ export default function Topbar() {
               size="small"
               sx={{
                 bgcolor: 'rgba(96,165,250,.16)', color: '#60a5fa', fontWeight: 700,
-                fontSize: '.7rem', cursor: 'pointer', border: '1px solid rgba(96,165,250,.3)'
+                fontSize: '.62rem', height: 18, cursor: 'pointer', border: '1px solid rgba(96,165,250,.3)'
               }}
             />
-          </Tooltip>
-        )}
+          )}
+        </Box>
 
         {/* Dark / Light Toggle */}
         <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
           <IconButton onClick={() => {
             if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(15)
             toggleMode()
-          }} sx={{ borderRadius: '12px' }}>
-            {mode === 'dark' ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
+          }} sx={{ borderRadius: '12px', width: 36, height: 36 }}>
+            {mode === 'dark' ? <MdLightMode size={18} /> : <MdDarkMode size={18} />}
           </IconButton>
         </Tooltip>
 
@@ -162,7 +159,6 @@ export default function Topbar() {
                 '&:hover': { transform: 'scale(1.08)' }
               }}
             />
-            {/* Live % Dot Indicator */}
             <Box
               sx={{
                 position: 'absolute', bottom: -2, right: -2,
@@ -237,11 +233,11 @@ export default function Topbar() {
         {/* Owner Login Dialog */}
         <Dialog open={loginOpen} onClose={() => setLoginOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
           <DialogTitle sx={{ fontWeight: 800, textAlign: 'center' }}>
-            🔐 Owner Login
+            🔐 Owner Mode Login
           </DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-              Enter User ID & Password to unlock editing features.
+              Only Owner can edit attendance. Guests remain in View-Only Mode.
             </Typography>
             {loginError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{loginError}</Alert>}
             <Box component="form" onSubmit={handleLoginSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -256,7 +252,7 @@ export default function Topbar() {
               <TextField
                 label="Password"
                 type="password"
-                placeholder="123456"
+                placeholder="Password"
                 fullWidth
                 required
                 value={password}

@@ -31,13 +31,6 @@ export const STATUS_LABELS = {
   critical: 'Critical',
 }
 
-/**
- * "Can I Bunk" calculator.
- * Given current present/total, determines, for a target percentage:
- *  - if currently above target: how many more classes can be missed and stay >= target
- *  - if currently below target: how many consecutive classes must be attended to reach target
- * Returns { canBunk: number, mustAttend: number, message }
- */
 export function calculateBunkAdvice(present, total, targetPercent) {
   const target = targetPercent / 100
 
@@ -48,7 +41,6 @@ export function calculateBunkAdvice(present, total, targetPercent) {
   const currentPct = present / total
 
   if (currentPct >= target) {
-    // Max x such that present / (total + x) >= target  =>  x <= present/target - total
     const rawBunk = target > 0 ? present / target - total : Infinity
     const canBunk = Math.max(0, Math.floor(rawBunk))
     return {
@@ -60,7 +52,6 @@ export function calculateBunkAdvice(present, total, targetPercent) {
     }
   }
 
-  // Min y such that (present + y) / (total + y) >= target => y >= (target*total - present) / (1 - target)
   if (target >= 1) {
     return { canBunk: 0, mustAttend: Infinity, message: 'Target of 100% requires attending every remaining class.' }
   }
@@ -73,16 +64,17 @@ export function calculateBunkAdvice(present, total, targetPercent) {
   }
 }
 
-/** Overall stats across all subjects */
+/** Overall stats across all subjects (Excluding LIBRARY / isIgnored) */
 export function getOverallStats(subjects) {
-  const present = subjects.reduce((sum, s) => sum + s.present, 0)
-  const total = subjects.reduce((sum, s) => sum + s.total, 0)
+  const activeSubjects = subjects.filter(s => !s.isIgnored && s.code !== 'LIBRARY-2')
+  const present = activeSubjects.reduce((sum, s) => sum + s.present, 0)
+  const total = activeSubjects.reduce((sum, s) => sum + s.total, 0)
   const absent = total - present
   return { present, absent, total, percentage: getPercentage(present, total) }
 }
 
 export function getHighestLowestAverage(subjects) {
-  const withClasses = subjects.filter((s) => s.total > 0)
+  const withClasses = subjects.filter((s) => !s.isIgnored && s.code !== 'LIBRARY-2' && s.total > 0)
   if (withClasses.length === 0) {
     return { highest: null, lowest: null, average: 0 }
   }
@@ -96,12 +88,11 @@ export function getHighestLowestAverage(subjects) {
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export function getTodayName() {
-  const idx = new Date().getDay() // 0 = Sunday
+  const idx = new Date().getDay()
   const map = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   return map[idx]
 }
 
-/** Computes current attendance streak (consecutive most-recent days marked Present across any subject) */
 export function computeStreak(history) {
   if (!history || history.length === 0) return 0
   const byDate = {}
@@ -120,7 +111,6 @@ export function computeStreak(history) {
   return streak
 }
 
-/** Weekly / monthly summary counts from history log */
 export function getSummary(history, days) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
   const relevant = history.filter((h) => h.timestamp >= cutoff)

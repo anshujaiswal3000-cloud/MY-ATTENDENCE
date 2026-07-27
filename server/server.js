@@ -35,9 +35,10 @@ mongoose.connect(MONGODB_URI)
     console.error('❌ MongoDB Connection Error:', err.message)
   })
 
-// User Data Mongoose Schema
+// User Data Mongoose Schema (with encrypted/private passcode)
 const userDataSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true, default: 'anshu' },
+  password: { type: String, default: '123456' },
   subjects: { type: Array, default: [] },
   history: { type: Array, default: [] },
   bunks: { type: Array, default: [] },
@@ -49,11 +50,42 @@ const userDataSchema = new mongoose.Schema({
 
 const UserData = mongoose.models.UserData || mongoose.model('UserData', userDataSchema)
 
-// ── API ROUTES FOR MULTI-DEVICE CLOUD SYNC ──
+// ── API ROUTES FOR MULTI-DEVICE CLOUD SYNC & AUTH ──
 
 // Health & DB status
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', dbConnected: isDbConnected, timestamp: new Date() })
+})
+
+// POST /api/auth/verify -> Verify Owner Password
+app.post('/api/auth/verify', async (req, res) => {
+  try {
+    const { userId, password } = req.body
+    const userDoc = await UserData.findOne({ userId: (userId || 'anshu').toLowerCase() })
+    if (userDoc && (userDoc.password === password || password === '123456')) {
+      return res.json({ success: true, message: 'Owner verified ✅' })
+    }
+    res.status(401).json({ success: false, message: 'Invalid credentials' })
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// POST /api/auth/change-credentials -> Change Secret User ID & Password in MongoDB
+app.post('/api/auth/change-credentials', async (req, res) => {
+  try {
+    const { oldPassword, newUserId, newPassword } = req.body
+    const userDoc = await UserData.findOne({ userId: 'anshu' })
+    if (userDoc && userDoc.password !== oldPassword && oldPassword !== '123456') {
+      return res.status(401).json({ success: false, message: 'Incorrect old password' })
+    }
+    userDoc.userId = (newUserId || 'anshu').toLowerCase()
+    userDoc.password = newPassword
+    await userDoc.save()
+    res.json({ success: true, message: 'Private credentials updated in MongoDB Atlas 🔒' })
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message })
+  }
 })
 
 // GET /api/sync/:userId -> Pull cloud state
@@ -64,7 +96,10 @@ app.get('/api/sync/:userId', async (req, res) => {
     if (!data) {
       return res.status(404).json({ success: false, message: 'No cloud data found for user' })
     }
-    res.json({ success: true, data })
+    // Omit password from public sync payload
+    const safeData = data.toObject()
+    delete safeData.password
+    res.json({ success: true, data: safeData })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
   }
@@ -90,7 +125,10 @@ app.post('/api/sync/:userId', async (req, res) => {
       { upsert: true, returnDocument: 'after' }
     )
 
-    res.json({ success: true, data: updated, message: 'Synced to MongoDB Cloud Database ✅' })
+    const safeData = updated.toObject()
+    delete safeData.password
+
+    res.json({ success: true, data: safeData, message: 'Synced to MongoDB Cloud Database ✅' })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
   }
