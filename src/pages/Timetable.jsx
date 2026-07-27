@@ -15,30 +15,55 @@ export default function Timetable() {
   const activeDay = WEEKDAYS[tab]
   const isToday = activeDay === today
 
+  // Strict sorting by Period Order (P1 = 1, P2 = 2, ..., P9 = 9)
   const daySlots = useMemo(() => {
     const slots = []
     subjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
-        if (slot.day === activeDay) slots.push({ subject: s, time: slot.time })
+        if (slot.day === activeDay) {
+          slots.push({
+            subject: s,
+            time: slot.time,
+            period: slot.period,
+            periodOrder: slot.periodOrder || 1
+          })
+        }
       })
     })
-    return slots.sort((a, b) => a.time.localeCompare(b.time))
+    return slots.sort((a, b) => a.periodOrder - b.periodOrder)
   }, [subjects, activeDay])
 
-  const goLeft = () => setTab((t) => (t - 1 + WEEKDAYS.length) % WEEKDAYS.length)
-  const goRight = () => setTab((t) => (t + 1) % WEEKDAYS.length)
-  const goToday = () => setTab(defaultTab)
+  const goLeft = () => {
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+    setTab((t) => (t - 1 + WEEKDAYS.length) % WEEKDAYS.length)
+  }
+  const goRight = () => {
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+    setTab((t) => (t + 1) % WEEKDAYS.length)
+  }
+  const goToday = () => {
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(30)
+    setTab(defaultTab)
+  }
 
   return (
-    <Box>
-      {/* ── Official Timetable Header Banner (as in screenshot) ── */}
-      <GlassCard sx={{ p: { xs: 2.5, sm: 3 }, mb: 3, position: 'relative', overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-.01em', color: 'text.primary' }}>
-            {timetableHeader.title}
-          </Typography>
+    <Box sx={{ willChange: 'transform' }}>
+      {/* ── Official Timetable Header Banner (Responsive & Overflow-proof) ── */}
+      <GlassCard sx={{ p: { xs: 2.25, sm: 3 }, mb: 3, position: 'relative', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-.01em', wordBreak: 'break-word', fontSize: { xs: '1.15rem', sm: '1.4rem' } }}>
+              {timetableHeader.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: .5, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', fontSize: '.82rem' }}>
+              <span>{timetableHeader.room}</span>
+              <span>•</span>
+              <span>W.E.F {timetableHeader.wef}</span>
+              <span>•</span>
+              <span>Facilitator: <strong>{timetableHeader.facilitator}</strong></span>
+            </Typography>
+          </Box>
 
-          {/* Locked / Editing Toggle Status */}
           <Chip
             icon={isUnlocked ? <MdLockOpen size={14} /> : <MdLock size={14} />}
             label={isUnlocked ? 'Editing' : 'Locked'}
@@ -47,22 +72,14 @@ export default function Timetable() {
             sx={{
               bgcolor: isUnlocked ? 'rgba(96,165,250,.18)' : 'rgba(148,163,184,.14)',
               color: isUnlocked ? '#60a5fa' : 'text.secondary',
-              fontWeight: 700, fontSize: '.72rem', px: .5
+              fontWeight: 700, fontSize: '.72rem', px: .5, flexShrink: 0
             }}
           />
         </Box>
-
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span>{timetableHeader.room}</span>
-          <span>•</span>
-          <span>W.E.F {timetableHeader.wef}</span>
-          <span>•</span>
-          <span>Facilitator: <strong>{timetableHeader.facilitator}</strong></span>
-        </Typography>
       </GlassCard>
 
       {/* ── Day Selector Header ── */}
-      <GlassCard sx={{ p: 2, mb: 3 }}>
+      <GlassCard sx={{ p: 1.75, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
           <Button
             size="small"
@@ -80,11 +97,14 @@ export default function Timetable() {
               return (
                 <Box
                   key={d}
-                  onClick={() => setTab(i)}
+                  onClick={() => {
+                    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+                    setTab(i)
+                  }}
                   sx={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    gap: .3, cursor: 'pointer', minWidth: 52, px: 1, py: 1,
-                    borderRadius: '14px', flexShrink: 0, transition: 'all 200ms ease',
+                    gap: .3, cursor: 'pointer', minWidth: 54, px: 1, py: 1,
+                    borderRadius: '14px', flexShrink: 0, transition: 'transform 180ms ease, background 180ms ease',
                     background: isActive ? 'var(--aurora)' : 'transparent',
                     boxShadow: isActive ? '0 6px 18px rgba(99,102,241,.35)' : 'none',
                     border: isTodayDay && !isActive ? '1px solid rgba(96,165,250,.4)' : '1px solid transparent',
@@ -115,13 +135,13 @@ export default function Timetable() {
         </Box>
 
         {/* Day title info */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, pt: 1.5, borderTop: '1px solid rgba(148,163,184,.12)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(148,163,184,.12)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
               {activeDay}
             </Typography>
             {isToday && <Chip label="Today" size="small" sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 700, fontSize: '.68rem' }} />}
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ ml: .5 }}>
               • {daySlots.length === 0 ? 'No lectures' : `${daySlots.length} lecture${daySlots.length > 1 ? 's' : ''} scheduled`}
             </Typography>
           </Box>
@@ -133,31 +153,38 @@ export default function Timetable() {
         </Box>
       </GlassCard>
 
-      {/* ── Lecture Cards List ── */}
+      {/* ── Chronologically Sorted Lecture Cards List (P1 to P9) ── */}
       {daySlots.length === 0 ? (
         <EmptyState icon="🗓️" title={`No lectures on ${activeDay}`} subtitle="Enjoy your free time or revise subject notes!" />
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {daySlots.map(({ subject, time }, i) => {
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {daySlots.map(({ subject, time, period }, i) => {
             const Icon = getSubjectIcon(subject.icon)
             const [colorStart, colorEnd] = Array.isArray(subject.color) ? subject.color : ['#6366f1', '#8b5cf6']
             const pct = getPercentage(subject.present, subject.total)
             const statusColor = pct >= 85 ? '#10b981' : pct >= 75 ? '#f59e0b' : '#f43f5e'
 
             return (
-              <GlassCard key={`${subject.id}-${time}`} delay={i * 0.05} sx={{ p: 0, overflow: 'hidden' }}>
+              <GlassCard key={`${subject.id}-${time}-${i}`} delay={i * 0.04} sx={{ p: 0, overflow: 'hidden' }}>
                 <Box sx={{ height: 4, background: `linear-gradient(90deg, ${colorStart}, ${colorEnd})` }} />
-                <Box sx={{ p: { xs: 2.25, sm: 2.75 } }}>
+                <Box sx={{ p: { xs: 2.25, sm: 2.5 } }}>
                   
-                  {/* Top row: Subject Code & Time */}
+                  {/* Top row: Period Badge, Subject Code & Time */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {period && (
+                        <Chip
+                          label={period}
+                          size="small"
+                          sx={{ fontSize: '.72rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff', height: 22 }}
+                        />
+                      )}
                       <Chip
                         icon={<MdSchedule size={13} />}
                         label={time}
                         size="small"
                         className="mono-num"
-                        sx={{ fontSize: '.74rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.16)', color: '#818cf8', px: .5 }}
+                        sx={{ fontSize: '.74rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.16)', color: '#818cf8', height: 22 }}
                       />
                       <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                         {subject.code}
@@ -171,7 +198,7 @@ export default function Timetable() {
                   {/* Main row: Icon + Subject Name & Faculty + Actions */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0, flex: 1 }}>
-                      <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`, color: '#fff', fontSize: 22, flexShrink: 0 }}>
+                      <Box sx={{ width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`, color: '#fff', fontSize: 22, flexShrink: 0 }}>
                         <Icon />
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
@@ -188,7 +215,10 @@ export default function Timetable() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                       <Tooltip title="Mark Present">
                         <IconButton
-                          onClick={() => markAttendance(subject.id, 'present')}
+                          onClick={() => {
+                            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(30)
+                            markAttendance(subject.id, 'present')
+                          }}
                           sx={{
                             width: 42, height: 42, borderRadius: '12px',
                             background: 'rgba(16,185,129,.18)', color: '#10b981',
@@ -200,7 +230,10 @@ export default function Timetable() {
                       </Tooltip>
                       <Tooltip title="Mark Absent">
                         <IconButton
-                          onClick={() => markAttendance(subject.id, 'absent')}
+                          onClick={() => {
+                            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(30)
+                            markAttendance(subject.id, 'absent')
+                          }}
                           sx={{
                             width: 42, height: 42, borderRadius: '12px',
                             background: 'rgba(244,63,94,.18)', color: '#f43f5e',

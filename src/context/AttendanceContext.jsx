@@ -98,7 +98,6 @@ export function AttendanceProvider({ children }) {
         if (status === 'present') {
           return { ...s, present: s.present + 1, total: s.total + 1 }
         } else {
-          // If marking absent: if present > 0 and was auto-logged, reduce present; total stays
           const newPresent = Math.max(0, s.present - (s.present > 0 ? 1 : 0))
           const newTotal = s.total > s.present ? s.total : s.total + 1
           return { ...s, present: newPresent, total: newTotal }
@@ -119,17 +118,12 @@ export function AttendanceProvider({ children }) {
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
   }, [setSubjects, setHistory, notify])
 
-  // Log a Bunked Class manually
+  // Log a Bunked Class (Purely personal opinion tracker - DOES NOT linked/alter attendance counters)
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     let subjectName = ''
-    setSubjects((prev) =>
-      prev.map((s) => {
-        if (s.id !== subjectId) return s
-        subjectName = s.name
-        const newPresent = Math.max(0, s.present - (s.present > 0 ? 1 : 0))
-        return { ...s, present: newPresent, total: Math.max(s.total, newPresent + 1) }
-      })
-    )
+    const sub = subjects.find(s => s.id === subjectId)
+    if (sub) subjectName = sub.name
+    
     const now = new Date()
     const bunkEntry = {
       id: `bunk_${Math.random().toString(36).slice(2, 10)}`,
@@ -140,8 +134,8 @@ export function AttendanceProvider({ children }) {
       timestamp: now.getTime()
     }
     setBunks((prev) => [bunkEntry, ...prev])
-    notify(`Bunk logged for ${subjectName} 🚪`, 'warning')
-  }, [setSubjects, setBunks, notify])
+    notify(`Personal Bunk logged for ${subjectName || 'Class'} 🚪`, 'info')
+  }, [subjects, setBunks, notify])
 
   const deleteBunkClass = useCallback((id) => {
     setBunks((prev) => prev.filter((b) => b.id !== id))
@@ -149,14 +143,13 @@ export function AttendanceProvider({ children }) {
   }, [setBunks, notify])
 
   // ── AUTO ATTENDANCE ENGINE ──
-  // Automatically logs scheduled classes as Present when class end time passes
   useEffect(() => {
     if (!settings.autoAttendance) return
 
     const checkAutoAttendance = () => {
       const now = new Date()
       const todayName = getTodayName()
-      const todayDateKey = now.toISOString().slice(0, 10) // "2026-07-27"
+      const todayDateKey = now.toISOString().slice(0, 10)
       const curHours = now.getHours()
       const curMins = now.getMinutes()
 
@@ -167,15 +160,12 @@ export function AttendanceProvider({ children }) {
           const endTime = parseEndTime(slot.time)
           if (!endTime) return
 
-          // Check if class end-time has passed
           const classEnded = curHours > endTime.hours || (curHours === endTime.hours && curMins >= endTime.minutes)
 
           if (classEnded) {
             const slotKey = `${todayDateKey}_${subj.id}_${slot.time}`
 
-            // If not auto-logged yet today
             if (!autoLoggedSlots.includes(slotKey)) {
-              // Automatically mark Present (+1 Present, +1 Total)
               setSubjects((prev) =>
                 prev.map((s) => (s.id === subj.id ? { ...s, present: s.present + 1, total: s.total + 1 } : s))
               )
@@ -201,7 +191,7 @@ export function AttendanceProvider({ children }) {
     }
 
     checkAutoAttendance()
-    const timer = setInterval(checkAutoAttendance, 30000) // check every 30s
+    const timer = setInterval(checkAutoAttendance, 30000)
     return () => clearInterval(timer)
   }, [subjects, autoLoggedSlots, settings.autoAttendance, setSubjects, setHistory, setAutoLoggedSlots, notify])
 

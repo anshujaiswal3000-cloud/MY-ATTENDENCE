@@ -18,8 +18,8 @@ export const defaultSubjects = [
     color: ['#10b981', '#3b82f6'],
     present: 14, total: 14,
     timetable: [
-      { day: 'Monday', period: 'P3', time: '10:40 AM - 11:30 AM' },
-      { day: 'Tuesday', period: 'P9', time: '03:40 PM - 04:30 PM' }
+      { day: 'Monday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' },
+      { day: 'Tuesday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' }
     ]
   },
   {
@@ -30,12 +30,12 @@ export const defaultSubjects = [
     color: ['#3b82f6', '#8b5cf6'],
     present: 22, total: 22,
     timetable: [
-      { day: 'Monday', period: 'P2', time: '09:50 AM - 10:40 AM' },
-      { day: 'Tuesday', period: 'P3', time: '10:40 AM - 11:30 AM' },
-      { day: 'Wednesday', period: 'P4', time: '11:30 AM - 12:20 PM' },
-      { day: 'Thursday', period: 'P1', time: '09:00 AM - 09:50 AM' },
-      { day: 'Friday', period: 'P3', time: '10:40 AM - 11:30 AM' },
-      { day: 'Saturday', period: 'P5', time: '01:00 PM - 02:00 PM' }
+      { day: 'Monday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' },
+      { day: 'Tuesday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' },
+      { day: 'Wednesday', period: 'P4', periodOrder: 4, time: '11:30 AM - 12:20 PM' },
+      { day: 'Thursday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' },
+      { day: 'Friday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' },
+      { day: 'Saturday', period: 'P5', periodOrder: 5, time: '01:00 PM - 02:00 PM' }
     ]
   },
   {
@@ -46,12 +46,12 @@ export const defaultSubjects = [
     color: ['#10b981', '#3b82f6'],
     present: 20, total: 20,
     timetable: [
-      { day: 'Monday', period: 'P1', time: '09:00 AM - 09:50 AM' },
-      { day: 'Tuesday', period: 'P1', time: '09:00 AM - 09:50 AM' },
-      { day: 'Wednesday', period: 'P2', time: '09:50 AM - 10:40 AM' },
-      { day: 'Thursday', period: 'P2', time: '09:50 AM - 10:40 AM' },
-      { day: 'Friday', period: 'P5', time: '12:20 PM - 01:10 PM' },
-      { day: 'Saturday', period: 'P1', time: '09:00 AM - 10:00 AM' }
+      { day: 'Monday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' },
+      { day: 'Tuesday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' },
+      { day: 'Wednesday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' },
+      { day: 'Thursday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' },
+      { day: 'Friday', period: 'P5', periodOrder: 5, time: '12:20 PM - 01:10 PM' },
+      { day: 'Saturday', period: 'P1', periodOrder: 1, time: '09:00 AM - 10:00 AM' }
     ]
   },
   {
@@ -62,12 +62,12 @@ export const defaultSubjects = [
     color: ['#8b5cf6', '#10b981'],
     present: 18, total: 18,
     timetable: [
-      { day: 'Monday', period: 'P9', time: '03:40 PM - 04:30 PM' },
-      { day: 'Tuesday', period: 'P7', time: '02:00 PM - 02:50 PM' },
-      { day: 'Wednesday', period: 'P1', time: '09:00 AM - 09:50 AM' },
-      { day: 'Thursday', period: 'P4', time: '11:30 AM - 12:20 PM' },
-      { day: 'Friday', period: 'P7', time: '02:00 PM - 02:50 PM' },
-      { day: 'Saturday', period: 'P2', time: '10:00 AM - 11:00 AM' }
+      { day: 'Monday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' },
+      { day: 'Tuesday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
+      { day: 'Wednesday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' },
+      { day: 'Thursday', period: 'P4', periodOrder: 4, time: '11:30 AM - 12:20 PM' },
+      { day: 'Friday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
+      { day: 'Saturday', period: 'P2', periodOrder: 2, time: '10:00 AM - 11:00 AM' }
     ]
   },
   {
@@ -78,13 +78,13 @@ export const defaultSubjects = [
     color: ['#10b981', '#8b5cf6'],
     present: 24, total: 24,
     timetable: [
-      { day: 'Monday', period: 'P7', time: '02:00 PM - 02:50 PM' },
-      { day: 'Tuesday', period: 'P2', time: '09:50 AM - 10:40 AM' },
-      { day: 'Wednesday', period: 'P3', time: '10:40 AM - 11:30 AM' },
-      { day: 'Wednesday', period: 'P9', time: '03:40 PM - 04:30 PM' },
-      { day: 'Thursday', period: 'P5', time: '12:20 PM - 01:10 PM' },
-      { day: 'Friday', period: 'P4', time: '11:30 AM - 12:20 PM' },
-      { day: 'Saturday', period: 'P4', time: '12:00 PM - 01:00 PM' }
+      { day: 'Monday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
+      { day: 'Tuesday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' },
+      { day: 'Wednesday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' },
+      { day: 'Wednesday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' },
+      { day: 'Thursday', period: 'P5', periodOrder: 5, time: '12:20 PM - 01:10 PM' },
+      { day: 'Friday', period: 'P4', periodOrder: 4, time: '11:30 AM - 12:20 PM' },
+      { day: 'Saturday', period: 'P4', periodOrder: 4, time: '12:00 PM - 01:00 PM' }
     ]
   },
   {
@@ -95,7 +95,7 @@ export const defaultSubjects = [
     color: ['#3b82f6', '#10b981'],
     present: 6, total: 6,
     timetable: [
-      { day: 'Tuesday', period: 'P4-P5', time: '11:30 AM - 01:10 PM' }
+      { day: 'Tuesday', period: 'P4-P5', periodOrder: 4, time: '11:30 AM - 01:10 PM' }
     ]
   },
   {
@@ -106,7 +106,7 @@ export const defaultSubjects = [
     color: ['#8b5cf6', '#3b82f6'],
     present: 6, total: 6,
     timetable: [
-      { day: 'Monday', period: 'P4-P5', time: '11:30 AM - 01:10 PM' }
+      { day: 'Monday', period: 'P4-P5', periodOrder: 4, time: '11:30 AM - 01:10 PM' }
     ]
   },
   {
@@ -117,7 +117,7 @@ export const defaultSubjects = [
     color: ['#8b5cf6', '#10b981'],
     present: 6, total: 6,
     timetable: [
-      { day: 'Friday', period: 'P8-P9', time: '02:50 PM - 04:30 PM' }
+      { day: 'Friday', period: 'P8-P9', periodOrder: 8, time: '02:50 PM - 04:30 PM' }
     ]
   },
   {
@@ -128,8 +128,8 @@ export const defaultSubjects = [
     color: ['#3b82f6', '#8b5cf6'],
     present: 8, total: 8,
     timetable: [
-      { day: 'Wednesday', period: 'P5', time: '12:20 PM - 01:10 PM' },
-      { day: 'Thursday', period: 'P3', time: '10:40 AM - 11:30 AM' }
+      { day: 'Wednesday', period: 'P5', periodOrder: 5, time: '12:20 PM - 01:10 PM' },
+      { day: 'Thursday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' }
     ]
   },
   {
@@ -140,8 +140,8 @@ export const defaultSubjects = [
     color: ['#10b981', '#3b82f6'],
     present: 8, total: 8,
     timetable: [
-      { day: 'Thursday', period: 'P8', time: '02:50 PM - 03:40 PM' },
-      { day: 'Friday', period: 'P1', time: '09:00 AM - 09:50 AM' }
+      { day: 'Thursday', period: 'P8', periodOrder: 8, time: '02:50 PM - 03:40 PM' },
+      { day: 'Friday', period: 'P1', periodOrder: 1, time: '09:00 AM - 09:50 AM' }
     ]
   },
   {
@@ -152,7 +152,7 @@ export const defaultSubjects = [
     color: ['#8b5cf6', '#3b82f6'],
     present: 4, total: 4,
     timetable: [
-      { day: 'Monday', period: 'P8', time: '02:50 PM - 03:40 PM' }
+      { day: 'Monday', period: 'P8', periodOrder: 8, time: '02:50 PM - 03:40 PM' }
     ]
   },
   {
@@ -163,10 +163,10 @@ export const defaultSubjects = [
     color: ['#10b981', '#8b5cf6'],
     present: 14, total: 14,
     timetable: [
-      { day: 'Tuesday', period: 'P8', time: '02:50 PM - 03:40 PM' },
-      { day: 'Wednesday', period: 'P7', time: '02:00 PM - 02:50 PM' },
-      { day: 'Thursday', period: 'P7', time: '02:00 PM - 02:50 PM' },
-      { day: 'Saturday', period: 'P3', time: '11:00 AM - 12:00 PM' }
+      { day: 'Tuesday', period: 'P8', periodOrder: 8, time: '02:50 PM - 03:40 PM' },
+      { day: 'Wednesday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
+      { day: 'Thursday', period: 'P7', periodOrder: 7, time: '02:00 PM - 02:50 PM' },
+      { day: 'Saturday', period: 'P3', periodOrder: 3, time: '11:00 AM - 12:00 PM' }
     ]
   },
   {
@@ -177,7 +177,7 @@ export const defaultSubjects = [
     color: ['#3b82f6', '#10b981'],
     present: 4, total: 4,
     timetable: [
-      { day: 'Wednesday', period: 'P8', time: '02:50 PM - 03:40 PM' }
+      { day: 'Wednesday', period: 'P8', periodOrder: 8, time: '02:50 PM - 03:40 PM' }
     ]
   },
   {
@@ -188,8 +188,8 @@ export const defaultSubjects = [
     color: ['#8b5cf6', '#10b981'],
     present: 8, total: 8,
     timetable: [
-      { day: 'Thursday', period: 'P9', time: '03:40 PM - 04:30 PM' },
-      { day: 'Friday', period: 'P2', time: '09:50 AM - 10:40 AM' }
+      { day: 'Thursday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' },
+      { day: 'Friday', period: 'P2', periodOrder: 2, time: '09:50 AM - 10:40 AM' }
     ]
   },
   {
@@ -200,7 +200,7 @@ export const defaultSubjects = [
     color: ['#3b82f6', '#8b5cf6'],
     present: 4, total: 4,
     timetable: [
-      { day: 'Saturday', period: 'P6', time: '02:00 PM - 03:00 PM' }
+      { day: 'Saturday', period: 'P6', periodOrder: 6, time: '02:00 PM - 03:00 PM' }
     ]
   }
 ]

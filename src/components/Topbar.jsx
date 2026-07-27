@@ -4,7 +4,7 @@ import {
   Chip, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Alert
 } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdCode, MdVerified } from 'react-icons/md'
+import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdEmojiEvents, MdAutoAwesome } from 'react-icons/md'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import { useThemeMode } from '../context/ThemeContext'
@@ -17,12 +17,15 @@ export default function Topbar() {
   const theme = useTheme()
   const location = useLocation()
   const current = NAV_ITEMS.find((n) => n.path === location.pathname)
-  const { subjects, isUnlocked, unlockApp, lockApp } = useAttendance()
+  const { subjects, isUnlocked, unlockApp, lockApp, bunks } = useAttendance()
   const stats = getOverallStats(subjects)
 
   // Profile popover
   const [anchorEl, setAnchorEl] = useState(null)
-  const openProfile = (e) => setAnchorEl(e.currentTarget)
+  const openProfile = (e) => {
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([30, 50, 30])
+    setAnchorEl(e.currentTarget)
+  }
   const closeProfile = () => setAnchorEl(null)
   const profileOpen = Boolean(anchorEl)
 
@@ -47,6 +50,7 @@ export default function Topbar() {
 
   const statusColor = stats.percentage >= 85 ? '#10b981' : stats.percentage >= 75 ? '#f59e0b' : '#f43f5e'
   const statusLabel = stats.percentage >= 85 ? 'Safe' : stats.percentage >= 75 ? 'Warning' : 'Critical'
+  const isExcellent = stats.percentage >= 90
 
   return (
     <Box
@@ -75,7 +79,10 @@ export default function Topbar() {
             <Chip
               icon={<MdLockOpen size={14} color="#34d399" />}
               label="Editing"
-              onClick={lockApp}
+              onClick={() => {
+                if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+                lockApp()
+              }}
               size="small"
               sx={{
                 bgcolor: 'rgba(16,185,129,.16)', color: '#34d399', fontWeight: 700,
@@ -88,7 +95,10 @@ export default function Topbar() {
             <Chip
               icon={<MdLock size={14} color="#60a5fa" />}
               label="Login"
-              onClick={() => setLoginOpen(true)}
+              onClick={() => {
+                if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+                setLoginOpen(true)
+              }}
               size="small"
               sx={{
                 bgcolor: 'rgba(96,165,250,.16)', color: '#60a5fa', fontWeight: 700,
@@ -100,7 +110,10 @@ export default function Topbar() {
 
         {/* Dark / Light Toggle */}
         <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
-          <IconButton onClick={toggleMode} sx={{ borderRadius: '12px' }}>
+          <IconButton onClick={() => {
+            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(15)
+            toggleMode()
+          }} sx={{ borderRadius: '12px' }}>
             {mode === 'dark' ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
           </IconButton>
         </Tooltip>
@@ -141,7 +154,7 @@ export default function Topbar() {
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           PaperProps={{
             sx: {
-              mt: 1, borderRadius: '20px', minWidth: 240, p: 0, overflow: 'hidden',
+              mt: 1, borderRadius: '22px', minWidth: 260, p: 0, overflow: 'hidden',
               background: theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
               backdropFilter: 'blur(20px)',
               border: `1px solid ${theme.custom.glassBorder}`,
@@ -165,6 +178,21 @@ export default function Topbar() {
             </Box>
           </Box>
 
+          {/* 🌟 Special Congratulation Banner if Attendance >= 90% */}
+          {isExcellent && (
+            <Box sx={{ p: 1.75, mx: 1.5, mt: 1.5, borderRadius: '14px', background: 'linear-gradient(135deg, rgba(16,185,129,.2), rgba(59,130,246,.2))', border: '1px solid rgba(16,185,129,.4)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: .3 }}>
+                <MdEmojiEvents size={20} color="#fbbf24" />
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399', fontSize: '.85rem' }}>
+                  Congratulations Anshu! 🌟
+                </Typography>
+              </Box>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.4 }}>
+                Outstanding <strong>{stats.percentage.toFixed(1)}%</strong> attendance! You are setting an inspiration for the class!
+              </Typography>
+            </Box>
+          )}
+
           {/* Live Stats */}
           <Box sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -180,8 +208,11 @@ export default function Topbar() {
             <Typography className="mono-num" variant="h5" sx={{ fontWeight: 800, color: statusColor }}>
               {stats.percentage.toFixed(1)}%
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: .5 }}>
               {stats.present} present out of {stats.total} total lectures
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 700, display: 'block', mt: .5 }}>
+              🚪 Personal Bunks Logged: {bunks.length}
             </Typography>
           </Box>
         </Popover>
