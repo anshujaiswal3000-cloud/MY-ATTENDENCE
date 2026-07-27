@@ -8,10 +8,11 @@ import {
   MdCheckCircle, MdCancel, MdListAlt, MdEventAvailable,
   MdArrowForward, MdSchool, MdTrendingUp, MdTrendingDown,
   MdStar, MdWarning, MdDoorBack, MdAdd, MdSchedule, MdLocationOn,
-  MdTimer, MdClass
+  MdTimer, MdClass, MdWavingHand
 } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../components/GlassCard'
+import AuroraGauge from '../components/AuroraGauge'
 import StatCard from '../components/StatCard'
 import EmptyState from '../components/EmptyState'
 import { useAttendance } from '../context/AttendanceContext'
@@ -56,9 +57,11 @@ export default function Dashboard() {
   const today = getTodayName()
   const greetingHour = new Date().getHours()
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening'
-
-  // Weekly trend bars
-  const weekly = useMemo(() => Array.from({ length: 7 }, (_, i) => 65 + (i * 5) % 35), [])
+  const wishMessage = greetingHour < 12 
+    ? '🌅 Wishing you an energetic and productive morning ahead!' 
+    : greetingHour < 17 
+      ? '☀️ Hope your afternoon classes are going great!' 
+      : '🌙 Wishing you a peaceful evening & successful day completion!'
 
   // ALL subjects sorted by % descending
   const topSubjects = useMemo(() =>
@@ -73,26 +76,23 @@ export default function Dashboard() {
 
   // ── Calculate Upcoming / Current Class Status ──
   const upcomingClass = useMemo(() => {
-    // 1. Look for today's classes
     const todaySlots = []
     subjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
-        if (slot.day === today) todaySlots.push({ subject: s, time: slot.time })
+        if (slot.day === today) todaySlots.push({ subject: s, time: slot.time, period: slot.period })
       })
     })
 
     if (todaySlots.length > 0) {
-      // Return first slot today
       return { slot: todaySlots[0], dayLabel: `Today (${today})` }
     }
 
-    // 2. Otherwise find tomorrow's classes
     const todayIdx = WEEKDAYS.indexOf(today)
     const nextDay = WEEKDAYS[(todayIdx + 1) % WEEKDAYS.length]
     const nextSlots = []
     subjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
-        if (slot.day === nextDay) nextSlots.push({ subject: s, time: slot.time })
+        if (slot.day === nextDay) nextSlots.push({ subject: s, time: slot.time, period: slot.period })
       })
     })
 
@@ -105,8 +105,7 @@ export default function Dashboard() {
 
   return (
     <Box>
-
-      {/* ── Hero Banner ── */}
+      {/* ── Wish & Hero Banner ── */}
       <GlassCard sx={{ p: { xs: 2.5, sm: 3.25 }, mb: 3 }}>
         <Box className="dashboard-hero" sx={{
           mx: { xs: -2.5, sm: -3.25 }, my: { xs: -2.5, sm: -3.25 },
@@ -125,14 +124,10 @@ export default function Dashboard() {
             <Typography variant="h4" sx={{ fontWeight: 800, mt: .25, letterSpacing: '-.02em' }}>
               {greeting}, Anshu 👋
             </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mt: .75, maxWidth: 380, lineHeight: 1.65 }}>
-              {attendanceExcellent
-                ? '🌟 Outstanding! Keep this momentum going all semester.'
-                : attendanceSafe
-                  ? 'You\'re on track. Stay consistent to finish strong.'
-                  : '⚠️ Attendance is below target. Time to catch up!'}
+            <Typography variant="body2" sx={{ color: '#a5b4fc', mt: .5, fontWeight: 700 }}>
+              {wishMessage}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mt: 1.75, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
               {attendanceExcellent && <Chip icon={<MdStar />} label="Excellent attendance" size="small" sx={{ bgcolor: 'rgba(16,185,129,.18)', color: '#6ee7b7', fontWeight: 700, fontSize: '.7rem' }} />}
               {criticalSubjects.length > 0 && <Chip icon={<MdWarning />} label={`${criticalSubjects.length} subject${criticalSubjects.length > 1 ? 's' : ''} below 75%`} size="small" sx={{ bgcolor: 'rgba(244,63,94,.18)', color: '#fb7185', fontWeight: 700, fontSize: '.7rem', cursor: 'pointer' }} onClick={() => navigate('/subjects')} />}
             </Box>
@@ -143,17 +138,32 @@ export default function Dashboard() {
         </Box>
       </GlassCard>
 
-      {/* ── Main Stats & Upcoming Class Grid ── */}
+      {/* ── Overall Attendance & Upcoming Class Grid ── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
 
-        {/* ── Live Upcoming Class Status Card (Replaced Semester Progress) ── */}
-        <Grid item xs={12} lg={5}>
+        {/* ── Restored Overall Attendance Widget (Clean Circular Gauge) ── */}
+        <Grid item xs={12} md={5} lg={4}>
+          <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <AuroraGauge percentage={stats.percentage} label="Overall Attendance" />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, fontWeight: 600 }}>
+              {stats.present} present out of {stats.total} total lectures
+            </Typography>
+            <Chip
+              size="small"
+              label={attendanceSafe ? '✅ On Track (≥ 75%)' : '⚠️ Below Target (< 75%)'}
+              sx={{ mt: 1.25, fontWeight: 700, fontSize: '.72rem', bgcolor: attendanceSafe ? 'rgba(16,185,129,.14)' : 'rgba(244,63,94,.14)', color: attendanceSafe ? '#34d399' : '#fb7185' }}
+            />
+          </GlassCard>
+        </Grid>
+
+        {/* ── Live Upcoming Class Status Card ── */}
+        <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MdTimer size={20} color="#60a5fa" />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                  <MdTimer size={22} color="#60a5fa" />
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>
                     Upcoming Class Status
                   </Typography>
                 </Box>
@@ -165,17 +175,26 @@ export default function Dashboard() {
               </Box>
 
               {upcomingClass ? (
-                <Box sx={{ p: 2, borderRadius: '16px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
+                <Box sx={{ p: 2.25, borderRadius: '18px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Box>
-                      <Chip
-                        icon={<MdSchedule size={12} />}
-                        label={upcomingClass.slot.time}
-                        size="small"
-                        className="mono-num"
-                        sx={{ fontSize: '.72rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc', mb: .8 }}
-                      />
-                      <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                      <Box sx={{ display: 'flex', gap: 1, mb: .8 }}>
+                        {upcomingClass.slot.period && (
+                          <Chip
+                            label={upcomingClass.slot.period}
+                            size="small"
+                            sx={{ fontSize: '.72rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff' }}
+                          />
+                        )}
+                        <Chip
+                          icon={<MdSchedule size={12} />}
+                          label={upcomingClass.slot.time}
+                          size="small"
+                          className="mono-num"
+                          sx={{ fontSize: '.72rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc' }}
+                        />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.25 }}>
                         {upcomingClass.slot.subject.name}
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 700 }}>
@@ -184,19 +203,19 @@ export default function Dashboard() {
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,.1)' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
-                      <MdLocationOn size={14} color="#f43f5e" /> {timetableHeader.room}
+                  <Box sx={{ display: 'flex', gap: 2.5, mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,.1)' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: .5, fontWeight: 600 }}>
+                      <MdLocationOn size={15} color="#f43f5e" /> {timetableHeader.room}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
-                      <MdClass size={14} color="#10b981" /> Prof. {upcomingClass.slot.subject.faculty}
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: .5, fontWeight: 600 }}>
+                      <MdClass size={15} color="#10b981" /> Prof. {upcomingClass.slot.subject.faculty}
                     </Typography>
                   </Box>
                 </Box>
               ) : (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
                   <Typography variant="body2" color="text.secondary">
-                    🎉 All classes completed for now! Check timetable for full schedule.
+                    🎉 All classes completed for today! Check timetable for full schedule.
                   </Typography>
                 </Box>
               )}
@@ -208,67 +227,65 @@ export default function Dashboard() {
               onClick={() => navigate('/timetable')}
               sx={{ textTransform: 'none', mt: 2, fontWeight: 700, alignSelf: 'flex-start', color: '#60a5fa' }}
             >
-              View Full Timetable
+              View Full Timetable Schedule
             </Button>
           </GlassCard>
         </Grid>
+      </Grid>
 
-        {/* Right Stats Grid */}
-        <Grid item xs={12} lg={7}>
-          <Grid container spacing={2.5}>
-            <Grid item xs={6} sm={6}>
-              <StatCard
-                icon={<MdCheckCircle />}
-                label="Present"
-                value={stats.present}
-                description={`of ${stats.total} classes (${stats.percentage.toFixed(1)}%)`}
-                accent="#10b981"
-                delay={.05}
-              />
-            </Grid>
-            <Grid item xs={6} sm={6}>
-              <StatCard
-                icon={<MdCancel />}
-                label="Absent"
-                value={stats.absent}
-                description={`${stats.total > 0 ? ((stats.absent / stats.total) * 100).toFixed(1) : 0}% missed`}
-                accent="#f43f5e"
-                delay={.1}
-              />
-            </Grid>
-            <Grid item xs={6} sm={6}>
-              <StatCard
-                icon={<MdListAlt />}
-                label="Total classes"
-                value={stats.total}
-                description="This semester"
-                accent="#3b82f6"
-                delay={.15}
-              />
-            </Grid>
+      {/* ── 4 Main Stat Cards ── */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
+          <StatCard
+            icon={<MdCheckCircle />}
+            label="Present"
+            value={stats.present}
+            description={`of ${stats.total} classes (${stats.percentage.toFixed(1)}%)`}
+            accent="#10b981"
+            delay={.05}
+          />
+        </Grid>
+        <Grid item xs={6} sm={3}>
+          <StatCard
+            icon={<MdCancel />}
+            label="Absent"
+            value={stats.absent}
+            description={`${stats.total > 0 ? ((stats.absent / stats.total) * 100).toFixed(1) : 0}% missed`}
+            accent="#f43f5e"
+            delay={.1}
+          />
+        </Grid>
+        <Grid item xs={6} sm={3}>
+          <StatCard
+            icon={<MdListAlt />}
+            label="Total classes"
+            value={stats.total}
+            description="This semester"
+            accent="#3b82f6"
+            delay={.15}
+          />
+        </Grid>
 
-            {/* Bunked Classes Logger Card */}
-            <Grid item xs={6} sm={6}>
-              <GlassCard delay={.2} sx={{ p: 2.25, minHeight: 122, cursor: 'pointer' }} onClick={() => setBunkDialogOpen(true)}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#fff', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', flexShrink: 0 }}>
-                    <MdDoorBack />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ opacity: 0.65 }} noWrap>
-                      Bunked Classes
-                    </Typography>
-                    <Typography className="mono-num" variant="h5" sx={{ fontWeight: 800 }}>
-                      {bunks.length}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 700, display: 'flex', alignItems: 'center', gap: .3, mt: 0.2 }}>
-                      <MdAdd size={12} /> Log Bunk
-                    </Typography>
-                  </Box>
-                </Box>
-              </GlassCard>
-            </Grid>
-          </Grid>
+        {/* Bunked Classes Logger Card */}
+        <Grid item xs={6} sm={3}>
+          <GlassCard delay={.2} sx={{ p: 2.25, minHeight: 122, cursor: 'pointer' }} onClick={() => setBunkDialogOpen(true)}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#fff', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', flexShrink: 0 }}>
+                <MdDoorBack />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body2" sx={{ opacity: 0.65 }} noWrap>
+                  Bunked Classes
+                </Typography>
+                <Typography className="mono-num" variant="h5" sx={{ fontWeight: 800 }}>
+                  {bunks.length}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 700, display: 'flex', alignItems: 'center', gap: .3, mt: 0.2 }}>
+                  <MdAdd size={12} /> Log Bunk
+                </Typography>
+              </Box>
+            </Box>
+          </GlassCard>
         </Grid>
       </Grid>
 
