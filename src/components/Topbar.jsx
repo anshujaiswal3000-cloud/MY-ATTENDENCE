@@ -2,9 +2,10 @@ import React, { useState } from 'react'
 import {
   Box, Typography, IconButton, Tooltip, Avatar, Popover,
   Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Button, Alert
+  TextField, Button, Alert, InputAdornment
 } from '@mui/material'
 import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdCloudDone, MdCloudOff } from 'react-icons/md'
+import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import confetti from 'canvas-confetti'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
@@ -49,6 +50,7 @@ export default function Topbar() {
   const [loginOpen, setLoginOpen] = useState(false)
   const [userId, setUserId] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loginError, setLoginError] = useState('')
 
   const handleLoginSubmit = (e) => {
@@ -230,7 +232,7 @@ export default function Topbar() {
           </Box>
         </Popover>
 
-        {/* Owner Login Dialog */}
+        {/* Owner Login Dialog with Eye Icon Toggle */}
         <Dialog open={loginOpen} onClose={() => setLoginOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
           <DialogTitle sx={{ fontWeight: 800, textAlign: 'center' }}>
             🔐 Owner Mode Login
@@ -251,12 +253,21 @@ export default function Topbar() {
               />
               <TextField
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
                 fullWidth
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
               />
             </Box>
           </DialogContent>

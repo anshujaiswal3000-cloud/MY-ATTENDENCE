@@ -57,7 +57,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', dbConnected: isDbConnected, timestamp: new Date() })
 })
 
-// POST /api/auth/verify -> Verify Owner Password
+// POST /api/auth/verify -> Verify Owner Credentials
 app.post('/api/auth/verify', async (req, res) => {
   try {
     const { userId, password } = req.body
@@ -65,7 +65,7 @@ app.post('/api/auth/verify', async (req, res) => {
     if (userDoc && (userDoc.password === password || password === '123456')) {
       return res.json({ success: true, message: 'Owner verified ✅' })
     }
-    res.status(401).json({ success: false, message: 'Invalid credentials' })
+    res.status(401).json({ success: false, message: 'Invalid User ID or Password' })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
   }
@@ -74,13 +74,22 @@ app.post('/api/auth/verify', async (req, res) => {
 // POST /api/auth/change-credentials -> Change Secret User ID & Password in MongoDB
 app.post('/api/auth/change-credentials', async (req, res) => {
   try {
-    const { oldPassword, newUserId, newPassword } = req.body
-    const userDoc = await UserData.findOne({ userId: 'anshu' })
-    if (userDoc && userDoc.password !== oldPassword && oldPassword !== '123456') {
-      return res.status(401).json({ success: false, message: 'Incorrect old password' })
+    const { oldUserId, oldPassword, newUserId, newPassword } = req.body
+    const searchId = (oldUserId || 'anshu').toLowerCase()
+    let userDoc = await UserData.findOne({ userId: searchId })
+    if (!userDoc) {
+      userDoc = await UserData.findOne({})
     }
+    if (!userDoc) {
+      return res.status(404).json({ success: false, message: 'User record not found' })
+    }
+    if (userDoc.password !== oldPassword && oldPassword !== '123456') {
+      return res.status(401).json({ success: false, message: 'Incorrect Current Password' })
+    }
+
     userDoc.userId = (newUserId || 'anshu').toLowerCase()
     userDoc.password = newPassword
+    userDoc.updatedAt = new Date()
     await userDoc.save()
     res.json({ success: true, message: 'Private credentials updated in MongoDB Atlas 🔒' })
   } catch (err) {
@@ -94,9 +103,11 @@ app.get('/api/sync/:userId', async (req, res) => {
     const userId = (req.params.userId || 'anshu').toLowerCase()
     let data = await UserData.findOne({ userId })
     if (!data) {
-      return res.status(404).json({ success: false, message: 'No cloud data found for user' })
+      data = await UserData.findOne({})
     }
-    // Omit password from public sync payload
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'No cloud data found' })
+    }
     const safeData = data.toObject()
     delete safeData.password
     res.json({ success: true, data: safeData })
@@ -111,8 +122,15 @@ app.post('/api/sync/:userId', async (req, res) => {
     const userId = (req.params.userId || 'anshu').toLowerCase()
     const { subjects, history, bunks, notes, settings, timetableHeader } = req.body
 
+    let userDoc = await UserData.findOne({ userId })
+    if (!userDoc) {
+      userDoc = await UserData.findOne({})
+    }
+
+    const filter = userDoc ? { _id: userDoc._id } : { userId }
+
     const updated = await UserData.findOneAndUpdate(
-      { userId },
+      filter,
       {
         subjects: subjects || [],
         history: history || [],
@@ -125,31 +143,21 @@ app.post('/api/sync/:userId', async (req, res) => {
       { upsert: true, returnDocument: 'after' }
     )
 
-    const safeData = updated.toObject()
-    delete safeData.password
-
-    res.json({ success: true, data: safeData, message: 'Synced to MongoDB Cloud Database ✅' })
+    res.json({ success: true, message: 'Data synced to MongoDB Atlas', updatedAt: updated.updatedAt })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
   }
 })
 
-// ── SERVE STATIC FRONTEND DIST ──
-const distPath = path.join(__dirname, '..', 'dist')
+// Serve static frontend files in production
+const distPath = path.join(__dirname, '../dist')
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath))
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'))
+  })
 }
 
-// SPA Fallback
-app.get('*', (req, res) => {
-  const indexPath = path.join(distPath, 'index.html')
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath)
-  } else {
-    res.status(200).send('<!DOCTYPE html><html><head><title>AttendX</title></head><body style="background:#070b13;color:#fff;font-family:sans-serif;display:grid;place-items:center;height:100vh;"><div><h2>AttendX App Initializing...</h2><p>Please refresh the page in 5 seconds.</p></div></body></html>')
-  }
-})
-
 app.listen(PORT, () => {
-  console.log(`🚀 AttendX Cloud Server running on port ${PORT}`)
+  console.log(`🚀 AttendX Server running on http://localhost:${PORT}`)
 })

@@ -1,6 +1,14 @@
 import React, { useRef, useState } from 'react'
-import { Box, Typography, Button, Switch, TextField, MenuItem, Grid, Divider, Alert, Slider } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload, MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock, MdVpnKey, MdVibration, MdAutoAwesome } from 'react-icons/md'
+import {
+  Box, Typography, Button, Switch, TextField, MenuItem, Grid,
+  Divider, Alert, Slider, InputAdornment, IconButton
+} from '@mui/material'
+import {
+  MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
+  MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock,
+  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity
+} from 'react-icons/md'
+import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useThemeMode } from '../context/ThemeContext'
@@ -27,10 +35,17 @@ export default function Settings() {
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
 
-  // Security Credentials form
+  // Security Credentials form state
+  const [oldUserId, setOldUserId] = useState('anshu')
   const [oldPassword, setOldPassword] = useState('')
-  const [newUserId, setNewUserId] = useState('anshu')
+  const [newUserId, setNewUserId] = useState('')
   const [newPassword, setNewPassword] = useState('')
+
+  // Show/Hide password toggles
+  const [showOldUser, setShowOldUser] = useState(false)
+  const [showOldPass, setShowOldPass] = useState(false)
+  const [showNewPass, setShowNewPass] = useState(false)
+
   const [secMsg, setSecMsg] = useState('')
   const [secErr, setSecErr] = useState('')
 
@@ -65,11 +80,11 @@ export default function Settings() {
       const res = await fetch('/api/auth/change-credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oldPassword, newUserId, newPassword })
+        body: JSON.stringify({ oldUserId, oldPassword, newUserId, newPassword })
       })
       const json = await res.json()
       if (json.success) {
-        setSecMsg('Private User ID & Password updated in MongoDB Atlas 🔒')
+        setSecMsg('Private User ID & Password updated in MongoDB Atlas Cloud 🔒')
         setOldPassword('')
         setNewPassword('')
       } else {
@@ -82,58 +97,109 @@ export default function Settings() {
 
   return (
     <Box sx={{ maxWidth: 640, pb: 4 }}>
-      {/* ── Owner Credentials Security Card ── */}
-      <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.3)' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MdVpnKey color="#60a5fa" /> Owner Security Credentials (MongoDB Cloud)
+
+      {/* 🛡️ Dedicated Security Card 🛡️ */}
+      <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: .5, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MdSecurity color="#60a5fa" size={22} /> Security (Change Owner Credentials)
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          Set your private secret User ID & Password saved in MongoDB Atlas. Nobody else can unlock your app without these.
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2.5 }}>
+          Enter current credentials to verify, then save your new secret User ID & Password directly to MongoDB Cloud.
         </Typography>
 
         {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
         {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
 
         <Box component="form" onSubmit={handleChangeCredentials} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Current Password"
-            type="password"
-            size="small"
-            required
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-            placeholder="123456"
-          />
+          
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField
+                label="Current User ID"
+                type={showOldUser ? 'text' : 'password'}
+                size="small"
+                fullWidth
+                required
+                value={oldUserId}
+                onChange={(e) => setOldUserId(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowOldUser(!showOldUser)} edge="end" size="small">
+                        {showOldUser ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Current Password"
+                type={showOldPass ? 'text' : 'password'}
+                size="small"
+                fullWidth
+                required
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="123456"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowOldPass(!showOldPass)} edge="end" size="small">
+                        {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ my: .5, opacity: .3 }} />
+
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField
                 label="New Secret User ID"
                 size="small"
+                fullWidth
                 required
                 value={newUserId}
                 onChange={(e) => setNewUserId(e.target.value)}
-                placeholder="anshu"
+                placeholder="anshu_owner"
               />
             </Grid>
             <Grid item xs={6}>
               <TextField
                 label="New Secret Password"
-                type="password"
+                type={showNewPass ? 'text' : 'password'}
                 size="small"
+                fullWidth
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
+                placeholder="New password"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowNewPass(!showNewPass)} edge="end" size="small">
+                        {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
               />
             </Grid>
           </Grid>
+
           <Button
             type="submit"
             variant="contained"
             disabled={!isUnlocked}
-            sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700 }}
+            sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700, mt: 1 }}
           >
-            {isUnlocked ? 'Save Secret Credentials to MongoDB' : 'Login to make any change 🔒'}
+            {isUnlocked ? 'Save to Cloud ☁️' : 'Login to make any change 🔒'}
           </Button>
         </Box>
       </GlassCard>
