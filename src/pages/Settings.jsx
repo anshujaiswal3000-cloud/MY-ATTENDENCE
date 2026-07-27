@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react'
 import {
   Box, Typography, Button, Switch, TextField, MenuItem, Grid,
-  Divider, Alert, Slider, InputAdornment, IconButton
+  Divider, Alert, Slider, InputAdornment, IconButton, Collapse
 } from '@mui/material'
 import {
   MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
   MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock,
-  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity
+  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdExpandMore, MdExpandLess
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
@@ -34,6 +34,9 @@ export default function Settings() {
   const fileInputRef = useRef(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
+
+  // Security section collapse state
+  const [securityExpanded, setSecurityExpanded] = useState(false)
 
   // Security Credentials form state
   const [oldUserId, setOldUserId] = useState('anshu')
@@ -98,110 +101,139 @@ export default function Settings() {
   return (
     <Box sx={{ maxWidth: 640, pb: 4 }}>
 
-      {/* 🛡️ Dedicated Security Card 🛡️ */}
-      <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: .5, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MdSecurity color="#60a5fa" size={22} /> Security (Change Owner Credentials)
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2.5 }}>
-          Enter current credentials to verify, then save your new secret User ID & Password directly to MongoDB Cloud.
-        </Typography>
+      {/* 🛡️ Collapsible Dedicated Security Card 🛡️ */}
+      <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
+        <Box
+          onClick={() => setSecurityExpanded(!securityExpanded)}
+          sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer', userSelect: 'none'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40, height: 40, borderRadius: '12px', display: 'grid', placeItems: 'center',
+              bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontSize: 22
+            }}>
+              <MdSecurity />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                Security (Change Owner Credentials)
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Tap to expand and update private Owner User ID & Password
+              </Typography>
+            </Box>
+          </Box>
 
-        {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
-        {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
-
-        <Box component="form" onSubmit={handleChangeCredentials} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField
-                label="Current User ID"
-                type={showOldUser ? 'text' : 'password'}
-                size="small"
-                fullWidth
-                required
-                value={oldUserId}
-                onChange={(e) => setOldUserId(e.target.value)}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowOldUser(!showOldUser)} edge="end" size="small">
-                        {showOldUser ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Current Password"
-                type={showOldPass ? 'text' : 'password'}
-                size="small"
-                fullWidth
-                required
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                placeholder="123456"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowOldPass(!showOldPass)} edge="end" size="small">
-                        {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-              />
-            </Grid>
-          </Grid>
-
-          <Divider sx={{ my: .5, opacity: .3 }} />
-
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField
-                label="New Secret User ID"
-                size="small"
-                fullWidth
-                required
-                value={newUserId}
-                onChange={(e) => setNewUserId(e.target.value)}
-                placeholder="anshu_owner"
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="New Secret Password"
-                type={showNewPass ? 'text' : 'password'}
-                size="small"
-                fullWidth
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="New password"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowNewPass(!showNewPass)} edge="end" size="small">
-                        {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-              />
-            </Grid>
-          </Grid>
-
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={!isUnlocked}
-            sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700, mt: 1 }}
-          >
-            {isUnlocked ? 'Save to Cloud ☁️' : 'Login to make any change 🔒'}
-          </Button>
+          <IconButton size="small" sx={{ color: '#60a5fa' }}>
+            {securityExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
         </Box>
+
+        {/* Collapsible Content Body */}
+        <Collapse in={securityExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
+            {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
+
+            <Box component="form" onSubmit={handleChangeCredentials} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              
+              {/* Row 1: Current User ID & Current Password */}
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Current User ID"
+                    type={showOldUser ? 'text' : 'password'}
+                    size="small"
+                    fullWidth
+                    required
+                    value={oldUserId}
+                    onChange={(e) => setOldUserId(e.target.value)}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowOldUser(!showOldUser)} edge="end" size="small">
+                            {showOldUser ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Current Password"
+                    type={showOldPass ? 'text' : 'password'}
+                    size="small"
+                    fullWidth
+                    required
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowOldPass(!showOldPass)} edge="end" size="small">
+                            {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: .5, opacity: .3 }} />
+
+              {/* Row 2: New Secret User ID & New Secret Password */}
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="New Secret User ID"
+                    size="small"
+                    fullWidth
+                    required
+                    value={newUserId}
+                    onChange={(e) => setNewUserId(e.target.value)}
+                    placeholder="anshu_owner"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="New Secret Password"
+                    type={showNewPass ? 'text' : 'password'}
+                    size="small"
+                    fullWidth
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowNewPass(!showNewPass)} edge="end" size="small">
+                            {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={!isUnlocked}
+                sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700, mt: 1, py: 1 }}
+              >
+                {isUnlocked ? 'Save to Cloud ☁️' : 'Login to make any change 🔒'}
+              </Button>
+            </Box>
+          </Box>
+        </Collapse>
       </GlassCard>
 
       {/* ── App Preferences & Automation ── */}
