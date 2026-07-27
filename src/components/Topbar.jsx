@@ -6,13 +6,14 @@ import {
 } from '@mui/material'
 import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdCloudDone, MdCloudOff, MdEmail, MdVpnKey } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
-import confetti from 'canvas-confetti'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import { useThemeMode } from '../context/ThemeContext'
 import { NAV_ITEMS } from '../data/navConfig'
 import { useAttendance } from '../context/AttendanceContext'
 import { getOverallStats } from '../utils/attendanceUtils'
+import { triggerHaptic } from '../utils/hapticUtils'
+import MascotProfileModal from './MascotProfileModal'
 
 export default function Topbar() {
   const { mode, toggleMode } = useThemeMode()
@@ -22,28 +23,13 @@ export default function Topbar() {
   const { subjects, isUnlocked, unlockApp, lockApp, bunks, dbSynced, notify } = useAttendance()
   const stats = getOverallStats(subjects)
 
-  // Profile popover
-  const [anchorEl, setAnchorEl] = useState(null)
+  // Animated Mascot Celebration Profile Modal
+  const [mascotModalOpen, setMascotModalOpen] = useState(false)
 
-  const openProfile = (e) => {
-    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([40, 60, 40])
-    
-    if (stats.percentage >= 90) {
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 90,
-          origin: { x: 0.85, y: 0.12 },
-          colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
-        })
-      } catch (err) {}
-    }
-
-    setAnchorEl(e.currentTarget)
+  const openProfile = () => {
+    triggerHaptic([30, 50, 30])
+    setMascotModalOpen(true)
   }
-
-  const closeProfile = () => setAnchorEl(null)
-  const profileOpen = Boolean(anchorEl)
 
   // Login Dialog
   const [loginOpen, setLoginOpen] = useState(false)
@@ -135,7 +121,6 @@ export default function Topbar() {
   }
 
   const statusColor = stats.percentage >= 85 ? '#10b981' : stats.percentage >= 75 ? '#f59e0b' : '#f43f5e'
-  const statusLabel = stats.percentage >= 85 ? 'Safe' : stats.percentage >= 75 ? 'Warning' : 'Critical'
 
   return (
     <Box
@@ -178,7 +163,7 @@ export default function Topbar() {
               icon={<MdLockOpen size={12} color="#34d399" />}
               label="Editing"
               onClick={() => {
-                if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+                triggerHaptic(20)
                 lockApp()
               }}
               size="small"
@@ -192,7 +177,7 @@ export default function Topbar() {
               icon={<MdLock size={12} color="#60a5fa" />}
               label="Owner Login"
               onClick={() => {
-                if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20)
+                triggerHaptic(20)
                 setLoginOpen(true)
               }}
               size="small"
@@ -207,15 +192,15 @@ export default function Topbar() {
         {/* Dark / Light Toggle */}
         <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
           <IconButton onClick={() => {
-            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(15)
+            triggerHaptic(15)
             toggleMode()
           }} sx={{ borderRadius: '12px', width: 36, height: 36 }}>
             {mode === 'dark' ? <MdLightMode size={18} /> : <MdDarkMode size={18} />}
           </IconButton>
         </Tooltip>
 
-        {/* Profile Avatar with Live Attendance Badge */}
-        <Tooltip title="Anshu Jaiswal (Profile)">
+        {/* 🌟 Profile Avatar with Live Attendance Badge (Triggers Opening Ball Mascot Modal) 🌟 */}
+        <Tooltip title="Anshu Jaiswal (Profile Celebration)">
           <Box sx={{ position: 'relative', cursor: 'pointer' }} onClick={openProfile}>
             <Avatar
               src="/profile.jpg"
@@ -224,9 +209,9 @@ export default function Topbar() {
                 width: 38, height: 38,
                 border: '2px solid transparent',
                 background: `linear-gradient(white, white) padding-box, var(--aurora) border-box`,
-                boxShadow: '0 4px 14px rgba(99,102,241,.3)',
+                boxShadow: '0 4px 14px rgba(99,102,241,.35)',
                 transition: 'transform 200ms ease',
-                '&:hover': { transform: 'scale(1.08)' }
+                '&:hover': { transform: 'scale(1.1)' }
               }}
             />
             <Box
@@ -240,63 +225,11 @@ export default function Topbar() {
           </Box>
         </Tooltip>
 
-        {/* Profile Popover */}
-        <Popover
-          open={profileOpen}
-          anchorEl={anchorEl}
-          onClose={closeProfile}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          PaperProps={{
-            sx: {
-              mt: 1, borderRadius: '22px', minWidth: 260, p: 0, overflow: 'hidden',
-              background: theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(20px)',
-              border: `1px solid ${theme.custom.glassBorder}`,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            }
-          }}
-        >
-          <Box sx={{ p: 2.25, display: 'flex', alignItems: 'center', gap: 1.75, background: 'var(--aurora)' }}>
-            <Avatar src="/profile.jpg" alt="Anshu Jaiswal" sx={{ width: 48, height: 48, border: '2px solid #fff' }} />
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
-                <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '.95rem', lineHeight: 1.2 }}>
-                  Anshu Jaiswal
-                </Typography>
-                <MdVerified size={15} color="#60a5fa" />
-              </Box>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,.8)' }}>
-                UCER CSE 2nd Year (Sec B)
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                Live Attendance
-              </Typography>
-              <Chip
-                label={statusLabel}
-                size="small"
-                sx={{ fontSize: '.64rem', fontWeight: 700, height: 20, bgcolor: `${statusColor}18`, color: statusColor }}
-              />
-            </Box>
-            <Typography className="mono-num" variant="h5" sx={{ fontWeight: 800, color: statusColor }}>
-              {stats.percentage.toFixed(1)}%
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: .5 }}>
-              {stats.present} present out of {stats.total} total lectures
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 700, display: 'block', mt: .5 }}>
-              🚪 Personal Bunks Logged: {bunks.length}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 700, display: 'block', mt: .2 }}>
-              ☁️ MongoDB Cloud: {dbSynced ? 'Connected & Synced' : 'Connecting...'}
-            </Typography>
-          </Box>
-        </Popover>
+        {/* 🤖 Animated 3D Mascot Celebration Modal 🤖 */}
+        <MascotProfileModal
+          open={mascotModalOpen}
+          onClose={() => setMascotModalOpen(false)}
+        />
 
         {/* 🔐 Owner Login Dialog 🔐 */}
         <Dialog open={loginOpen} onClose={() => setLoginOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
