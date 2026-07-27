@@ -16,7 +16,7 @@ export const defaultSubjects = [
     faculty: 'Ajai Kumar Maurya',
     icon: 'python',
     color: ['#10b981', '#3b82f6'],
-    present: 12, total: 12,
+    present: 14, total: 14,
     timetable: [
       { day: 'Monday', time: '10:40 AM - 11:30 AM' },
       { day: 'Tuesday', time: '03:40 PM - 04:30 PM' }
@@ -28,7 +28,7 @@ export const defaultSubjects = [
     faculty: 'Sunil Kumar Khare',
     icon: 'book',
     color: ['#3b82f6', '#8b5cf6'],
-    present: 18, total: 18,
+    present: 22, total: 22,
     timetable: [
       { day: 'Monday', time: '09:50 AM - 10:40 AM' },
       { day: 'Tuesday', time: '10:40 AM - 11:30 AM' },
@@ -44,7 +44,7 @@ export const defaultSubjects = [
     faculty: 'Chitranjan Dwivedi',
     icon: 'cpu',
     color: ['#10b981', '#3b82f6'],
-    present: 15, total: 15,
+    present: 20, total: 20,
     timetable: [
       { day: 'Monday', time: '09:00 AM - 09:50 AM' },
       { day: 'Tuesday', time: '09:00 AM - 09:50 AM' },
@@ -60,7 +60,7 @@ export const defaultSubjects = [
     faculty: 'Dharmendra Kumar',
     icon: 'logic',
     color: ['#8b5cf6', '#10b981'],
-    present: 14, total: 14,
+    present: 18, total: 18,
     timetable: [
       { day: 'Monday', time: '03:40 PM - 04:30 PM' },
       { day: 'Tuesday', time: '02:00 PM - 02:50 PM' },
@@ -76,7 +76,7 @@ export const defaultSubjects = [
     faculty: 'Santosh Dubey',
     icon: 'chip',
     color: ['#10b981', '#8b5cf6'],
-    present: 16, total: 16,
+    present: 24, total: 24,
     timetable: [
       { day: 'Monday', time: '02:00 PM - 02:50 PM' },
       { day: 'Tuesday', time: '09:50 AM - 10:40 AM' },
@@ -93,7 +93,7 @@ export const defaultSubjects = [
     faculty: 'Shyam B. Verma & Sunil K. Khare',
     icon: 'flask',
     color: ['#3b82f6', '#10b981'],
-    present: 4, total: 4,
+    present: 6, total: 6,
     timetable: [
       { day: 'Tuesday', time: '11:30 AM - 01:10 PM' }
     ]
@@ -104,7 +104,7 @@ export const defaultSubjects = [
     faculty: 'Manoj Yadav',
     icon: 'code',
     color: ['#8b5cf6', '#3b82f6'],
-    present: 4, total: 4,
+    present: 6, total: 6,
     timetable: [
       { day: 'Monday', time: '11:30 AM - 01:10 PM' }
     ]
@@ -115,7 +115,7 @@ export const defaultSubjects = [
     faculty: 'Nitish Kumar & Sachin Sonkar',
     icon: 'globe',
     color: ['#8b5cf6', '#10b981'],
-    present: 4, total: 4,
+    present: 6, total: 6,
     timetable: [
       { day: 'Friday', time: '02:50 PM - 04:30 PM' }
     ]
@@ -126,7 +126,7 @@ export const defaultSubjects = [
     faculty: 'Pooja Sharma',
     icon: 'brain',
     color: ['#3b82f6', '#8b5cf6'],
-    present: 6, total: 6,
+    present: 8, total: 8,
     timetable: [
       { day: 'Wednesday', time: '12:20 PM - 01:10 PM' },
       { day: 'Thursday', time: '10:40 AM - 11:30 AM' }
@@ -138,7 +138,7 @@ export const defaultSubjects = [
     faculty: 'Arun Samuel Lawrence',
     icon: 'terminal',
     color: ['#10b981', '#3b82f6'],
-    present: 6, total: 6,
+    present: 8, total: 8,
     timetable: [
       { day: 'Thursday', time: '02:50 PM - 03:40 PM' },
       { day: 'Friday', time: '09:00 AM - 09:50 AM' }
@@ -150,7 +150,7 @@ export const defaultSubjects = [
     faculty: 'Gaurav Goswami',
     icon: 'brain',
     color: ['#8b5cf6', '#3b82f6'],
-    present: 3, total: 3,
+    present: 4, total: 4,
     timetable: [
       { day: 'Monday', time: '02:50 PM - 03:40 PM' }
     ]
@@ -161,7 +161,7 @@ export const defaultSubjects = [
     faculty: 'Shalini Tripathi',
     icon: 'terminal',
     color: ['#10b981', '#8b5cf6'],
-    present: 10, total: 10,
+    present: 14, total: 14,
     timetable: [
       { day: 'Tuesday', time: '02:50 PM - 03:40 PM' },
       { day: 'Wednesday', time: '02:00 PM - 02:50 PM' },
@@ -175,7 +175,7 @@ export const defaultSubjects = [
     faculty: 'Shivanand Dubey',
     icon: 'calc',
     color: ['#3b82f6', '#10b981'],
-    present: 3, total: 3,
+    present: 4, total: 4,
     timetable: [
       { day: 'Wednesday', time: '02:50 PM - 03:40 PM' }
     ]
@@ -186,7 +186,7 @@ export const defaultSubjects = [
     faculty: 'Nishat Bano',
     icon: 'robot',
     color: ['#8b5cf6', '#10b981'],
-    present: 6, total: 6,
+    present: 8, total: 8,
     timetable: [
       { day: 'Thursday', time: '03:40 PM - 04:30 PM' },
       { day: 'Friday', time: '09:50 AM - 10:40 AM' }
@@ -198,7 +198,7 @@ export const defaultSubjects = [
     faculty: 'Staff',
     icon: 'book',
     color: ['#3b82f6', '#8b5cf6'],
-    present: 2, total: 2,
+    present: 4, total: 4,
     timetable: [
       { day: 'Saturday', time: '02:00 PM - 03:00 PM' }
     ]
