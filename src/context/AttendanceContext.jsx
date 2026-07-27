@@ -124,7 +124,6 @@ export function AttendanceProvider({ children }) {
     }
   }, [setSubjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader])
 
-  // Pull from MongoDB on initial mount & poll every 10 seconds for multi-device sync!
   useEffect(() => {
     pullFromCloud()
     const timer = setInterval(pullFromCloud, 10000)
@@ -135,10 +134,10 @@ export function AttendanceProvider({ children }) {
   const unlockApp = useCallback((userId, password) => {
     if ((userId.toLowerCase() === 'anshu' && password === '123456') || password === '123456') {
       setIsUnlocked(true)
-      notify('Welcome back Anshu! Owner editing mode unlocked 🔓')
+      notify('Welcome Anshu! Editing mode unlocked 🔓')
       return true
     }
-    notify('Invalid User ID or Password. Only Owner can make changes!', 'error')
+    notify('Invalid User ID or Password!', 'error')
     return false
   }, [setIsUnlocked, notify])
 
@@ -150,7 +149,7 @@ export function AttendanceProvider({ children }) {
   /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner to mark attendance 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
 
@@ -192,10 +191,9 @@ export function AttendanceProvider({ children }) {
     pushToCloud({ subjects: newSubjects, history: newHistory })
   }, [isUnlocked, setSubjects, setHistory, notify, pushToCloud])
 
-  // Log a Bunked Class (STRICT OWNER PERMISSION REQUIRED)
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner to log bunks 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
 
@@ -220,13 +218,13 @@ export function AttendanceProvider({ children }) {
       return newBunks
     })
 
-    notify(`Personal Bunk logged for ${subjectName || 'Class'} 🚪`, 'info')
+    notify(`Bunk logged for ${subjectName || 'Class'} 🚪`, 'info')
     pushToCloud({ bunks: newBunks })
   }, [isUnlocked, subjects, setBunks, notify, pushToCloud])
 
   const deleteBunkClass = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner to delete bunks 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     let newBunks = []
@@ -293,7 +291,7 @@ export function AttendanceProvider({ children }) {
 
   const addSubject = useCallback((data) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner to add subjects 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return null
     }
     const subject = buildSubject(data)
@@ -308,7 +306,7 @@ export function AttendanceProvider({ children }) {
 
   const updateSubject = useCallback((id, updates) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     setSubjects((prev) => {
@@ -321,7 +319,7 @@ export function AttendanceProvider({ children }) {
 
   const deleteSubject = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     setSubjects((prev) => {
@@ -335,7 +333,7 @@ export function AttendanceProvider({ children }) {
 
   const addNote = useCallback((noteData) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     const newNote = {
@@ -353,7 +351,7 @@ export function AttendanceProvider({ children }) {
 
   const toggleNoteComplete = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     setNotes((prev) => {
@@ -365,7 +363,7 @@ export function AttendanceProvider({ children }) {
 
   const deleteNote = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     setNotes((prev) => {
@@ -378,7 +376,7 @@ export function AttendanceProvider({ children }) {
 
   const resetAttendance = useCallback(() => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     setSubjects((prev) => prev.map((s) => ({ ...s, present: 0, total: 0 })))
@@ -391,7 +389,7 @@ export function AttendanceProvider({ children }) {
 
   const updateTimetable = useCallback((subjectId, timetable) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     setSubjects((prev) => {
@@ -410,7 +408,7 @@ export function AttendanceProvider({ children }) {
 
   const importData = useCallback((data) => {
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     applyImportedData(data)

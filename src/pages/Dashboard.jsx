@@ -77,7 +77,7 @@ export default function Dashboard() {
   const handleBunkSubmit = (e) => {
     e.preventDefault()
     if (!isUnlocked) {
-      notify('Screen Locked! Please Login as Owner to log bunks 🔒', 'warning')
+      notify('Login required to edit 🔒', 'warning')
       return
     }
     if (!bunkSubjectId) return
@@ -111,7 +111,7 @@ export default function Dashboard() {
     [subjects]
   )
 
-  // ── Calculate Live Upcoming Class Status ──
+  // ── Calculate Live Upcoming Lecture ──
   const upcomingClass = useMemo(() => {
     const now = new Date()
     const curMins = now.getHours() * 60 + now.getMinutes()
@@ -119,7 +119,7 @@ export default function Dashboard() {
     const todaySlots = []
     subjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
-        if (slot.day === today) {
+        if (slot.day === today && !s.isIgnored && s.code !== 'LIBRARY-2') {
           const endMins = parseEndTime(slot.time)
           const startMins = getStartMinutes(slot.time)
           todaySlots.push({ subject: s, time: slot.time, period: slot.period, startMins, endMins })
@@ -139,7 +139,7 @@ export default function Dashboard() {
       const nextSlots = []
       subjects.forEach((s) => {
         ;(s.timetable || []).forEach((slot) => {
-          if (slot.day === nextDay) {
+          if (slot.day === nextDay && !s.isIgnored && s.code !== 'LIBRARY-2') {
             nextSlots.push({ subject: s, time: slot.time, period: slot.period, startMins: getStartMinutes(slot.time) })
           }
         })
@@ -201,7 +201,7 @@ export default function Dashboard() {
         </Box>
       </GlassCard>
 
-      {/* ── Overall Attendance & Live Upcoming Class Grid ── */}
+      {/* ── Overall Attendance & Live Upcoming Lecture Grid ── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
 
         <Grid item xs={12} md={5} lg={4}>
@@ -218,6 +218,7 @@ export default function Dashboard() {
           </GlassCard>
         </Grid>
 
+        {/* 🌟 Upcoming Lecture Card 🌟 */}
         <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
@@ -225,7 +226,7 @@ export default function Dashboard() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <MdTimer size={22} color="#60a5fa" />
                   <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                    Upcoming Class Status
+                    Upcoming Lecture
                   </Typography>
                 </Box>
                 <Chip
