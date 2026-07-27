@@ -11,6 +11,20 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // Global Chunk Loading Error Handler — Auto-reloads on new version deployment
+      window.addEventListener('error', function(e) {
+        if (e && e.message && (e.message.indexOf('Importing a module script failed') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
+          console.warn('New app version detected, clearing stale cache...')
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              for (let name of names) caches.delete(name)
+            })
+          }
+          window.location.reload()
+        }
+      })
+    </script>
   </head>
   <body>
     <div id="root"></div>
