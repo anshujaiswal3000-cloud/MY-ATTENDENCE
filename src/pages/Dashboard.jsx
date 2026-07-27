@@ -27,10 +27,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   useEffect(() => { const t = setTimeout(() => setLoading(false), 400); return () => clearTimeout(t) }, [])
 
-  // ── Live computed stats from real subject data ──
+  // Live computed stats from real subject data
   const stats = useMemo(() => getOverallStats(subjects), [subjects])
   const streak = useMemo(() => computeStreak(history), [history])
-  const safeBunks = useMemo(() => calculateBunkAdvice(stats.present, stats.total, 75).canBunk, [stats])
+  const bunkAdvice = useMemo(() => calculateBunkAdvice(stats.present, stats.total, 75), [stats])
   const { highest, lowest, average } = useMemo(() => getHighestLowestAverage(subjects), [subjects])
   const attendanceSafe = stats.percentage >= 75
   const attendanceExcellent = stats.percentage >= 90
@@ -51,9 +51,6 @@ export default function Dashboard() {
     [subjects]
   )
 
-  // Bunk advice
-  const bunkAdvice = useMemo(() => calculateBunkAdvice(stats.present, stats.total, 75), [stats])
-
   // Recent critical subjects (< 75%)
   const criticalSubjects = useMemo(() =>
     subjects.filter(s => s.total > 0 && getPercentage(s.present, s.total) < 75),
@@ -62,7 +59,6 @@ export default function Dashboard() {
 
   return (
     <Box>
-
       {/* ── Hero Banner ── */}
       <GlassCard sx={{ p: { xs: 2.5, sm: 3.25 }, mb: 3 }}>
         <Box className="dashboard-hero" sx={{
@@ -104,35 +100,39 @@ export default function Dashboard() {
       {/* ── Main Stats Grid ── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
 
-        {/* Aurora Gauge — live from subjects */}
+        {/* Aurora Gauge — Clean responsive layout (no text collision) */}
         <Grid item xs={12} lg={4}>
-          <GlassCard sx={{ p: 2.75, height: '100%' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.25, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row', lg: 'column', xl: 'row' }, alignItems: 'center', gap: 2.5, width: '100%', justifyContent: 'center' }}>
               <AuroraGauge percentage={stats.percentage} label="Overall attendance" />
-              <Box sx={{ flex: 1, minWidth: 145 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: .5 }}>Semester progress</Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: .5 }}>
-                  <Typography variant="caption" color="text.secondary">Present</Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#10b981' }}>{stats.present}</Typography>
+              <Box sx={{ width: '100%', flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, textAlign: { xs: 'center', sm: 'left', lg: 'center', xl: 'left' } }}>
+                  Semester progress
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: .75 }}>
+                  <Typography variant="body2" color="text.secondary">Present</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: '#10b981' }}>{stats.present}</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: .5 }}>
-                  <Typography variant="caption" color="text.secondary">Absent</Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#f43f5e' }}>{stats.absent}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: .75 }}>
+                  <Typography variant="body2" color="text.secondary">Absent</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: '#f43f5e' }}>{stats.absent}</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.25 }}>
-                  <Typography variant="caption" color="text.secondary">Total</Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#3b82f6' }}>{stats.total}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary">Total</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: '#3b82f6' }}>{stats.total}</Typography>
                 </Box>
                 <LinearProgress
                   variant="determinate"
                   value={Math.min(stats.percentage, 100)}
-                  sx={{ height: 8, borderRadius: 8, bgcolor: 'rgba(148,163,184,.18)', '& .MuiLinearProgress-bar': { borderRadius: 8, background: 'var(--aurora)' } }}
+                  sx={{ height: 8, borderRadius: 8, bgcolor: 'rgba(148,163,184,.18)', mb: 1.5, '& .MuiLinearProgress-bar': { borderRadius: 8, background: 'var(--aurora)' } }}
                 />
-                <Chip
-                  size="small"
-                  label={attendanceSafe ? '✅ On track' : '⚠️ Needs attention'}
-                  sx={{ mt: 1.25, fontWeight: 700, fontSize: '.72rem', bgcolor: attendanceSafe ? 'rgba(16,185,129,.14)' : 'rgba(244,63,94,.14)', color: attendanceSafe ? '#34d399' : '#fb7185' }}
-                />
+                <Box sx={{ textAlign: { xs: 'center', sm: 'left', lg: 'center', xl: 'left' } }}>
+                  <Chip
+                    size="small"
+                    label={attendanceSafe ? '✅ On track' : '⚠️ Needs attention'}
+                    sx={{ fontWeight: 700, fontSize: '.72rem', bgcolor: attendanceSafe ? 'rgba(16,185,129,.14)' : 'rgba(244,63,94,.14)', color: attendanceSafe ? '#34d399' : '#fb7185' }}
+                  />
+                </Box>
               </Box>
             </Box>
           </GlassCard>
@@ -201,9 +201,6 @@ export default function Dashboard() {
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Weekly trend</Typography>
                     <Typography variant="caption" color="text.secondary">Your recent attendance rhythm</Typography>
                   </Box>
-                  <Button size="small" endIcon={<MdArrowForward />} onClick={() => navigate('/analytics')} sx={{ textTransform: 'none', fontSize: '.75rem' }}>
-                    Details
-                  </Button>
                 </Box>
                 <Box className="trend-bars" sx={{ mt: 1.25 }}>
                   {weekly.map((height, i) => <span key={i} style={{ height: `${height}%`, animationDelay: `${i * 45}ms` }} />)}

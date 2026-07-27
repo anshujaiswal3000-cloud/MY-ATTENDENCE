@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   subjects: 'attendx_subjects',
   history: 'attendx_history',
   settings: 'attendx_settings',
+  notes: 'attendx_notes',
   themeMode: 'attendx_theme_mode',
   backup: 'attendx_backup',
 }
@@ -46,7 +47,7 @@ export function readJSONFile(file) {
 }
 
 export function applyImportedData(data) {
-  ;['subjects', 'history', 'settings'].forEach((name) => {
+  ;['subjects', 'history', 'settings', 'notes'].forEach((name) => {
     if (data[name] !== undefined && data[name] !== null) {
       window.localStorage.setItem(STORAGE_KEYS[name], JSON.stringify(data[name]))
     }

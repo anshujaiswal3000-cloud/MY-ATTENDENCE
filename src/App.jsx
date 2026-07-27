@@ -4,6 +4,7 @@ import AppLayout from './components/AppLayout'
 import Dashboard from './pages/Dashboard'
 import Subjects from './pages/Subjects'
 import Timetable from './pages/Timetable'
+import Notes from './pages/Notes'
 import Settings from './pages/Settings'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/subjects" element={<Subjects />} />
         <Route path="/timetable" element={<Timetable />} />
+        <Route path="/notes" element={<Notes />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
     </Routes>

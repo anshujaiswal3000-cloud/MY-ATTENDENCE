@@ -13,7 +13,7 @@ export function useAttendance() {
 
 const DEFAULT_SETTINGS = {
   semester: 'Semester 1',
-  semesters: ['Semester 1'],
+  semesters: ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4'],
 }
 
 function seedSubjects() {
@@ -23,6 +23,17 @@ function seedSubjects() {
 export function AttendanceProvider({ children }) {
   const [subjects, setSubjects] = useLocalStorage(STORAGE_KEYS.subjects, seedSubjects())
   const [history, setHistory] = useLocalStorage(STORAGE_KEYS.history, [])
+  const [notes, setNotes] = useLocalStorage(STORAGE_KEYS.notes, [
+    {
+      id: 'note_1',
+      title: 'Digital Electronics Assignment 2',
+      subjectId: 'de',
+      subjectName: 'Digital Electronics',
+      category: 'Assignment',
+      content: 'Submit solved K-Map minimization questions before Friday 5 PM.',
+      date: 'Jul 26, 2026'
+    }
+  ])
   const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.settings, DEFAULT_SETTINGS)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
@@ -79,6 +90,20 @@ export function AttendanceProvider({ children }) {
     notify('Subject deleted', 'info')
   }, [setSubjects, setHistory, notify])
 
+  const addNote = useCallback((noteData) => {
+    const newNote = {
+      id: `note_${Math.random().toString(36).slice(2, 10)}`,
+      ...noteData,
+    }
+    setNotes((prev) => [newNote, ...prev])
+    notify('Note added')
+  }, [setNotes, notify])
+
+  const deleteNote = useCallback((id) => {
+    setNotes((prev) => prev.filter((n) => n.id !== id))
+    notify('Note deleted', 'info')
+  }, [setNotes, notify])
+
   const deleteHistoryEntry = useCallback((entryId) => {
     let target = null
     setHistory((prev) => {
@@ -86,7 +111,6 @@ export function AttendanceProvider({ children }) {
       return prev.filter((h) => h.id !== entryId)
     })
     if (target) {
-      // Reverse the counter effect of this log entry
       setSubjects((prev) =>
         prev.map((s) => {
           if (s.id !== target.subjectId) return s
@@ -121,8 +145,9 @@ export function AttendanceProvider({ children }) {
     if (data.subjects) setSubjects(data.subjects)
     if (data.history) setHistory(data.history)
     if (data.settings) setSettings(data.settings)
+    if (data.notes) setNotes(data.notes)
     notify('Data imported — reloaded from backup')
-  }, [setSubjects, setHistory, setSettings, notify])
+  }, [setSubjects, setHistory, setSettings, setNotes, notify])
 
   const backup = useCallback(() => {
     const data = collectAllData()
@@ -140,12 +165,14 @@ export function AttendanceProvider({ children }) {
     if (data.subjects) setSubjects(data.subjects)
     if (data.history) setHistory(data.history)
     if (data.settings) setSettings(data.settings)
+    if (data.notes) setNotes(data.notes)
     notify('Backup restored')
-  }, [setSubjects, setHistory, setSettings, notify])
+  }, [setSubjects, setHistory, setSettings, setNotes, notify])
 
   const value = useMemo(() => ({
     subjects,
     history,
+    notes,
     settings,
     setSettings,
     snackbar,
@@ -155,6 +182,8 @@ export function AttendanceProvider({ children }) {
     addSubject,
     updateSubject,
     deleteSubject,
+    addNote,
+    deleteNote,
     deleteHistoryEntry,
     resetAttendance,
     updateTimetable,
@@ -162,7 +191,7 @@ export function AttendanceProvider({ children }) {
     importData,
     backup,
     restoreBackup,
-  }), [subjects, history, settings, snackbar, notify, closeSnackbar, markAttendance, addSubject, updateSubject, deleteSubject, deleteHistoryEntry, resetAttendance, updateTimetable, exportData, importData, backup, restoreBackup, setSettings])
+  }), [subjects, history, notes, settings, snackbar, notify, closeSnackbar, markAttendance, addSubject, updateSubject, deleteSubject, addNote, deleteNote, deleteHistoryEntry, resetAttendance, updateTimetable, exportData, importData, backup, restoreBackup, setSettings])
 
   return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>
 }
