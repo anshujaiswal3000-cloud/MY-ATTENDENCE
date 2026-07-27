@@ -10,7 +10,7 @@ import { useAttendance } from '../context/AttendanceContext'
 import { getPercentage, getStatus } from '../utils/attendanceUtils'
 
 export default function Subjects() {
-  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject } = useAttendance()
+  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject, isUnlocked } = useAttendance()
   const theme = useTheme()
 
   const [search, setSearch] = useState('')
@@ -69,7 +69,7 @@ export default function Subjects() {
           icon="📚"
           title={subjects.length === 0 ? 'No subjects yet' : 'No matches'}
           subtitle={subjects.length === 0 ? 'Add your first subject to start tracking attendance.' : 'Try a different search or filter.'}
-          actionLabel={subjects.length === 0 ? 'Add Subject' : undefined}
+          actionLabel={subjects.length === 0 && isUnlocked ? 'Add Subject' : undefined}
           onAction={() => setDialogOpen(true)}
         />
       ) : (
@@ -90,12 +90,19 @@ export default function Subjects() {
         </Grid>
       )}
 
-      <Fab
-        onClick={() => { setEditing(null); setDialogOpen(true); }}
-        sx={{ position: 'fixed', bottom: { xs: 84, md: 28 }, right: 96, zIndex: 30, background: theme.custom.aurora, color: '#fff' }}
-      >
-        <FaPlus size={18} />
-      </Fab>
+      {/* Fixed FAB Button in Bottom Right Corner */}
+      {isUnlocked && (
+        <Fab
+          onClick={() => { setEditing(null); setDialogOpen(true); }}
+          sx={{
+            position: 'fixed', bottom: { xs: 78, md: 28 }, right: { xs: 20, md: 28 },
+            zIndex: 30, background: theme.custom.aurora, color: '#fff',
+            boxShadow: '0 8px 24px rgba(99,102,241,.4)'
+          }}
+        >
+          <FaPlus size={18} />
+        </Fab>
+      )}
 
       <AddSubjectDialog
         open={dialogOpen}

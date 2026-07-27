@@ -8,7 +8,7 @@ import {
   MdCheckCircle, MdCancel, MdListAlt, MdEventAvailable,
   MdArrowForward, MdSchool, MdTrendingUp, MdTrendingDown,
   MdStar, MdWarning, MdDoorBack, MdAdd, MdSchedule, MdLocationOn,
-  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory, MdInfo
+  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory, MdLock
 } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../components/GlassCard'
@@ -27,9 +27,38 @@ import {
   getTodayName
 } from '../utils/attendanceUtils'
 
+function getStartMinutes(timeRangeStr) {
+  try {
+    if (!timeRangeStr) return 0
+    const startStr = timeRangeStr.split('-')[0].trim()
+    const [timeVal, modifier] = startStr.split(' ')
+    let [hours, minutes] = timeVal.split(':').map(Number)
+    if (modifier === 'PM' && hours < 12) hours += 12
+    if (modifier === 'AM' && hours === 12) hours = 0
+    return hours * 60 + minutes
+  } catch (e) {
+    return 0
+  }
+}
+
+function parseEndTime(timeRangeStr) {
+  try {
+    const parts = timeRangeStr.split('-')
+    if (parts.length < 2) return null
+    const endStr = parts[1].trim()
+    const [timeVal, modifier] = endStr.split(' ')
+    let [hours, minutes] = timeVal.split(':').map(Number)
+    if (modifier === 'PM' && hours < 12) hours += 12
+    if (modifier === 'AM' && hours === 12) hours = 0
+    return { hours, minutes }
+  } catch (err) {
+    return null
+  }
+}
+
 export default function Dashboard() {
   const {
-    subjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader
+    subjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify
   } = useAttendance()
   
   const navigate = useNavigate()
@@ -47,6 +76,10 @@ export default function Dashboard() {
 
   const handleBunkSubmit = (e) => {
     e.preventDefault()
+    if (!isUnlocked) {
+      notify('Screen Locked! Please Login as Owner to log bunks 🔒', 'warning')
+      return
+    }
     if (!bunkSubjectId) return
     logBunkClass(bunkSubjectId, bunkReason)
     setBunkTab(1)
@@ -68,47 +101,58 @@ export default function Dashboard() {
       ? '☀️ Hope your afternoon classes are going great!' 
       : '🌙 Wishing you a peaceful evening & successful day completion!'
 
-  // ALL subjects sorted by % descending
   const topSubjects = useMemo(() =>
     [...subjects].sort((a, b) => getPercentage(b.present, b.total) - getPercentage(a.present, a.total)),
     [subjects]
   )
 
   const criticalSubjects = useMemo(() =>
-    subjects.filter(s => s.total > 0 && getPercentage(s.present, s.total) < 75),
+    subjects.filter(s => !s.isIgnored && s.total > 0 && getPercentage(s.present, s.total) < 75),
     [subjects]
   )
 
-  // ── Calculate Upcoming / Current Class Status ──
+  // ── Calculate Live Upcoming Class Status ──
   const upcomingClass = useMemo(() => {
+    const now = new Date()
+    const curMins = now.getHours() * 60 + now.getMinutes()
+
     const todaySlots = []
     subjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
-        if (slot.day === today) todaySlots.push({ subject: s, time: slot.time, period: slot.period })
+        if (slot.day === today) {
+          const endMins = parseEndTime(slot.time)
+          const startMins = getStartMinutes(slot.time)
+          todaySlots.push({ subject: s, time: slot.time, period: slot.period, startMins, endMins })
+        }
       })
     })
+    todaySlots.sort((a, b) => a.startMins - b.startMins)
 
-    if (todaySlots.length > 0) {
-      return { slot: todaySlots[0], dayLabel: `Today (${today})` }
+    const nextToday = todaySlots.find(s => !s.endMins || curMins < (s.endMins.hours * 60 + s.endMins.minutes))
+    if (nextToday) {
+      return { slot: nextToday, dayLabel: `Today (${today})` }
     }
 
     const todayIdx = WEEKDAYS.indexOf(today)
-    const nextDay = WEEKDAYS[(todayIdx + 1) % WEEKDAYS.length]
-    const nextSlots = []
-    subjects.forEach((s) => {
-      ;(s.timetable || []).forEach((slot) => {
-        if (slot.day === nextDay) nextSlots.push({ subject: s, time: slot.time, period: slot.period })
+    for (let offset = 1; offset <= 6; offset++) {
+      const nextDay = WEEKDAYS[(todayIdx + offset) % WEEKDAYS.length]
+      const nextSlots = []
+      subjects.forEach((s) => {
+        ;(s.timetable || []).forEach((slot) => {
+          if (slot.day === nextDay) {
+            nextSlots.push({ subject: s, time: slot.time, period: slot.period, startMins: getStartMinutes(slot.time) })
+          }
+        })
       })
-    })
-
-    if (nextSlots.length > 0) {
-      return { slot: nextSlots[0], dayLabel: `Next Class (${nextDay})` }
+      if (nextSlots.length > 0) {
+        nextSlots.sort((a, b) => a.startMins - b.startMins)
+        return { slot: nextSlots[0], dayLabel: `Upcoming (${nextDay})` }
+      }
     }
 
     return null
   }, [subjects, today])
 
-  // Get date-wise logs for selected subject modal
   const subjectLogs = useMemo(() => {
     if (!selectedSubjectHistory) return []
     return history.filter(h => h.subjectId === selectedSubjectHistory.id || h.subjectName === selectedSubjectHistory.name)
@@ -124,7 +168,6 @@ export default function Dashboard() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 2, minHeight: 150, position: 'relative', overflow: 'hidden'
         }}>
-          {/* Background blur orbs */}
           <Box sx={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', background: 'rgba(99,102,241,.15)', filter: 'blur(40px)', top: -40, right: 60, pointerEvents: 'none' }} />
           <Box sx={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', background: 'rgba(16,185,129,.12)', filter: 'blur(30px)', bottom: -20, left: 40, pointerEvents: 'none' }} />
 
@@ -158,10 +201,9 @@ export default function Dashboard() {
         </Box>
       </GlassCard>
 
-      {/* ── Overall Attendance & Upcoming Class Grid ── */}
+      {/* ── Overall Attendance & Live Upcoming Class Grid ── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
 
-        {/* Overall Attendance Widget */}
         <Grid item xs={12} md={5} lg={4}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <AuroraGauge percentage={stats.percentage} label="Overall Attendance" />
@@ -176,7 +218,6 @@ export default function Dashboard() {
           </GlassCard>
         </Grid>
 
-        {/* Live Upcoming Class Status Card */}
         <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
@@ -286,7 +327,6 @@ export default function Dashboard() {
           />
         </Grid>
 
-        {/* Bunked Classes Logger Card */}
         <Grid item xs={6} sm={3}>
           <GlassCard delay={.2} sx={{ p: 2.25, minHeight: 122, cursor: 'pointer' }} onClick={() => setBunkDialogOpen(true)}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -346,18 +386,20 @@ export default function Dashboard() {
                         background: `${statusColor}22`, border: `1px solid ${statusColor}44`
                       }}>
                         <Typography className="mono-num" variant="body2" sx={{ fontWeight: 800, color: statusColor, fontSize: '.85rem' }}>
-                          {pct.toFixed(1)}%
+                          {subject.isIgnored ? 'N/A' : `${pct.toFixed(1)}%`}
                         </Typography>
                       </Box>
                     </Box>
 
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(100, pct)}
-                      sx={{ height: 7, borderRadius: 8, bgcolor: 'rgba(148,163,184,.14)', mb: 1.25, '& .MuiLinearProgress-bar': { borderRadius: 8, background: `linear-gradient(90deg, ${colorStart}, ${colorEnd})` } }}
-                    />
+                    {!subject.isIgnored && (
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, pct)}
+                        sx={{ height: 7, borderRadius: 8, bgcolor: 'rgba(148,163,184,.14)', mb: 1.25, '& .MuiLinearProgress-bar': { borderRadius: 8, background: `linear-gradient(90deg, ${colorStart}, ${colorEnd})` } }}
+                      />
+                    )}
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: subject.isIgnored ? 2 : 0 }}>
                       <Box sx={{ display: 'flex', gap: 1.5 }}>
                         <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 700 }}>
                           ✓ {subject.present}
@@ -395,7 +437,7 @@ export default function Dashboard() {
                 </Typography>
               </Box>
               <Chip
-                label={`${getPercentage(selectedSubjectHistory.present, selectedSubjectHistory.total).toFixed(1)}%`}
+                label={selectedSubjectHistory.isIgnored ? 'Library' : `${getPercentage(selectedSubjectHistory.present, selectedSubjectHistory.total).toFixed(1)}%`}
                 sx={{ fontWeight: 800, bgcolor: 'rgba(16,185,129,.18)', color: '#10b981' }}
               />
             </DialogTitle>
@@ -406,7 +448,7 @@ export default function Dashboard() {
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, maxHeight: 340, overflowY: 'auto' }}>
                 {subjectLogs.length === 0 ? (
-                  <EmptyState icon="📅" title="No history logs recorded" subtitle="Attendance logs will appear here date-wise as you mark classes." />
+                  <EmptyState icon="📅" title="No history logs recorded" subtitle="Attendance logs will appear here date-wise as classes occur." />
                 ) : (
                   subjectLogs.map((log) => (
                     <Box
@@ -433,9 +475,11 @@ export default function Dashboard() {
                           </Typography>
                         </Box>
                       </Box>
-                      <IconButton size="small" onClick={() => deleteHistoryEntry(log.id)} sx={{ color: 'text.secondary', opacity: .7, '&:hover': { color: '#f43f5e' } }}>
-                        <MdDelete size={16} />
-                      </IconButton>
+                      {isUnlocked && (
+                        <IconButton size="small" onClick={() => deleteHistoryEntry(log.id)} sx={{ color: 'text.secondary', opacity: .7, '&:hover': { color: '#f43f5e' } }}>
+                          <MdDelete size={16} />
+                        </IconButton>
+                      )}
                     </Box>
                   ))
                 )}
@@ -508,9 +552,11 @@ export default function Dashboard() {
                         Reason: {b.reason} • Date: {b.date}
                       </Typography>
                     </Box>
-                    <IconButton size="small" onClick={() => deleteBunkClass(b.id)} sx={{ color: '#f43f5e' }}>
-                      <MdDelete size={18} />
-                    </IconButton>
+                    {isUnlocked && (
+                      <IconButton size="small" onClick={() => deleteBunkClass(b.id)} sx={{ color: '#f43f5e' }}>
+                        <MdDelete size={18} />
+                      </IconButton>
+                    )}
                   </Box>
                 ))
               )}
@@ -521,8 +567,13 @@ export default function Dashboard() {
         <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
           <Button onClick={() => setBunkDialogOpen(false)}>Close</Button>
           {bunkTab === 0 && (
-            <Button variant="contained" onClick={handleBunkSubmit} sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}>
-              Save Bunk Record
+            <Button
+              variant="contained"
+              onClick={handleBunkSubmit}
+              disabled={!isUnlocked}
+              sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}
+            >
+              {isUnlocked ? 'Save Bunk Record' : 'Login Required 🔒'}
             </Button>
           )}
         </DialogActions>
