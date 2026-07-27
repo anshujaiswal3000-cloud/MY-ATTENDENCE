@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   Box, Typography, Grid, Chip, LinearProgress, Button, Avatar,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -62,8 +62,6 @@ export default function Dashboard() {
   } = useAttendance()
   
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
-  useEffect(() => { const t = setTimeout(() => setLoading(false), 200); return () => clearTimeout(t) }, [])
 
   // Bunk Modal State
   const [bunkDialogOpen, setBunkDialogOpen] = useState(false)
@@ -213,7 +211,7 @@ export default function Dashboard() {
 
         <Grid item xs={12} md={5} lg={4}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <AuroraGauge percentage={stats.percentage} label={`${activeSemester} Attendance`} />
+            <AuroraGauge percentage={stats.percentage} label="Overall Attendance" />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, fontWeight: 600 }}>
               {stats.present} present out of {stats.total} total lectures
             </Typography>
@@ -225,7 +223,7 @@ export default function Dashboard() {
           </GlassCard>
         </Grid>
 
-        {/* 🌟 Upcoming Lecture Card (Sem 3 Active Timetable) 🌟 */}
+        {/* 🌟 Upcoming Lecture Card 🌟 */}
         <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>

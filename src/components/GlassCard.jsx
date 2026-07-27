@@ -3,18 +3,17 @@ import { useTheme } from '@mui/material/styles'
 import { motion } from 'framer-motion'
 
 /**
- * GlassCard — the base glassmorphism surface used throughout AttendX.
- * Wraps children in a blurred, translucent, rounded panel that adapts
- * to light/dark mode via theme.custom tokens.
+ * GlassCard — Ultra-fast glassmorphism surface.
+ * Optimized for instant tab switching & lightning performance.
  */
 export default function GlassCard({ children, sx = {}, delay = 0, ...props }) {
   const theme = useTheme()
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.12, ease: 'easeOut' }}
       style={{ height: '100%' }}
     >
       <div

@@ -1,6 +1,5 @@
 import React from 'react'
-import { Box, Snackbar, Alert } from '@mui/material'
-import { Slide } from '@mui/material'
+import { Box, Snackbar, Alert, Slide } from '@mui/material'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
@@ -21,14 +20,26 @@ export default function AppLayout() {
       </Box>
       <BottomNav />
 
+      {/* 🚀 Ultra-Fast Auto-Dismissing Toast Messages (1 Second Disappear) 🚀 */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={2600}
+        autoHideDuration={1000}
         onClose={closeSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         TransitionComponent={Slide}
+        sx={{ bottom: { xs: 72, md: 24 } }}
       >
-        <Alert onClose={closeSnackbar} severity={snackbar.severity} variant="filled" sx={{ borderRadius: '16px', boxShadow: '0 14px 36px rgba(0,0,0,.28)', px: 1 }}>
+        <Alert
+          onClose={closeSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{
+            borderRadius: '16px',
+            boxShadow: '0 14px 36px rgba(0,0,0,.28)',
+            px: 2, py: .5, fontWeight: 700, fontSize: '.82rem',
+            bgcolor: snackbar.severity === 'success' ? '#10b981' : snackbar.severity === 'warning' ? '#f59e0b' : snackbar.severity === 'error' ? '#f43f5e' : '#3b82f6'
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
