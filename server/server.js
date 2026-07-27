@@ -4,6 +4,12 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import mongoose from 'mongoose'
 import cors from 'cors'
+import dns from 'dns'
+
+// Fallback DNS resolution for SRV records
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1'])
+} catch (e) {}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -11,7 +17,7 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3000
 
-// MongoDB URI (defaults to user's MongoDB cluster)
+// MongoDB URI
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://anshujaiswal3000_db_user:WwRv7a5ovLjITBCU@cluster0.msyxzky.mongodb.net/attendx?retryWrites=true&w=majority'
 
 // Middleware
@@ -41,7 +47,7 @@ const userDataSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true })
 
-const UserData = mongoose.model('UserData', userDataSchema)
+const UserData = mongoose.models.UserData || mongoose.model('UserData', userDataSchema)
 
 // ── API ROUTES FOR MULTI-DEVICE CLOUD SYNC ──
 
@@ -81,7 +87,7 @@ app.post('/api/sync/:userId', async (req, res) => {
         timetableHeader: timetableHeader || {},
         updatedAt: new Date()
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     )
 
     res.json({ success: true, data: updated, message: 'Synced to MongoDB Cloud Database ✅' })
