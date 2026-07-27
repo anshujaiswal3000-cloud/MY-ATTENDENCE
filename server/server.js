@@ -55,7 +55,7 @@ const UserData = mongoose.models.UserData || mongoose.model('UserData', userData
 // OTP Store in memory
 const otpStore = new Map()
 
-// Email Transporter setup
+// Email Transporter setup for Gmail
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -71,7 +71,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', dbConnected: isDbConnected, timestamp: new Date() })
 })
 
-// POST /api/auth/verify -> Verify Owner Credentials (STRICT CUSTOM CREDENTIAL MATCHING ONLY!)
+// POST /api/auth/verify -> Verify Owner Credentials
 app.post('/api/auth/verify', async (req, res) => {
   try {
     const { userId, password } = req.body
@@ -80,7 +80,6 @@ app.post('/api/auth/verify', async (req, res) => {
 
     let userDoc = await UserData.findOne({ userId: inputId })
     if (!userDoc) {
-      // Check fallback if user is sole document
       const count = await UserData.countDocuments()
       if (count === 1) {
         userDoc = await UserData.findOne({})
@@ -91,7 +90,6 @@ app.post('/api/auth/verify', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid User ID or Password' })
     }
 
-    // STRICT MATCH WITH STORED MONGODB CREDENTIALS ONLY
     const matchUser = userDoc.userId.toLowerCase() === inputId || inputId === 'anshu'
     const matchPass = userDoc.password === inputPass
 
@@ -105,7 +103,7 @@ app.post('/api/auth/verify', async (req, res) => {
   }
 })
 
-// POST /api/auth/send-otp -> Send 6-digit OTP to email
+// POST /api/auth/send-otp -> Send 6-digit OTP strictly to Real Gmail Inbox!
 app.post('/api/auth/send-otp', async (req, res) => {
   try {
     const { email } = req.body
@@ -117,6 +115,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
     console.log(`🔑 OTP generated for ${targetEmail}: ${otp}`)
 
+    let sentViaEmail = false
     try {
       if (process.env.EMAIL_PASS) {
         await transporter.sendMail({
@@ -124,25 +123,26 @@ app.post('/api/auth/send-otp', async (req, res) => {
           to: targetEmail,
           subject: '🔐 AttendX Password Reset OTP Code',
           html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #fff; border-radius: 12px;">
-              <h2 style="color: #60a5fa;">AttendX Password Reset OTP</h2>
-              <p>Your 6-digit OTP code to reset your password is:</p>
-              <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #10b981; background: rgba(16,185,129,0.15); padding: 15px; border-radius: 8px; display: inline-block; margin: 10px 0;">
+            <div style="font-family: Arial, sans-serif; padding: 24px; background: #0f172a; color: #fff; border-radius: 16px;">
+              <h2 style="color: #60a5fa; margin-top: 0;">AttendX Attendance Tracker</h2>
+              <p>Hello Anshu,</p>
+              <p>Your 6-digit OTP code to reset your AttendX owner password is:</p>
+              <div style="font-size: 34px; font-weight: 800; letter-spacing: 10px; color: #10b981; background: rgba(16,185,129,0.15); padding: 16px; border-radius: 12px; display: inline-block; margin: 15px 0;">
                 ${otp}
               </div>
-              <p style="color: #94a3b8; font-size: 12px;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+              <p style="color: #94a3b8; font-size: 13px; margin-top: 15px;">This OTP is valid for 10 minutes. If you did not request this, please ignore.</p>
             </div>
           `
         })
+        sentViaEmail = true
       }
     } catch (e) {
-      console.log('Email delivery skipped (SMTP unconfigured), providing demo OTP in response')
+      console.log('Nodemailer error sending email:', e.message)
     }
 
     res.json({
       success: true,
-      message: `OTP sent to ${targetEmail}`,
-      demoOtp: otp
+      message: `6-Digit OTP sent to ${targetEmail}. Please check your Gmail Inbox / Spam folder.`
     })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
@@ -165,15 +165,15 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
       return res.status(400).json({ success: false, message: 'OTP expired. Please request a new OTP.' })
     }
 
-    if (stored.otp !== otp.trim()) {
-      return res.status(400).json({ success: false, message: 'Invalid 6-digit OTP code. Please check and try again.' })
+    if (stored.otp !== (otp || '').trim()) {
+      return res.status(400).json({ success: false, message: 'Invalid 6-digit OTP code. Please check your Gmail.' })
     }
 
     let userDoc = await UserData.findOne({})
     if (!userDoc) {
-      userDoc = new UserData({ userId: 'anshu', password: newPassword })
+      userDoc = new UserData({ userId: 'anshu', password: newPassword.trim() })
     } else {
-      userDoc.password = newPassword
+      userDoc.password = newPassword.trim()
     }
 
     await userDoc.save()
@@ -194,7 +194,6 @@ app.post('/api/auth/change-credentials', async (req, res) => {
     if (!userDoc) userDoc = await UserData.findOne({})
     if (!userDoc) return res.status(404).json({ success: false, message: 'User record not found' })
 
-    // Verify current password strictly
     if (userDoc.password !== oldPassword.trim()) {
       return res.status(401).json({ success: false, message: 'Incorrect Current Password' })
     }

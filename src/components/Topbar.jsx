@@ -91,11 +91,8 @@ export default function Topbar() {
       const json = await res.json()
       if (json.success) {
         setOtpStep(2)
-        setOtpMsg(`6-Digit OTP sent to ${email}`)
-        if (json.demoOtp) {
-          setOtpCode(json.demoOtp)
-          notify(`🔑 OTP sent to ${email} (Code: ${json.demoOtp})`, 'info')
-        }
+        setOtpMsg(`6-Digit OTP sent to ${email}. Please check your Gmail Inbox / Spam folder.`)
+        notify(`📧 6-Digit OTP sent to ${email}`, 'success')
       } else {
         setOtpError(json.message || 'Failed to send OTP')
       }
@@ -128,7 +125,7 @@ export default function Topbar() {
         setOtpCode('')
         setNewPassword('')
       } else {
-        setOtpError(json.message || 'Invalid OTP code')
+        setOtpError(json.message || 'Invalid OTP code. Please check your Gmail.')
       }
     } catch (err) {
       setOtpError('Network error during OTP verification')
@@ -366,7 +363,7 @@ export default function Topbar() {
         {/* 📧 Forgot Password & OTP Reset Dialog 📧 */}
         <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
           <DialogTitle sx={{ fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-            <MdEmail color="#60a5fa" /> Reset Password via Email OTP
+            <MdEmail color="#60a5fa" /> Reset Password via Gmail OTP
           </DialogTitle>
           <DialogContent>
             {otpMsg && <Alert severity="info" sx={{ mb: 2, borderRadius: '12px' }}>{otpMsg}</Alert>}
@@ -375,10 +372,10 @@ export default function Topbar() {
             {otpStep === 1 ? (
               <Box component="form" onSubmit={handleSendOtp} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Send a 6-digit OTP code to your registered email to reset your owner password.
+                  Send a 6-digit OTP code to your Gmail inbox to reset your password.
                 </Typography>
                 <TextField
-                  label="Registered Email Address"
+                  label="Registered Gmail Address"
                   type="email"
                   fullWidth
                   required
@@ -389,11 +386,11 @@ export default function Topbar() {
             ) : (
               <Box component="form" onSubmit={handleVerifyOtpReset} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Enter the 6-digit OTP code sent to <strong>{email}</strong> and your new password.
+                  Enter the 6-digit OTP code received in your <strong>Gmail Inbox / Spam folder ({email})</strong>:
                 </Typography>
                 <TextField
                   label="6-Digit OTP Code"
-                  placeholder="e.g. 742910"
+                  placeholder="Check Gmail Inbox"
                   fullWidth
                   required
                   value={otpCode}
@@ -421,7 +418,7 @@ export default function Topbar() {
             )}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-            <Button onClick={() => { setForgotOpen(false); setOtpStep(1); }}>Cancel</Button>
+            <Button onClick={() => { setForgotOpen(false); setOtpStep(1); setOtpCode(''); }}>Cancel</Button>
             {otpStep === 1 ? (
               <Button
                 variant="contained"
@@ -429,7 +426,7 @@ export default function Topbar() {
                 disabled={loadingOtp}
                 sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}
               >
-                {loadingOtp ? 'Sending OTP...' : 'Send 6-Digit OTP'}
+                {loadingOtp ? 'Sending OTP...' : 'Send OTP to Gmail'}
               </Button>
             ) : (
               <Button
