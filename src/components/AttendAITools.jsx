@@ -11,6 +11,55 @@ import { useAttendance } from '../context/AttendanceContext'
 import { getOverallStats, getPercentage, calculateBunkAdvice } from '../utils/attendanceUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
+function findMatchingSubject(queryStr, subjectsList) {
+  const q = queryStr.toLowerCase().trim()
+  if (!q) return null
+
+  // 1. Direct match on subject code or full name
+  const exact = subjectsList.find(s => 
+    s.name.toLowerCase() === q || (s.code && s.code.toLowerCase() === q)
+  )
+  if (exact) return exact
+
+  // 2. Alias / Keyword match
+  for (const s of subjectsList) {
+    const name = s.name.toLowerCase()
+    const code = (s.code || '').toLowerCase()
+
+    if ((q.includes('digital') || q.includes('dld') || q.includes('electronic')) && (name.includes('digital') || code.includes('dld') || name.includes('electronic'))) {
+      return s
+    }
+    if (q.includes('python') && name.includes('python')) {
+      return s
+    }
+    if ((q.includes('computer organization') || q.includes(' co ') || q.endsWith(' co') || q.startsWith('co ')) && (name.includes('computer organization') || code.includes('co'))) {
+      return s
+    }
+    if ((q.includes('math') || q.includes('m1') || q.includes('m2') || q.includes('m3')) && name.includes('math')) {
+      return s
+    }
+    if ((q.includes('structure') || q.includes('dsa') || q.includes(' ds ')) && (name.includes('structure') || name.includes('ds'))) {
+      return s
+    }
+    if ((q.includes('chem') || q.includes('chemistry')) && name.includes('chemistry')) {
+      return s
+    }
+    if ((q.includes('physics') || q.includes('phy')) && name.includes('physics')) {
+      return s
+    }
+  }
+
+  // 3. Fallback token inclusion match
+  const words = q.split(' ').filter(w => w.length > 2 && !['class', 'aaj', 'kal', 'toh', 'kitne', 'percent', 'attendance', 'ho', 'jayega', 'kru', 'na', 'kare', 'karein', 'karu', 'drop', 'miss', 'bunk', 'if', 'not'].includes(w))
+  
+  for (const w of words) {
+    const match = subjectsList.find(s => s.name.toLowerCase().includes(w) || (s.code && s.code.toLowerCase().includes(w)))
+    if (match) return match
+  }
+
+  return null
+}
+
 export default function AttendAITools() {
   const { subjects, history, bunks, settings } = useAttendance()
   const activeSemester = settings?.semester || 'Semester 3'
@@ -29,7 +78,6 @@ export default function AttendAITools() {
       const pct = getPercentage(sub.present, sub.total)
       const advice = calculateBunkAdvice(sub.present, sub.total, targetGoal)
       
-      // Calculate how many continuous classes to attend to reach targetGoal
       let requiredLectures = 0
       if (!sub.isIgnored && pct < targetGoal) {
         let p = sub.present
@@ -41,7 +89,6 @@ export default function AttendAITools() {
         }
       }
 
-      // Calculate how many continuous classes can be bunked while staying above targetGoal
       let safeBunks = 0
       if (!sub.isIgnored && pct >= targetGoal) {
         let p = sub.present
@@ -75,7 +122,7 @@ export default function AttendAITools() {
     return librarySubjects.reduce((acc, curr) => acc + (curr.present || 0), 0)
   }, [librarySubjects])
 
-  // Handle AI Assistant Prompt Query
+  // Ultra-Accurate Natural Language Simulation Handler
   const handleAiAsk = (e) => {
     e?.preventDefault()
     if (!query.trim()) return
@@ -85,31 +132,95 @@ export default function AttendAITools() {
 
     setTimeout(() => {
       const q = query.toLowerCase()
-      let answer = ''
+      const matchedSubject = findMatchingSubject(q, subjects)
 
-      if (q.includes('bunk') || q.includes('miss') || q.includes('absent')) {
-        const safeSubj = subjectAnalytics.filter(s => !s.isIgnored && s.safeBunks > 0)
-        if (safeSubj.length > 0) {
-          answer = `🤖 **AttendAI Bunk Analysis**: Aap in subjects mein safely bunk kar sakte ho: ${safeSubj.map(s => `${s.name} (${s.safeBunks} classes)`).join(', ')} while keeping attendance above ${targetGoal}%!`
+      const isBunkAction = q.includes('na') || q.includes('nhi') || q.includes('bunk') || q.includes('miss') || q.includes('absent') || q.includes('chhod') || q.includes('skip') || q.includes('leave')
+
+      if (matchedSubject) {
+        const isLab = matchedSubject.isLab || matchedSubject.name.toLowerCase().includes('lab')
+        const count = isLab ? 2 : 1
+
+        if (isBunkAction) {
+          // Bunk / Miss scenario calculation
+          const newSubjP = matchedSubject.present
+          const newSubjT = matchedSubject.total + count
+          const curSubjPct = getPercentage(matchedSubject.present, matchedSubject.total)
+          const newSubjPct = getPercentage(newSubjP, newSubjT)
+
+          const newOverallP = stats.present
+          const newOverallT = stats.total + count
+          const newOverallPct = getPercentage(newOverallP, newOverallT)
+
+          setAiResponse({
+            type: 'simulation',
+            subjectName: matchedSubject.name,
+            action: 'bunk',
+            curSubjPct,
+            newSubjPct,
+            newSubjP,
+            newSubjT,
+            curOverallPct: stats.percentage,
+            newOverallPct,
+            newOverallP,
+            newOverallT,
+            safe: newOverallPct >= targetGoal
+          })
         } else {
-          answer = `🤖 **AttendAI Warning**: Abhi kisi subject mein extra bunk safe nahi hai. Current attendance ${stats.percentage.toFixed(1)}% hai, target goal ${targetGoal}% tak pahocho!`
+          // Attend / Present scenario calculation
+          const newSubjP = matchedSubject.present + count
+          const newSubjT = matchedSubject.total + count
+          const curSubjPct = getPercentage(matchedSubject.present, matchedSubject.total)
+          const newSubjPct = getPercentage(newSubjP, newSubjT)
+
+          const newOverallP = stats.present + count
+          const newOverallT = stats.total + count
+          const newOverallPct = getPercentage(newOverallP, newOverallT)
+
+          setAiResponse({
+            type: 'simulation',
+            subjectName: matchedSubject.name,
+            action: 'attend',
+            curSubjPct,
+            newSubjPct,
+            newSubjP,
+            newSubjT,
+            curOverallPct: stats.percentage,
+            newOverallPct,
+            newOverallP,
+            newOverallT,
+            safe: newOverallPct >= targetGoal
+          })
         }
+      } else if (q.includes('bunk') || q.includes('miss') || q.includes('absent')) {
+        const safeSubj = subjectAnalytics.filter(s => !s.isIgnored && s.safeBunks > 0)
+        setAiResponse({
+          type: 'text',
+          content: safeSubj.length > 0
+            ? `🤖 **AttendAI Bunk Analysis**: Aap in subjects mein safely bunk kar sakte ho: ${safeSubj.map(s => `${s.name} (${s.safeBunks} classes)`).join(', ')} while keeping attendance above ${targetGoal}%!`
+            : `🤖 **AttendAI Warning**: Abhi kisi subject mein extra bunk safe nahi hai. Current attendance ${stats.percentage.toFixed(1)}% hai, target goal ${targetGoal}% tak pahocho!`
+        })
       } else if (q.includes('target') || q.includes('75') || q.includes('80') || q.includes('reach')) {
         const lowSubj = subjectAnalytics.filter(s => !s.isIgnored && s.requiredLectures > 0)
-        if (lowSubj.length > 0) {
-          answer = `🤖 **AttendAI Goal Predictor**: Target ${targetGoal}% hit karne ke liye in classes ko continuously attend karo: ${lowSubj.map(s => `${s.name} (+${s.requiredLectures} lectures)`).join(', ')}!`
-        } else {
-          answer = `🤖 **AttendAI Celebration**: Woohoo! Aapke saare subjects already ${targetGoal}% Target Goal ke upar hain!`
-        }
+        setAiResponse({
+          type: 'text',
+          content: lowSubj.length > 0
+            ? `🤖 **AttendAI Goal Predictor**: Target ${targetGoal}% hit karne ke liye in classes ko continuously attend karo: ${lowSubj.map(s => `${s.name} (+${s.requiredLectures} lectures)`).join(', ')}!`
+            : `🤖 **AttendAI Celebration**: Woohoo! Aapke saare subjects already ${targetGoal}% Target Goal ke upar hain!`
+        })
       } else if (q.includes('library')) {
-        answer = `📚 **Library Attendance Summary**: Abhi tak total **${libraryTotalSessions} Library Sessions** record huye hain (${libraryPresentSessions} Attended) across ${librarySubjects.length} library slots.`
+        setAiResponse({
+          type: 'text',
+          content: `📚 **Library Attendance Summary**: Abhi tak total **${libraryTotalSessions} Library Sessions** record huye hain (${libraryPresentSessions} Attended) across ${librarySubjects.length} library slots.`
+        })
       } else {
-        answer = `🤖 **AttendAI Live Overview**: Total Attendance ${stats.percentage.toFixed(1)}% (${stats.present}/${stats.total} lectures) in ${activeSemester}. Overall Status: ${stats.percentage >= targetGoal ? '✅ On Track' : '⚠️ Warning Area'}.`
+        setAiResponse({
+          type: 'text',
+          content: `🤖 **AttendAI Live Overview**: Total Attendance ${stats.percentage.toFixed(1)}% (${stats.present}/${stats.total} lectures) in ${activeSemester}. Overall Status: ${stats.percentage >= targetGoal ? '✅ On Track' : '⚠️ Warning Area'}.`
+        })
       }
 
-      setAiResponse(answer)
       setLoadingAi(false)
-    }, 400)
+    }, 300)
   }
 
   return (
@@ -123,10 +234,10 @@ export default function AttendAITools() {
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-              AttendAI Real-Time Assistant
+              AttendAI Real-Time Assistant & Predictor
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Ask AI about safe bunks, target goals, or attendance predictions using real cloud data
+              Poocho: "agr mai digital electronic ki class aaj na kru toh kitne % attendance ho jayega?"
             </Typography>
           </Box>
         </Box>
@@ -134,6 +245,7 @@ export default function AttendAITools() {
         {/* Quick Suggestion Chips */}
         <Box sx={{ display: 'flex', gap: 1, my: 1.5, flexWrap: 'wrap' }}>
           {[
+            'agr mai digital electronic ki class aaj na kru toh kitne % attendance ho jayega?',
             'Kin-kin subjects mein safe bunks hain?',
             '75% target pahochnay ke liye kitni classes chahiye?',
             'Library classes count kitne hue hain?'
@@ -156,7 +268,7 @@ export default function AttendAITools() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Ask AttendAI anything about your attendance..."
+            placeholder="Ask anything in Hinglish or English..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -166,16 +278,78 @@ export default function AttendAITools() {
             disabled={loadingAi || !query.trim()}
             sx={{ background: 'var(--aurora)', borderRadius: '12px', px: 2.5, flexShrink: 0 }}
           >
-            {loadingAi ? 'Analyzing...' : <MdSend size={18} />}
+            {loadingAi ? 'Calculating...' : <MdSend size={18} />}
           </Button>
         </Box>
 
         {/* AI Answer Box */}
         {aiResponse && (
-          <Box sx={{ mt: 2, p: 2, borderRadius: '16px', bgcolor: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: '#e0e7ff', lineHeight: 1.5 }}>
-              {aiResponse}
-            </Typography>
+          <Box sx={{ mt: 2, p: 2.25, borderRadius: '16px', bgcolor: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)' }}>
+            {aiResponse.type === 'simulation' ? (
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#a5b4fc', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <MdAutoAwesome color="#34d399" /> AttendAI Real-Time Simulation Result
+                </Typography>
+                
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#fff', mb: 1.5 }}>
+                  Agar aap aaj <strong>{aiResponse.subjectName}</strong> ki class {aiResponse.action === 'bunk' ? 'bunk karte hain (Absent)' : 'attend karte hain (Present)'}:
+                </Typography>
+
+                <Grid container spacing={1.5}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>
+                        SUBJECT ATTENDANCE ({aiResponse.subjectName})
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: .5 }}>
+                        <Typography className="mono-num" variant="body2" sx={{ opacity: .6, textDecoration: 'line-through' }}>
+                          {aiResponse.curSubjPct.toFixed(1)}%
+                        </Typography>
+                        <Typography className="mono-num" variant="h6" sx={{ fontWeight: 800, color: aiResponse.action === 'bunk' ? '#f43f5e' : '#34d399' }}>
+                          ➔ {aiResponse.newSubjPct.toFixed(1)}%
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        ({aiResponse.newSubjP}/{aiResponse.newSubjT} lectures)
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>
+                        OVERALL ATTENDANCE IMPACT
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: .5 }}>
+                        <Typography className="mono-num" variant="body2" sx={{ opacity: .6, textDecoration: 'line-through' }}>
+                          {aiResponse.curOverallPct.toFixed(1)}%
+                        </Typography>
+                        <Typography className="mono-num" variant="h6" sx={{ fontWeight: 800, color: aiResponse.safe ? '#34d399' : '#f43f5e' }}>
+                          ➔ {aiResponse.newOverallPct.toFixed(1)}%
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        ({aiResponse.newOverallP}/{aiResponse.newOverallT} total lectures)
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                <Chip
+                  size="small"
+                  label={aiResponse.safe ? `✅ Target Safe (≥ ${targetGoal}%)` : `⚠️ Target Warning (< ${targetGoal}%)`}
+                  sx={{
+                    mt: 1.5, fontWeight: 800, fontSize: '.72rem',
+                    bgcolor: aiResponse.safe ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)',
+                    color: aiResponse.safe ? '#34d399' : '#fb7185'
+                  }}
+                />
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#e0e7ff', lineHeight: 1.5 }}>
+                {aiResponse.content}
+              </Typography>
+            )}
           </Box>
         )}
       </GlassCard>
