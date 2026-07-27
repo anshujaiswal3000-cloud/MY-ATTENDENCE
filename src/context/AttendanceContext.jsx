@@ -26,12 +26,12 @@ function seedHistory() {
   return generateSeedHistory(seedSubjects())
 }
 
-/** Parses end time from range like "09:00 AM - 09:50 AM" or "11:30 AM - 01:10 PM" */
+/** Parses end time from range like "09:00 AM - 09:50 AM" */
 function parseEndTime(timeRangeStr) {
   try {
     const parts = timeRangeStr.split('-')
     if (parts.length < 2) return null
-    const endStr = parts[1].trim() // "09:50 AM" or "01:10 PM"
+    const endStr = parts[1].trim()
     const [timeVal, modifier] = endStr.split(' ')
     let [hours, minutes] = timeVal.split(':').map(Number)
 
@@ -67,6 +67,7 @@ export function AttendanceProvider({ children }) {
 
   const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.settings, DEFAULT_SETTINGS)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+  const [dbSynced, setDbSynced] = useState(false)
 
   const notify = useCallback((message, severity = 'success') => {
     setSnackbar({ open: true, message, severity })
@@ -74,6 +75,58 @@ export function AttendanceProvider({ children }) {
 
   const closeSnackbar = useCallback(() => {
     setSnackbar((s) => ({ ...s, open: false }))
+  }, [])
+
+  // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──
+  const pushToCloud = useCallback(async (overrides = {}) => {
+    try {
+      const payload = {
+        subjects: overrides.subjects || subjects,
+        history: overrides.history || history,
+        bunks: overrides.bunks || bunks,
+        notes: overrides.notes || notes,
+        settings: overrides.settings || settings,
+        timetableHeader: overrides.timetableHeader || timetableHeader
+      }
+      const res = await fetch('/api/sync/anshu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (res.ok) {
+        setDbSynced(true)
+      }
+    } catch (err) {
+      setDbSynced(false)
+    }
+  }, [subjects, history, bunks, notes, settings, timetableHeader])
+
+  const pullFromCloud = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sync/anshu')
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && json.data) {
+          const cloud = json.data
+          if (cloud.subjects && cloud.subjects.length > 0) setSubjects(cloud.subjects)
+          if (cloud.history) setHistory(cloud.history)
+          if (cloud.bunks) setBunks(cloud.bunks)
+          if (cloud.notes) setNotes(cloud.notes)
+          if (cloud.settings) setSettings(cloud.settings)
+          if (cloud.timetableHeader) setTimetableHeader(cloud.timetableHeader)
+          setDbSynced(true)
+        }
+      }
+    } catch (err) {
+      setDbSynced(false)
+    }
+  }, [setSubjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader])
+
+  // Pull from MongoDB on initial mount & poll every 10 seconds for multi-device sync!
+  useEffect(() => {
+    pullFromCloud()
+    const timer = setInterval(pullFromCloud, 10000)
+    return () => clearInterval(timer)
   }, [])
 
   // Lock / Unlock Owner access
@@ -92,11 +145,12 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent - Date Only */
+  /** Mark a subject Present or Absent - Instant Cloud Sync */
   const markAttendance = useCallback((subjectId, status) => {
     let subjectName = ''
-    setSubjects((prev) =>
-      prev.map((s) => {
+    let newSubjects = []
+    setSubjects((prev) => {
+      newSubjects = prev.map((s) => {
         if (s.id !== subjectId) return s
         subjectName = s.name
         if (status === 'present') {
@@ -107,7 +161,9 @@ export function AttendanceProvider({ children }) {
           return { ...s, present: newPresent, total: newTotal }
         }
       })
-    )
+      return newSubjects
+    })
+
     const now = new Date()
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
     const entry = {
@@ -115,14 +171,21 @@ export function AttendanceProvider({ children }) {
       subjectId,
       subjectName,
       status,
-      date: dateFormatted, // Date only e.g. 27/07/2026
+      date: dateFormatted,
       timestamp: now.getTime(),
     }
-    setHistory((prev) => [entry, ...prev])
-    notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
-  }, [setSubjects, setHistory, notify])
 
-  // Log a Bunked Class (Personal opinion tracker)
+    let newHistory = []
+    setHistory((prev) => {
+      newHistory = [entry, ...prev]
+      return newHistory
+    })
+
+    notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
+    pushToCloud({ subjects: newSubjects, history: newHistory })
+  }, [setSubjects, setHistory, notify, pushToCloud])
+
+  // Log a Bunked Class (Personal opinion tracker - Instant Cloud Sync)
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     let subjectName = ''
     const sub = subjects.find(s => s.id === subjectId)
@@ -138,14 +201,26 @@ export function AttendanceProvider({ children }) {
       date: dateFormatted,
       timestamp: now.getTime()
     }
-    setBunks((prev) => [bunkEntry, ...prev])
+
+    let newBunks = []
+    setBunks((prev) => {
+      newBunks = [bunkEntry, ...prev]
+      return newBunks
+    })
+
     notify(`Personal Bunk logged for ${subjectName || 'Class'} 🚪`, 'info')
-  }, [subjects, setBunks, notify])
+    pushToCloud({ bunks: newBunks })
+  }, [subjects, setBunks, notify, pushToCloud])
 
   const deleteBunkClass = useCallback((id) => {
-    setBunks((prev) => prev.filter((b) => b.id !== id))
+    let newBunks = []
+    setBunks((prev) => {
+      newBunks = prev.filter((b) => b.id !== id)
+      return newBunks
+    })
     notify('Bunk record removed', 'info')
-  }, [setBunks, notify])
+    pushToCloud({ bunks: newBunks })
+  }, [setBunks, notify, pushToCloud])
 
   // ── AUTO ATTENDANCE ENGINE ──
   useEffect(() => {
@@ -188,6 +263,7 @@ export function AttendanceProvider({ children }) {
               setHistory((prev) => [logEntry, ...prev])
               setAutoLoggedSlots((prev) => [...prev, slotKey])
               notify(`⏰ Auto-logged Present for ${subj.name}`, 'success')
+              pushToCloud()
             }
           }
         })
@@ -197,25 +273,37 @@ export function AttendanceProvider({ children }) {
     checkAutoAttendance()
     const timer = setInterval(checkAutoAttendance, 30000)
     return () => clearInterval(timer)
-  }, [subjects, autoLoggedSlots, settings.autoAttendance, setSubjects, setHistory, setAutoLoggedSlots, notify])
+  }, [subjects, autoLoggedSlots, settings.autoAttendance, setSubjects, setHistory, setAutoLoggedSlots, notify, pushToCloud])
 
   const addSubject = useCallback((data) => {
     const subject = buildSubject(data)
-    setSubjects((prev) => [...prev, subject])
+    setSubjects((prev) => {
+      const next = [...prev, subject]
+      pushToCloud({ subjects: next })
+      return next
+    })
     notify('Subject added')
     return subject.id
-  }, [setSubjects, notify])
+  }, [setSubjects, notify, pushToCloud])
 
   const updateSubject = useCallback((id, updates) => {
-    setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)))
+    setSubjects((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+      pushToCloud({ subjects: next })
+      return next
+    })
     notify('Subject updated')
-  }, [setSubjects, notify])
+  }, [setSubjects, notify, pushToCloud])
 
   const deleteSubject = useCallback((id) => {
-    setSubjects((prev) => prev.filter((s) => s.id !== id))
+    setSubjects((prev) => {
+      const next = prev.filter((s) => s.id !== id)
+      pushToCloud({ subjects: next })
+      return next
+    })
     setHistory((prev) => prev.filter((h) => h.subjectId !== id))
     notify('Subject deleted', 'info')
-  }, [setSubjects, setHistory, notify])
+  }, [setSubjects, setHistory, notify, pushToCloud])
 
   const addNote = useCallback((noteData) => {
     const newNote = {
@@ -223,20 +311,30 @@ export function AttendanceProvider({ children }) {
       completed: false,
       ...noteData,
     }
-    setNotes((prev) => [newNote, ...prev])
+    setNotes((prev) => {
+      const next = [newNote, ...prev]
+      pushToCloud({ notes: next })
+      return next
+    })
     notify('Note added')
-  }, [setNotes, notify])
+  }, [setNotes, notify, pushToCloud])
 
   const toggleNoteComplete = useCallback((id) => {
-    setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, completed: !n.completed } : n))
-    )
-  }, [setNotes])
+    setNotes((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, completed: !n.completed } : n))
+      pushToCloud({ notes: next })
+      return next
+    })
+  }, [setNotes, pushToCloud])
 
   const deleteNote = useCallback((id) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id))
+    setNotes((prev) => {
+      const next = prev.filter((n) => n.id !== id)
+      pushToCloud({ notes: next })
+      return next
+    })
     notify('Note deleted', 'info')
-  }, [setNotes, notify])
+  }, [setNotes, notify, pushToCloud])
 
   const resetAttendance = useCallback(() => {
     setSubjects((prev) => prev.map((s) => ({ ...s, present: 0, total: 0 })))
@@ -244,12 +342,17 @@ export function AttendanceProvider({ children }) {
     setBunks([])
     setAutoLoggedSlots([])
     notify('Attendance reset', 'info')
-  }, [setSubjects, setHistory, setBunks, setAutoLoggedSlots, notify])
+    pushToCloud({ subjects: defaultSubjects.map(s => buildSubject(s, s.id)), history: [], bunks: [] })
+  }, [setSubjects, setHistory, setBunks, setAutoLoggedSlots, notify, pushToCloud])
 
   const updateTimetable = useCallback((subjectId, timetable) => {
-    setSubjects((prev) => prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s)))
+    setSubjects((prev) => {
+      const next = prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
+      pushToCloud({ subjects: next })
+      return next
+    })
     notify('Timetable updated')
-  }, [setSubjects, notify])
+  }, [setSubjects, notify, pushToCloud])
 
   const exportData = useCallback(() => {
     const data = collectAllData()
@@ -264,27 +367,8 @@ export function AttendanceProvider({ children }) {
     if (data.settings) setSettings(data.settings)
     if (data.notes) setNotes(data.notes)
     notify('Data imported — reloaded from backup')
-  }, [setSubjects, setHistory, setSettings, setNotes, notify])
-
-  const backup = useCallback(() => {
-    const data = collectAllData()
-    window.localStorage.setItem(STORAGE_KEYS.backup, JSON.stringify(data))
-    notify('Backup saved locally')
-  }, [notify])
-
-  const restoreBackup = useCallback(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEYS.backup)
-    if (!raw) {
-      notify('No backup found', 'error')
-      return
-    }
-    const data = JSON.parse(raw)
-    if (data.subjects) setSubjects(data.subjects)
-    if (data.history) setHistory(data.history)
-    if (data.settings) setSettings(data.settings)
-    if (data.notes) setNotes(data.notes)
-    notify('Backup restored')
-  }, [setSubjects, setHistory, setSettings, setNotes, notify])
+    pushToCloud(data)
+  }, [setSubjects, setHistory, setSettings, setNotes, notify, pushToCloud])
 
   const value = useMemo(() => ({
     subjects,
@@ -293,6 +377,7 @@ export function AttendanceProvider({ children }) {
     notes,
     settings,
     isUnlocked,
+    dbSynced,
     timetableHeader,
     setTimetableHeader,
     setSettings,
@@ -314,14 +399,14 @@ export function AttendanceProvider({ children }) {
     updateTimetable,
     exportData,
     importData,
-    backup,
-    restoreBackup,
+    pushToCloud,
+    pullFromCloud,
   }), [
-    subjects, history, bunks, notes, settings, isUnlocked, timetableHeader,
+    subjects, history, bunks, notes, settings, isUnlocked, dbSynced, timetableHeader,
     setTimetableHeader, snackbar, notify, closeSnackbar, unlockApp, lockApp,
     markAttendance, logBunkClass, deleteBunkClass, addSubject, updateSubject, deleteSubject,
     addNote, toggleNoteComplete, deleteNote, resetAttendance, updateTimetable, exportData, importData,
-    backup, restoreBackup, setSettings
+    pushToCloud, pullFromCloud, setSettings
   ])
 
   return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>

@@ -4,7 +4,7 @@ import {
   Chip, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Alert
 } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified } from 'react-icons/md'
+import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdCloudDone, MdCloudOff } from 'react-icons/md'
 import confetti from 'canvas-confetti'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
@@ -18,7 +18,7 @@ export default function Topbar() {
   const theme = useTheme()
   const location = useLocation()
   const current = NAV_ITEMS.find((n) => n.path === location.pathname)
-  const { subjects, isUnlocked, unlockApp, lockApp, bunks } = useAttendance()
+  const { subjects, isUnlocked, unlockApp, lockApp, bunks, dbSynced } = useAttendance()
   const stats = getOverallStats(subjects)
 
   // Profile popover
@@ -87,6 +87,20 @@ export default function Topbar() {
 
       {/* Right Actions */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+        {/* MongoDB Cloud Sync Indicator */}
+        <Tooltip title={dbSynced ? "Live MongoDB Cloud Synced (Phone & Laptop connected)" : "Local Storage Mode"}>
+          <Chip
+            icon={dbSynced ? <MdCloudDone size={14} color="#10b981" /> : <MdCloudOff size={14} color="#f59e0b" />}
+            label={dbSynced ? "Cloud Live" : "Local"}
+            size="small"
+            sx={{
+              bgcolor: dbSynced ? 'rgba(16,185,129,.16)' : 'rgba(245,158,11,.16)',
+              color: dbSynced ? '#10b981' : '#f59e0b',
+              fontWeight: 700, fontSize: '.68rem', px: .3
+            }}
+          />
+        </Tooltip>
 
         {/* Lock / Unlock Toggle Button */}
         {isUnlocked ? (
@@ -213,6 +227,9 @@ export default function Topbar() {
             </Typography>
             <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 700, display: 'block', mt: .5 }}>
               🚪 Personal Bunks Logged: {bunks.length}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 700, display: 'block', mt: .2 }}>
+              ☁️ MongoDB Cloud: {dbSynced ? 'Connected & Synced' : 'Connecting...'}
             </Typography>
           </Box>
         </Popover>
