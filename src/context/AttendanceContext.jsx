@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage'
 import { STORAGE_KEYS, collectAllData, downloadJSON, applyImportedData } from '../utils/storageUtils'
-import { defaultSubjects, buildSubject, DEFAULT_TIMETABLE_HEADER } from '../data/defaultSubjects'
+import { defaultSubjects, buildSubject, DEFAULT_TIMETABLE_HEADER, generateSeedHistory } from '../data/defaultSubjects'
 import { getTodayName, WEEKDAYS } from '../utils/attendanceUtils'
 
 const AttendanceContext = createContext(null)
@@ -20,6 +20,10 @@ const DEFAULT_SETTINGS = {
 
 function seedSubjects() {
   return defaultSubjects.map((s) => buildSubject(s))
+}
+
+function seedHistory() {
+  return generateSeedHistory(seedSubjects())
 }
 
 /** Parses end time from range like "09:00 AM - 09:50 AM" or "11:30 AM - 01:10 PM" */
@@ -42,7 +46,7 @@ function parseEndTime(timeRangeStr) {
 
 export function AttendanceProvider({ children }) {
   const [subjects, setSubjects] = useLocalStorage(STORAGE_KEYS.subjects, seedSubjects())
-  const [history, setHistory] = useLocalStorage(STORAGE_KEYS.history, [])
+  const [history, setHistory] = useLocalStorage(STORAGE_KEYS.history, seedHistory())
   const [bunks, setBunks] = useLocalStorage('attendx_bunks', [])
   const [autoLoggedSlots, setAutoLoggedSlots] = useLocalStorage('attendx_auto_logged_slots', [])
   const [isUnlocked, setIsUnlocked] = useLocalStorage('attendx_is_unlocked', true)
@@ -56,7 +60,7 @@ export function AttendanceProvider({ children }) {
       subjectName: 'Digital Logic Design (BOE-310)',
       category: 'Assignment',
       content: 'Complete K-Map minimization problems 1 to 5.',
-      date: 'Jul 26, 2026',
+      date: '26/07/2026',
       completed: false
     }
   ])
@@ -88,7 +92,7 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent */
+  /** Mark a subject Present or Absent - Date Only */
   const markAttendance = useCallback((subjectId, status) => {
     let subjectName = ''
     setSubjects((prev) =>
@@ -105,32 +109,33 @@ export function AttendanceProvider({ children }) {
       })
     )
     const now = new Date()
+    const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
     const entry = {
       id: `log_${Math.random().toString(36).slice(2, 10)}`,
       subjectId,
       subjectName,
       status,
-      date: now.toISOString().slice(0, 10),
-      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: dateFormatted, // Date only e.g. 27/07/2026
       timestamp: now.getTime(),
     }
     setHistory((prev) => [entry, ...prev])
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
   }, [setSubjects, setHistory, notify])
 
-  // Log a Bunked Class (Purely personal opinion tracker - DOES NOT linked/alter attendance counters)
+  // Log a Bunked Class (Personal opinion tracker)
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     let subjectName = ''
     const sub = subjects.find(s => s.id === subjectId)
     if (sub) subjectName = sub.name
     
     const now = new Date()
+    const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
     const bunkEntry = {
       id: `bunk_${Math.random().toString(36).slice(2, 10)}`,
       subjectId,
       subjectName,
       reason,
-      date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      date: dateFormatted,
       timestamp: now.getTime()
     }
     setBunks((prev) => [bunkEntry, ...prev])
@@ -149,7 +154,7 @@ export function AttendanceProvider({ children }) {
     const checkAutoAttendance = () => {
       const now = new Date()
       const todayName = getTodayName()
-      const todayDateKey = now.toISOString().slice(0, 10)
+      const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
       const curHours = now.getHours()
       const curMins = now.getMinutes()
 
@@ -163,7 +168,7 @@ export function AttendanceProvider({ children }) {
           const classEnded = curHours > endTime.hours || (curHours === endTime.hours && curMins >= endTime.minutes)
 
           if (classEnded) {
-            const slotKey = `${todayDateKey}_${subj.id}_${slot.time}`
+            const slotKey = `${dateFormatted}_${subj.id}_${slot.time}`
 
             if (!autoLoggedSlots.includes(slotKey)) {
               setSubjects((prev) =>
@@ -176,14 +181,13 @@ export function AttendanceProvider({ children }) {
                 subjectName: subj.name,
                 status: 'present',
                 auto: true,
-                date: todayDateKey,
-                time: slot.time,
+                date: dateFormatted,
                 timestamp: now.getTime()
               }
 
               setHistory((prev) => [logEntry, ...prev])
               setAutoLoggedSlots((prev) => [...prev, slotKey])
-              notify(`⏰ Auto-logged Present for ${subj.name} (${slot.time})`, 'success')
+              notify(`⏰ Auto-logged Present for ${subj.name}`, 'success')
             }
           }
         })

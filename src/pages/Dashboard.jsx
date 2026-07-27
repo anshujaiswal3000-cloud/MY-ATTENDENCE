@@ -426,7 +426,7 @@ export default function Dashboard() {
                         </Box>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                            {log.date} {log.time ? `• ${log.time}` : ''}
+                            {log.date}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             Status: <strong style={{ color: log.status === 'present' ? '#10b981' : '#f43f5e' }}>{log.status.toUpperCase()}</strong> {log.auto ? '(Auto-logged)' : ''}

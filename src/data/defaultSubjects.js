@@ -1,6 +1,8 @@
 // UCER CSE 2nd Year (Sec B) Official Timetable & Subject Data
 // Facilitator: AJAI KUMAR MAURYA (Room D104, W.E.F 26/07/2026)
 // Aligned with official ERP Portal data (student.icampuserp.in)
+// Classes Start Date: 14/07/2026 (Tue)
+// Holidays: Every Sunday, 1st & 3rd Saturday of the month
 
 export const DEFAULT_TIMETABLE_HEADER = {
   title: 'United College CSE 2nd Year (Sec B) Timetable',
@@ -184,4 +186,50 @@ export function buildSubject(seed, idOverride) {
     timetable: seed.timetable || [],
     createdAt: Date.now(),
   }
+}
+
+/** Generates realistic ERP date-wise attendance logs from 14/07/2026 onwards */
+export function generateSeedHistory(subjectsList) {
+  const logs = []
+  const startDate = new Date(2026, 6, 14) // 14 July 2026 (Month 6 = July)
+  const endDate = new Date(2026, 6, 27)   // 27 July 2026
+
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const dayName = DAY_NAMES[d.getDay()]
+    const dateNum = d.getDate()
+    const dayOfWeek = d.getDay()
+
+    // Skip Sunday
+    if (dayOfWeek === 0) continue
+
+    // Check 1st & 3rd Saturday holidays
+    if (dayOfWeek === 6) {
+      const weekOfMonth = Math.ceil(dateNum / 7)
+      if (weekOfMonth === 1 || weekOfMonth === 3) continue // 1st or 3rd Saturday holiday
+    }
+
+    const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+
+    // Add entries for scheduled subjects on this day
+    subjectsList.forEach((subj) => {
+      ;(subj.timetable || []).forEach((slot) => {
+        if (slot.day === dayName) {
+          logs.push({
+            id: `log_${subj.code}_${formattedDate.replace(/\//g, '')}_${slot.period || 'P1'}`,
+            subjectId: subj.id,
+            subjectName: subj.name,
+            code: subj.code,
+            status: 'present',
+            date: formattedDate, // Format: 14/07/2026
+            timestamp: d.getTime()
+          })
+        }
+      })
+    })
+  }
+
+  // Reverse so newest date comes first
+  return logs.reverse()
 }
