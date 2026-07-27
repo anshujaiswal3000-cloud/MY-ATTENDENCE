@@ -7,6 +7,23 @@ import { getSubjectIcon } from '../utils/iconRegistry'
 import { useAttendance } from '../context/AttendanceContext'
 import { WEEKDAYS, getTodayName, getPercentage } from '../utils/attendanceUtils'
 
+/** Parses start minutes from range like "09:00 AM - 09:50 AM" -> 540 */
+function getStartMinutes(timeRangeStr) {
+  try {
+    if (!timeRangeStr) return 0
+    const startStr = timeRangeStr.split('-')[0].trim() // "09:00 AM"
+    const [timeVal, modifier] = startStr.split(' ')
+    let [hours, minutes] = timeVal.split(':').map(Number)
+
+    if (modifier === 'PM' && hours < 12) hours += 12
+    if (modifier === 'AM' && hours === 12) hours = 0
+
+    return hours * 60 + minutes
+  } catch (e) {
+    return 0
+  }
+}
+
 export default function Timetable() {
   const { subjects, markAttendance, isUnlocked, lockApp, timetableHeader } = useAttendance()
   const today = getTodayName()
@@ -15,7 +32,7 @@ export default function Timetable() {
   const activeDay = WEEKDAYS[tab]
   const isToday = activeDay === today
 
-  // Strict sorting by Period Order (P1 = 1, P2 = 2, ..., P9 = 9)
+  // Guaranteed chronological time sorting (09:00 AM -> 09:50 AM -> 10:40 AM -> 11:30 AM ...)
   const daySlots = useMemo(() => {
     const slots = []
     subjects.forEach((s) => {
@@ -25,12 +42,12 @@ export default function Timetable() {
             subject: s,
             time: slot.time,
             period: slot.period,
-            periodOrder: slot.periodOrder || 1
+            startMins: getStartMinutes(slot.time)
           })
         }
       })
     })
-    return slots.sort((a, b) => a.periodOrder - b.periodOrder)
+    return slots.sort((a, b) => a.startMins - b.startMins)
   }, [subjects, activeDay])
 
   const goLeft = () => {
@@ -47,15 +64,15 @@ export default function Timetable() {
   }
 
   return (
-    <Box sx={{ willChange: 'transform' }}>
-      {/* ── Official Timetable Header Banner (Responsive & Overflow-proof) ── */}
-      <GlassCard sx={{ p: { xs: 2.25, sm: 3 }, mb: 3, position: 'relative', overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+    <Box sx={{ pb: 4 }}>
+      {/* ── Header Banner (Overflow-Proof & Clean) ── */}
+      <GlassCard sx={{ p: { xs: 2, sm: 2.75 }, mb: 2.5, position: 'relative', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1 }}>
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-.01em', wordBreak: 'break-word', fontSize: { xs: '1.15rem', sm: '1.4rem' } }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-.01em', wordBreak: 'break-word', fontSize: { xs: '1.05rem', sm: '1.3rem' }, lineHeight: 1.25 }}>
               {timetableHeader.title}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: .5, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', fontSize: '.82rem' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mt: .75, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', fontSize: '.78rem' }}>
               <span>{timetableHeader.room}</span>
               <span>•</span>
               <span>W.E.F {timetableHeader.wef}</span>
@@ -65,21 +82,21 @@ export default function Timetable() {
           </Box>
 
           <Chip
-            icon={isUnlocked ? <MdLockOpen size={14} /> : <MdLock size={14} />}
+            icon={isUnlocked ? <MdLockOpen size={13} /> : <MdLock size={13} />}
             label={isUnlocked ? 'Editing' : 'Locked'}
             size="small"
             onClick={isUnlocked ? lockApp : undefined}
             sx={{
               bgcolor: isUnlocked ? 'rgba(96,165,250,.18)' : 'rgba(148,163,184,.14)',
               color: isUnlocked ? '#60a5fa' : 'text.secondary',
-              fontWeight: 700, fontSize: '.72rem', px: .5, flexShrink: 0
+              fontWeight: 700, fontSize: '.7rem', px: .5, flexShrink: 0
             }}
           />
         </Box>
       </GlassCard>
 
       {/* ── Day Selector Header ── */}
-      <GlassCard sx={{ p: 1.75, mb: 3 }}>
+      <GlassCard sx={{ p: 1.5, mb: 2.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
           <Button
             size="small"
@@ -135,9 +152,9 @@ export default function Timetable() {
         </Box>
 
         {/* Day title info */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(148,163,184,.12)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.5, pt: 1.25, borderTop: '1px solid rgba(148,163,184,.12)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
               {activeDay}
             </Typography>
             {isToday && <Chip label="Today" size="small" sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 700, fontSize: '.68rem' }} />}
@@ -153,7 +170,7 @@ export default function Timetable() {
         </Box>
       </GlassCard>
 
-      {/* ── Chronologically Sorted Lecture Cards List (P1 to P9) ── */}
+      {/* ── Chronologically Sorted Lecture Cards List (09:00 AM -> 09:50 AM -> 10:40 AM ...) ── */}
       {daySlots.length === 0 ? (
         <EmptyState icon="🗓️" title={`No lectures on ${activeDay}`} subtitle="Enjoy your free time or revise subject notes!" />
       ) : (

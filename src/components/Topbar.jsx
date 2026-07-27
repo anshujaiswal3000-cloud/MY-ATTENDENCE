@@ -5,6 +5,7 @@ import {
   TextField, Button, Alert
 } from '@mui/material'
 import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdEmojiEvents, MdAutoAwesome } from 'react-icons/md'
+import confetti from 'canvas-confetti'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import { useThemeMode } from '../context/ThemeContext'
@@ -22,10 +23,25 @@ export default function Topbar() {
 
   // Profile popover
   const [anchorEl, setAnchorEl] = useState(null)
+
   const openProfile = (e) => {
-    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([30, 50, 30])
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate([40, 60, 40])
+    
+    // 🎆 Fire Confetti / Fireworks Patakha Celebration if Attendance >= 90%!
+    if (stats.percentage >= 90) {
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 80,
+          origin: { x: 0.85, y: 0.12 },
+          colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+        })
+      } catch (err) {}
+    }
+
     setAnchorEl(e.currentTarget)
   }
+
   const closeProfile = () => setAnchorEl(null)
   const profileOpen = Boolean(anchorEl)
 
@@ -178,17 +194,17 @@ export default function Topbar() {
             </Box>
           </Box>
 
-          {/* 🌟 Special Congratulation Banner if Attendance >= 90% */}
+          {/* 🎆 Special Fireworks / Confetti Celebration Banner if Attendance >= 90% */}
           {isExcellent && (
-            <Box sx={{ p: 1.75, mx: 1.5, mt: 1.5, borderRadius: '14px', background: 'linear-gradient(135deg, rgba(16,185,129,.2), rgba(59,130,246,.2))', border: '1px solid rgba(16,185,129,.4)' }}>
+            <Box sx={{ p: 1.75, mx: 1.5, mt: 1.5, borderRadius: '14px', background: 'linear-gradient(135deg, rgba(16,185,129,.25), rgba(59,130,246,.25))', border: '1px solid rgba(16,185,129,.4)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: .3 }}>
-                <MdEmojiEvents size={20} color="#fbbf24" />
+                <MdEmojiEvents size={22} color="#fbbf24" />
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399', fontSize: '.85rem' }}>
-                  Congratulations Anshu! 🌟
+                  Fireworks Celebration! 🎆
                 </Typography>
               </Box>
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.4 }}>
-                Outstanding <strong>{stats.percentage.toFixed(1)}%</strong> attendance! You are setting an inspiration for the class!
+                Outstanding <strong>{stats.percentage.toFixed(1)}%</strong> attendance! Keeps you right at the top of the class!
               </Typography>
             </Box>
           )}
