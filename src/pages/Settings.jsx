@@ -15,6 +15,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { useThemeMode } from '../context/ThemeContext'
 import { useAttendance } from '../context/AttendanceContext'
 import { readJSONFile } from '../utils/storageUtils'
+import { triggerHaptic } from '../utils/hapticUtils'
 
 function SettingRow({ icon, title, subtitle, action }) {
   return (
@@ -36,7 +37,8 @@ export default function Settings() {
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
 
-  // Security section collapse state
+  // Collapsible states
+  const [semesterExpanded, setSemesterExpanded] = useState(false)
   const [securityExpanded, setSecurityExpanded] = useState(false)
 
   // Security Credentials form state
@@ -80,6 +82,7 @@ export default function Settings() {
 
   // Password verification wrapper for sensitive actions
   const requirePasswordThen = (actionFn) => {
+    triggerHaptic(20)
     setPendingAction(() => actionFn)
     setAuthPassword('')
     setAuthError('')
@@ -98,9 +101,11 @@ export default function Settings() {
       const json = await res.json()
       if (json.success) {
         setAuthDialogOpen(false)
+        triggerHaptic(30)
         if (pendingAction) pendingAction()
         setPendingAction(null)
       } else {
+        triggerHaptic([40, 60, 40])
         setAuthError('Incorrect password! Operation denied.')
       }
     } catch (err) {
@@ -110,6 +115,7 @@ export default function Settings() {
 
   const handleChangeCredentials = async (e) => {
     e.preventDefault()
+    triggerHaptic(20)
     setSecMsg('')
     setSecErr('')
     try {
@@ -120,10 +126,12 @@ export default function Settings() {
       })
       const json = await res.json()
       if (json.success) {
+        triggerHaptic(40)
         setSecMsg('Private User ID & Password updated in MongoDB Atlas Cloud 🔒')
         setOldPassword('')
         setNewPassword('')
       } else {
+        triggerHaptic([40, 60, 40])
         setSecErr(json.message || 'Failed to update credentials')
       }
     } catch (err) {
@@ -134,47 +142,85 @@ export default function Settings() {
   return (
     <Box sx={{ maxWidth: 640, pb: 4 }}>
 
-      {/* 🎓 Active Semester Selector 🎓 */}
-      <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: .5, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MdSchool color="#60a5fa" size={22} /> Select Active Semester Record
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-          Switch between Semester 1, 2 & 3 to view official ERP attendance records. Timetable & Upcoming Lecture retain Semester 3.
-        </Typography>
+      {/* 🎓 Collapsible Select Semester Card 🎓 */}
+      <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setSemesterExpanded(!semesterExpanded)
+          }}
+          sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer', userSelect: 'none'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 40, height: 40, borderRadius: '12px', display: 'grid', placeItems: 'center',
+              bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontSize: 22
+            }}>
+              <MdSchool />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                Select Semester (Active: {activeSemester})
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Tap to expand and choose between Semester 1, 2 & 3 ERP records
+              </Typography>
+            </Box>
+          </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-          {['Semester 1', 'Semester 2', 'Semester 3'].map((sem) => {
-            const isSelected = activeSemester === sem
-            return (
-              <Button
-                key={sem}
-                variant={isSelected ? "contained" : "outlined"}
-                onClick={() => {
-                  setSettings((s) => ({ ...s, semester: sem }))
-                  notify(`Switched to ${sem} official attendance records!`)
-                }}
-                sx={{
-                  borderRadius: '14px',
-                  fontWeight: 800,
-                  px: 2.5, py: 1,
-                  background: isSelected ? 'var(--aurora)' : 'transparent',
-                  borderColor: isSelected ? 'transparent' : 'rgba(148,163,184,.3)',
-                  color: isSelected ? '#fff' : 'text.primary',
-                  boxShadow: isSelected ? '0 4px 16px rgba(99,102,241,.35)' : 'none'
-                }}
-              >
-                {sem} {isSelected ? ' (Active ✨)' : ''}
-              </Button>
-            )
-          })}
+          <IconButton size="small" sx={{ color: '#60a5fa' }}>
+            {semesterExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
         </Box>
+
+        {/* Collapsible Semester Options Body */}
+        <Collapse in={semesterExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              Choose a semester to load its official ERP attendance history:
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              {['Semester 1', 'Semester 2', 'Semester 3'].map((sem) => {
+                const isSelected = activeSemester === sem
+                return (
+                  <Button
+                    key={sem}
+                    variant={isSelected ? "contained" : "outlined"}
+                    onClick={() => {
+                      triggerHaptic(20)
+                      setSettings((s) => ({ ...s, semester: sem }))
+                      notify(`Switched to ${sem} official attendance records!`)
+                    }}
+                    sx={{
+                      borderRadius: '14px',
+                      fontWeight: 800,
+                      px: 2.5, py: 1,
+                      background: isSelected ? 'var(--aurora)' : 'transparent',
+                      borderColor: isSelected ? 'transparent' : 'rgba(148,163,184,.3)',
+                      color: isSelected ? '#fff' : 'text.primary',
+                      boxShadow: isSelected ? '0 4px 16px rgba(99,102,241,.35)' : 'none'
+                    }}
+                  >
+                    {sem} {isSelected ? ' (Active ✨)' : ''}
+                  </Button>
+                )
+              })}
+            </Box>
+          </Box>
+        </Collapse>
       </GlassCard>
 
       {/* 🛡️ Collapsible Security Card 🛡️ */}
       <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
         <Box
-          onClick={() => setSecurityExpanded(!securityExpanded)}
+          onClick={() => {
+            triggerHaptic(15)
+            setSecurityExpanded(!securityExpanded)
+          }}
           sx={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             cursor: 'pointer', userSelect: 'none'
@@ -312,7 +358,7 @@ export default function Settings() {
           icon={mode === 'dark' ? <MdDarkMode /> : <MdLightMode />}
           title="Dark Mode"
           subtitle={mode === 'dark' ? 'Currently on' : 'Currently off — using Light Mode'}
-          action={<Switch checked={mode === 'dark'} onChange={toggleMode} />}
+          action={<Switch checked={mode === 'dark'} onChange={() => { triggerHaptic(15); toggleMode(); }} />}
         />
         <Divider sx={{ opacity: 0.3 }} />
         <SettingRow
@@ -322,7 +368,10 @@ export default function Settings() {
           action={
             <Switch
               checked={settings?.autoAttendance !== false}
-              onChange={(e) => setSettings((s) => ({ ...s, autoAttendance: e.target.checked }))}
+              onChange={(e) => {
+                triggerHaptic(15)
+                setSettings((s) => ({ ...s, autoAttendance: e.target.checked }))
+              }}
             />
           }
         />
@@ -334,7 +383,10 @@ export default function Settings() {
           action={
             <Switch
               checked={settings?.hapticFeedback !== false}
-              onChange={(e) => setSettings((s) => ({ ...s, hapticFeedback: e.target.checked }))}
+              onChange={(e) => {
+                triggerHaptic(20)
+                setSettings((s) => ({ ...s, hapticFeedback: e.target.checked }))
+              }}
             />
           }
         />
@@ -348,7 +400,10 @@ export default function Settings() {
         </Typography>
         <Slider
           value={settings?.targetPercentage || 75}
-          onChange={(_, v) => setSettings((s) => ({ ...s, targetPercentage: v }))}
+          onChange={(_, v) => {
+            setSettings((s) => ({ ...s, targetPercentage: v }))
+          }}
+          onChangeCommitted={() => triggerHaptic(15)}
           step={5}
           marks
           min={60}

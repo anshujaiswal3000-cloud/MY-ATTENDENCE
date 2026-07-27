@@ -3,6 +3,7 @@ import { Box, Typography, List, ListItemButton, ListItemIcon, ListItemText } fro
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '../data/navConfig'
 import { useTheme } from '@mui/material/styles'
+import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function Sidebar() {
   const theme = useTheme()
@@ -40,6 +41,7 @@ export default function Sidebar() {
             component={NavLink}
             to={path}
             end={path === '/'}
+            onClick={() => triggerHaptic(18)}
             sx={{
               borderRadius: '14px',
               '&.active': {
@@ -56,7 +58,7 @@ export default function Sidebar() {
       </List>
 
       <Box sx={{ mt: 'auto', px: 1 }}>
-        <Typography variant="caption" sx={{ opacity: 0.45 }}>AttendX v1.0 · Local-only</Typography>
+        <Typography variant="caption" sx={{ opacity: 0.45 }}>AttendX v1.0 · CSE Sec B</Typography>
       </Box>
     </Box>
   )

@@ -3,6 +3,7 @@ import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import { NAV_ITEMS } from '../data/navConfig'
+import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function BottomNav() {
   const navigate = useNavigate()
@@ -31,7 +32,10 @@ export default function BottomNav() {
       <BottomNavigation
         showLabels
         value={currentIndex}
-        onChange={(_, newIndex) => navigate(NAV_ITEMS[newIndex].path)}
+        onChange={(_, newIndex) => {
+          triggerHaptic(18)
+          navigate(NAV_ITEMS[newIndex].path)
+        }}
         sx={{ bgcolor: 'transparent' }}
       >
         {NAV_ITEMS.map(({ label, Icon }) => (
