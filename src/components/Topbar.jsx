@@ -4,7 +4,7 @@ import {
   Chip, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Alert
 } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified, MdEmojiEvents, MdAutoAwesome } from 'react-icons/md'
+import { MdLightMode, MdDarkMode, MdLock, MdLockOpen, MdVerified } from 'react-icons/md'
 import confetti from 'canvas-confetti'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
@@ -31,8 +31,8 @@ export default function Topbar() {
     if (stats.percentage >= 90) {
       try {
         confetti({
-          particleCount: 100,
-          spread: 80,
+          particleCount: 120,
+          spread: 90,
           origin: { x: 0.85, y: 0.12 },
           colors: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
         })
@@ -66,7 +66,6 @@ export default function Topbar() {
 
   const statusColor = stats.percentage >= 85 ? '#10b981' : stats.percentage >= 75 ? '#f59e0b' : '#f43f5e'
   const statusLabel = stats.percentage >= 85 ? 'Safe' : stats.percentage >= 75 ? 'Warning' : 'Critical'
-  const isExcellent = stats.percentage >= 90
 
   return (
     <Box
@@ -193,21 +192,6 @@ export default function Topbar() {
               </Typography>
             </Box>
           </Box>
-
-          {/* 🎆 Special Fireworks / Confetti Celebration Banner if Attendance >= 90% */}
-          {isExcellent && (
-            <Box sx={{ p: 1.75, mx: 1.5, mt: 1.5, borderRadius: '14px', background: 'linear-gradient(135deg, rgba(16,185,129,.25), rgba(59,130,246,.25))', border: '1px solid rgba(16,185,129,.4)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: .3 }}>
-                <MdEmojiEvents size={22} color="#fbbf24" />
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399', fontSize: '.85rem' }}>
-                  Fireworks Celebration! 🎆
-                </Typography>
-              </Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.4 }}>
-                Outstanding <strong>{stats.percentage.toFixed(1)}%</strong> attendance! Keeps you right at the top of the class!
-              </Typography>
-            </Box>
-          )}
 
           {/* Live Stats */}
           <Box sx={{ p: 2 }}>

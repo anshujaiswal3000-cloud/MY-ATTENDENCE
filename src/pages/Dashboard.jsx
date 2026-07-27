@@ -8,7 +8,7 @@ import {
   MdCheckCircle, MdCancel, MdListAlt, MdEventAvailable,
   MdArrowForward, MdSchool, MdTrendingUp, MdTrendingDown,
   MdStar, MdWarning, MdDoorBack, MdAdd, MdSchedule, MdLocationOn,
-  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory
+  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory, MdInfo
 } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../components/GlassCard'
@@ -29,24 +29,27 @@ import {
 
 export default function Dashboard() {
   const {
-    subjects, bunks, logBunkClass, deleteBunkClass, timetableHeader
+    subjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader
   } = useAttendance()
   
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   useEffect(() => { const t = setTimeout(() => setLoading(false), 200); return () => clearTimeout(t) }, [])
 
-  // Bunk Modal State (Tab 0 = Log Bunk, Tab 1 = View Bunk History)
+  // Bunk Modal State
   const [bunkDialogOpen, setBunkDialogOpen] = useState(false)
   const [bunkTab, setBunkTab] = useState(0)
   const [bunkSubjectId, setBunkSubjectId] = useState(subjects[0]?.id || '')
   const [bunkReason, setBunkReason] = useState('Personal / Event')
 
+  // Subject Detail History Modal State
+  const [selectedSubjectHistory, setSelectedSubjectHistory] = useState(null)
+
   const handleBunkSubmit = (e) => {
     e.preventDefault()
     if (!bunkSubjectId) return
     logBunkClass(bunkSubjectId, bunkReason)
-    setBunkTab(1) // Switch to history tab after logging
+    setBunkTab(1)
   }
 
   // Live computed stats
@@ -105,6 +108,12 @@ export default function Dashboard() {
     return null
   }, [subjects, today])
 
+  // Get date-wise logs for selected subject modal
+  const subjectLogs = useMemo(() => {
+    if (!selectedSubjectHistory) return []
+    return history.filter(h => h.subjectId === selectedSubjectHistory.id || h.subjectName === selectedSubjectHistory.name)
+  }, [history, selectedSubjectHistory])
+
   return (
     <Box>
       {/* ── Wish & Hero Banner with Date & Day Chip ── */}
@@ -124,7 +133,6 @@ export default function Dashboard() {
               <Typography variant="overline" sx={{ color: 'primary.light', letterSpacing: '.12em', fontWeight: 700, fontSize: '.68rem' }}>
                 ATTENDANCE OVERVIEW
               </Typography>
-              {/* Mini Date & Day Chip */}
               <Chip
                 icon={<MdCalendarToday size={12} />}
                 label={todayFormatted}
@@ -278,7 +286,7 @@ export default function Dashboard() {
           />
         </Grid>
 
-        {/* Bunked Classes Logger & History Viewer Card */}
+        {/* Bunked Classes Logger Card */}
         <Grid item xs={6} sm={3}>
           <GlassCard delay={.2} sx={{ p: 2.25, minHeight: 122, cursor: 'pointer' }} onClick={() => setBunkDialogOpen(true)}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -301,73 +309,13 @@ export default function Dashboard() {
         </Grid>
       </Grid>
 
-      {/* ── Highest / Lowest cards ── */}
-      {(highest || lowest) && (
-        <Grid container spacing={2.5} sx={{ mb: 3 }}>
-          {highest && (
-            <Grid item xs={12} sm={4}>
-              <GlassCard delay={.35} sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'grid', placeItems: 'center', fontSize: 22, color: '#fff', background: 'linear-gradient(135deg,#10b981,#059669)', flexShrink: 0 }}>
-                    <MdTrendingUp />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Highest</Typography>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>{highest.name}</Typography>
-                    <Typography className="mono-num" variant="h6" sx={{ fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
-                      {getPercentage(highest.present, highest.total).toFixed(1)}%
-                    </Typography>
-                  </Box>
-                </Box>
-              </GlassCard>
-            </Grid>
-          )}
-          {lowest && (
-            <Grid item xs={12} sm={4}>
-              <GlassCard delay={.4} sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'grid', placeItems: 'center', fontSize: 22, color: '#fff', background: 'linear-gradient(135deg,#f43f5e,#e11d48)', flexShrink: 0 }}>
-                    <MdTrendingDown />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Lowest</Typography>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>{lowest.name}</Typography>
-                    <Typography className="mono-num" variant="h6" sx={{ fontWeight: 800, color: '#f43f5e', lineHeight: 1.1 }}>
-                      {getPercentage(lowest.present, lowest.total).toFixed(1)}%
-                    </Typography>
-                  </Box>
-                </Box>
-              </GlassCard>
-            </Grid>
-          )}
-          {average > 0 && (
-            <Grid item xs={12} sm={4}>
-              <GlassCard delay={.45} sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'grid', placeItems: 'center', fontSize: 22, color: '#fff', background: 'gradient(135deg,#8b5cf6,#7c3aed)', flexShrink: 0 }}>
-                    <MdStar />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Average</Typography>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>All subjects</Typography>
-                    <Typography className="mono-num" variant="h6" sx={{ fontWeight: 800, color: '#a78bfa', lineHeight: 1.1 }}>
-                      {average.toFixed(1)}%
-                    </Typography>
-                  </Box>
-                </Box>
-              </GlassCard>
-            </Grid>
-          )}
-        </Grid>
-      )}
-
-      {/* ── Subject Snapshot — ALL subjects ── */}
+      {/* ── Subject Snapshot — Tap any subject to view Date-wise History ── */}
       {topSubjects.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 800 }}>Subject snapshot</Typography>
-              <Typography variant="body2" color="text.secondary">Live attendance across all your courses</Typography>
+              <Typography variant="body2" color="text.secondary">Tap any subject to view date-wise attendance history</Typography>
             </Box>
             <Button size="small" endIcon={<MdArrowForward />} onClick={() => navigate('/subjects')} sx={{ textTransform: 'none' }}>
               All subjects
@@ -383,7 +331,7 @@ export default function Dashboard() {
 
               return (
                 <Grid item xs={12} sm={6} md={4} key={subject.id}>
-                  <GlassCard delay={index * .05} sx={{ p: 2.25 }}>
+                  <GlassCard delay={index * .05} sx={{ p: 2.25, cursor: 'pointer' }} onClick={() => setSelectedSubjectHistory(subject)}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '.62rem', letterSpacing: '.06em' }}>
@@ -421,11 +369,9 @@ export default function Dashboard() {
                           / {subject.total}
                         </Typography>
                       </Box>
-                      <Chip
-                        label={status === 'safe' ? 'Safe' : status === 'warning' ? 'Warning' : 'Critical'}
-                        size="small"
-                        sx={{ fontSize: '.62rem', fontWeight: 700, height: 20, bgcolor: `${statusColor}18`, color: statusColor }}
-                      />
+                      <Typography variant="caption" sx={{ color: '#60a5fa', fontWeight: 700, fontSize: '.7rem', display: 'flex', alignItems: 'center', gap: .3 }}>
+                        <MdHistory size={12} /> View Log
+                      </Typography>
                     </Box>
                   </GlassCard>
                 </Grid>
@@ -434,6 +380,73 @@ export default function Dashboard() {
           </Grid>
         </Box>
       )}
+
+      {/* ── Date-wise Subject Attendance History Modal ── */}
+      <Dialog open={Boolean(selectedSubjectHistory)} onClose={() => setSelectedSubjectHistory(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
+        {selectedSubjectHistory && (
+          <>
+            <DialogTitle sx={{ fontWeight: 800, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                  {selectedSubjectHistory.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Code: {selectedSubjectHistory.code} • Prof. {selectedSubjectHistory.faculty}
+                </Typography>
+              </Box>
+              <Chip
+                label={`${getPercentage(selectedSubjectHistory.present, selectedSubjectHistory.total).toFixed(1)}%`}
+                sx={{ fontWeight: 800, bgcolor: 'rgba(16,185,129,.18)', color: '#10b981' }}
+              />
+            </DialogTitle>
+            <DialogContent sx={{ pt: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MdHistory color="#60a5fa" /> Date-Wise Class History ({subjectLogs.length} entries)
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, maxHeight: 340, overflowY: 'auto' }}>
+                {subjectLogs.length === 0 ? (
+                  <EmptyState icon="📅" title="No history logs recorded" subtitle="Attendance logs will appear here date-wise as you mark classes." />
+                ) : (
+                  subjectLogs.map((log) => (
+                    <Box
+                      key={log.id}
+                      sx={{
+                        p: 1.75, borderRadius: '14px', bgcolor: 'rgba(148,163,184,.1)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                          width: 34, height: 34, borderRadius: '10px', display: 'grid', placeItems: 'center',
+                          bgcolor: log.status === 'present' ? 'rgba(16,185,129,.18)' : 'rgba(244,63,94,.18)',
+                          color: log.status === 'present' ? '#10b981' : '#f43f5e'
+                        }}>
+                          {log.status === 'present' ? <MdCheckCircle size={20} /> : <MdCancel size={20} />}
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                            {log.date} {log.time ? `• ${log.time}` : ''}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Status: <strong style={{ color: log.status === 'present' ? '#10b981' : '#f43f5e' }}>{log.status.toUpperCase()}</strong> {log.auto ? '(Auto-logged)' : ''}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <IconButton size="small" onClick={() => deleteHistoryEntry(log.id)} sx={{ color: 'text.secondary', opacity: .7, '&:hover': { color: '#f43f5e' } }}>
+                        <MdDelete size={16} />
+                      </IconButton>
+                    </Box>
+                  ))
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button onClick={() => setSelectedSubjectHistory(null)}>Close</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
       {/* ── Bunked Classes Log & History Manager Modal ── */}
       <Dialog open={bunkDialogOpen} onClose={() => setBunkDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
