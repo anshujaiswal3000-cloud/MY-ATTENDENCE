@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react'
 import {
   Box, Typography, Button, Switch, TextField, MenuItem, Grid,
-  Divider, Alert, Slider, InputAdornment, IconButton, Collapse
+  Divider, Alert, Slider, InputAdornment, IconButton, Collapse, Chip
 } from '@mui/material'
 import {
   MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
   MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock,
-  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdExpandMore, MdExpandLess
+  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdExpandMore, MdExpandLess, MdSchool
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
@@ -70,11 +70,6 @@ export default function Settings() {
     }
   }
 
-  const addSemester = () => {
-    const name = `Semester ${semestersList.length + 1}`
-    setSettings((s) => ({ ...s, semesters: [...(s?.semesters || semestersList), name] }))
-  }
-
   const handleChangeCredentials = async (e) => {
     e.preventDefault()
     setSecMsg('')
@@ -101,7 +96,44 @@ export default function Settings() {
   return (
     <Box sx={{ maxWidth: 640, pb: 4 }}>
 
-      {/* 🛡️ Collapsible Dedicated Security Card 🛡️ */}
+      {/* 🎓 Active Semester Selector 🎓 */}
+      <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: .5, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MdSchool color="#60a5fa" size={22} /> Select Active Semester Record
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+          Switch between Semester 1, 2 & 3 to view official ERP attendance records. Timetable & Upcoming Lecture retain Semester 3.
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          {['Semester 1', 'Semester 2', 'Semester 3'].map((sem) => {
+            const isSelected = activeSemester === sem
+            return (
+              <Button
+                key={sem}
+                variant={isSelected ? "contained" : "outlined"}
+                onClick={() => {
+                  setSettings((s) => ({ ...s, semester: sem }))
+                  notify(`Switched to ${sem} official attendance records!`)
+                }}
+                sx={{
+                  borderRadius: '14px',
+                  fontWeight: 800,
+                  px: 2.5, py: 1,
+                  background: isSelected ? 'var(--aurora)' : 'transparent',
+                  borderColor: isSelected ? 'transparent' : 'rgba(148,163,184,.3)',
+                  color: isSelected ? '#fff' : 'text.primary',
+                  boxShadow: isSelected ? '0 4px 16px rgba(99,102,241,.35)' : 'none'
+                }}
+              >
+                {sem} {isSelected ? ' (Active ✨)' : ''}
+              </Button>
+            )
+          })}
+        </Box>
+      </GlassCard>
+
+      {/* 🛡️ Collapsible Security Card 🛡️ */}
       <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
         <Box
           onClick={() => setSecurityExpanded(!securityExpanded)}
@@ -140,7 +172,6 @@ export default function Settings() {
 
             <Box component="form" onSubmit={handleChangeCredentials} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               
-              {/* Row 1: Current User ID & Current Password */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField
@@ -187,7 +218,6 @@ export default function Settings() {
 
               <Divider sx={{ my: .5, opacity: .3 }} />
 
-              {/* Row 2: New Secret User ID & New Secret Password */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField
@@ -272,7 +302,7 @@ export default function Settings() {
         />
       </GlassCard>
 
-      {/* ── Target Goal & Semester ── */}
+      {/* ── Target Goal Slider ── */}
       <GlassCard delay={0.05} sx={{ p: 3, mb: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Target Attendance Goal</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -288,26 +318,6 @@ export default function Settings() {
           valueLabelDisplay="auto"
           sx={{ mb: 2 }}
         />
-
-        <Divider sx={{ opacity: 0.3, my: 2 }} />
-
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Active Semester</Typography>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={8}>
-            <TextField
-              select fullWidth size="small" label="Active semester"
-              value={activeSemester}
-              onChange={(e) => setSettings((s) => ({ ...s, semester: e.target.value }))}
-            >
-              {semestersList.map((sem) => (
-                <MenuItem key={sem} value={sem}>{sem}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={4}>
-            <Button fullWidth variant="outlined" onClick={addSemester} sx={{ borderRadius: '12px' }}>+ Add</Button>
-          </Grid>
-        </Grid>
       </GlassCard>
 
       {/* ── Data Export & Backup ── */}

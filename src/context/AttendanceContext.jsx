@@ -2,6 +2,7 @@ import React, { createContext, useContext, useCallback, useMemo, useState, useEf
 import useLocalStorage from '../hooks/useLocalStorage'
 import { STORAGE_KEYS, collectAllData, downloadJSON, applyImportedData } from '../utils/storageUtils'
 import { defaultSubjects, buildSubject, DEFAULT_TIMETABLE_HEADER, generateSeedHistory } from '../data/defaultSubjects'
+import { SEMESTER_1_SUBJECTS, SEMESTER_2_SUBJECTS } from '../data/semestersSeedData'
 import { getTodayName, WEEKDAYS } from '../utils/attendanceUtils'
 
 const AttendanceContext = createContext(null)
@@ -47,12 +48,16 @@ function parseEndTime(timeRangeStr) {
 }
 
 export function AttendanceProvider({ children }) {
-  const [subjects, setSubjects] = useLocalStorage(STORAGE_KEYS.subjects, seedSubjects())
+  // Active Sem 3 subjects
+  const [sem3Subjects, setSem3Subjects] = useLocalStorage(STORAGE_KEYS.subjects, seedSubjects())
+  const [sem1Subjects, setSem1Subjects] = useLocalStorage('attendx_sem1_subjects', SEMESTER_1_SUBJECTS)
+  const [sem2Subjects, setSem2Subjects] = useLocalStorage('attendx_sem2_subjects', SEMESTER_2_SUBJECTS)
+
   const [history, setHistory] = useLocalStorage(STORAGE_KEYS.history, seedHistory())
   const [bunks, setBunks] = useLocalStorage('attendx_bunks', [])
   const [autoLoggedSlots, setAutoLoggedSlots] = useLocalStorage('attendx_auto_logged_slots', [])
   
-  // DEFAULT TO FALSE (SCREEN LOCKED IN VIEW-ONLY MODE UNTIL OWNER LOGS IN)
+  // Default to Locked Mode for guests
   const [isUnlocked, setIsUnlocked] = useLocalStorage('attendx_is_unlocked', false)
   const [timetableHeader, setTimetableHeader] = useLocalStorage('attendx_timetable_header', DEFAULT_TIMETABLE_HEADER)
 
@@ -81,11 +86,25 @@ export function AttendanceProvider({ children }) {
     setSnackbar((s) => ({ ...s, open: false }))
   }, [])
 
+  const activeSemester = settings?.semester || 'Semester 3'
+
+  // Dynamic Subjects depending on active semester selection
+  const subjects = useMemo(() => {
+    if (activeSemester === 'Semester 1') return sem1Subjects
+    if (activeSemester === 'Semester 2') return sem2Subjects
+    return sem3Subjects
+  }, [activeSemester, sem1Subjects, sem2Subjects, sem3Subjects])
+
+  // Timetable & Upcoming Lecture ALWAYS uses Sem 3 active schedule
+  const timetableSubjects = sem3Subjects
+
   // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──
   const pushToCloud = useCallback(async (overrides = {}) => {
     try {
       const payload = {
-        subjects: overrides.subjects || subjects,
+        subjects: overrides.subjects || sem3Subjects,
+        sem1Subjects: overrides.sem1Subjects || sem1Subjects,
+        sem2Subjects: overrides.sem2Subjects || sem2Subjects,
         history: overrides.history || history,
         bunks: overrides.bunks || bunks,
         notes: overrides.notes || notes,
@@ -103,7 +122,7 @@ export function AttendanceProvider({ children }) {
     } catch (err) {
       setDbSynced(false)
     }
-  }, [subjects, history, bunks, notes, settings, timetableHeader])
+  }, [sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader])
 
   const pullFromCloud = useCallback(async () => {
     try {
@@ -112,7 +131,9 @@ export function AttendanceProvider({ children }) {
         const json = await res.json()
         if (json.success && json.data) {
           const cloud = json.data
-          if (cloud.subjects && cloud.subjects.length > 0) setSubjects(cloud.subjects)
+          if (cloud.subjects && cloud.subjects.length > 0) setSem3Subjects(cloud.subjects)
+          if (cloud.sem1Subjects) setSem1Subjects(cloud.sem1Subjects)
+          if (cloud.sem2Subjects) setSem2Subjects(cloud.sem2Subjects)
           if (cloud.history) setHistory(cloud.history)
           if (cloud.bunks) setBunks(cloud.bunks)
           if (cloud.notes) setNotes(cloud.notes)
@@ -124,7 +145,7 @@ export function AttendanceProvider({ children }) {
     } catch (err) {
       setDbSynced(false)
     }
-  }, [setSubjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader])
+  }, [setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader])
 
   useEffect(() => {
     pullFromCloud()
@@ -132,7 +153,7 @@ export function AttendanceProvider({ children }) {
     return () => clearInterval(timer)
   }, [])
 
-  // Strict Async Owner Authentication with MongoDB Cloud
+  // Strict Owner Authentication with MongoDB Cloud
   const unlockApp = useCallback(async (userIdInput, passwordInput) => {
     try {
       const res = await fetch('/api/auth/verify', {
@@ -168,9 +189,9 @@ export function AttendanceProvider({ children }) {
     }
 
     let subjectName = ''
-    let newSubjects = []
-    setSubjects((prev) => {
-      newSubjects = prev.map((s) => {
+    
+    const updateSubjectList = (prevList) =>
+      prevList.map((s) => {
         if (s.id !== subjectId) return s
         subjectName = s.name
         if (status === 'present') {
@@ -181,8 +202,10 @@ export function AttendanceProvider({ children }) {
           return { ...s, present: newPresent, total: newTotal }
         }
       })
-      return newSubjects
-    })
+
+    if (activeSemester === 'Semester 1') setSem1Subjects(updateSubjectList)
+    else if (activeSemester === 'Semester 2') setSem2Subjects(updateSubjectList)
+    else setSem3Subjects(updateSubjectList)
 
     const now = new Date()
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
@@ -202,8 +225,8 @@ export function AttendanceProvider({ children }) {
     })
 
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
-    pushToCloud({ subjects: newSubjects, history: newHistory })
-  }, [isUnlocked, setSubjects, setHistory, notify, pushToCloud])
+    pushToCloud()
+  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     if (!isUnlocked) {
@@ -250,9 +273,9 @@ export function AttendanceProvider({ children }) {
     pushToCloud({ bunks: newBunks })
   }, [isUnlocked, setBunks, notify, pushToCloud])
 
-  // ── AUTO ATTENDANCE ENGINE ──
+  // ── AUTO ATTENDANCE ENGINE (Sem 3) ──
   useEffect(() => {
-    if (!settings.autoAttendance) return
+    if (!settings.autoAttendance || activeSemester !== 'Semester 3') return
 
     const checkAutoAttendance = () => {
       const now = new Date()
@@ -261,7 +284,7 @@ export function AttendanceProvider({ children }) {
       const curHours = now.getHours()
       const curMins = now.getMinutes()
 
-      subjects.forEach((subj) => {
+      sem3Subjects.forEach((subj) => {
         ;(subj.timetable || []).forEach((slot) => {
           if (slot.day !== todayName) return
 
@@ -274,7 +297,7 @@ export function AttendanceProvider({ children }) {
             const slotKey = `${dateFormatted}_${subj.id}_${slot.time}`
 
             if (!autoLoggedSlots.includes(slotKey)) {
-              setSubjects((prev) =>
+              setSem3Subjects((prev) =>
                 prev.map((s) => (s.id === subj.id ? { ...s, present: s.present + 1, total: s.total + 1 } : s))
               )
 
@@ -301,7 +324,7 @@ export function AttendanceProvider({ children }) {
     checkAutoAttendance()
     const timer = setInterval(checkAutoAttendance, 30000)
     return () => clearInterval(timer)
-  }, [subjects, autoLoggedSlots, settings.autoAttendance, setSubjects, setHistory, setAutoLoggedSlots, notify, pushToCloud])
+  }, [sem3Subjects, autoLoggedSlots, settings.autoAttendance, activeSemester, setSem3Subjects, setHistory, setAutoLoggedSlots, notify, pushToCloud])
 
   const addSubject = useCallback((data) => {
     if (!isUnlocked) {
@@ -309,41 +332,43 @@ export function AttendanceProvider({ children }) {
       return null
     }
     const subject = buildSubject(data)
-    setSubjects((prev) => {
-      const next = [...prev, subject]
-      pushToCloud({ subjects: next })
-      return next
-    })
+    if (activeSemester === 'Semester 1') setSem1Subjects((prev) => [...prev, subject])
+    else if (activeSemester === 'Semester 2') setSem2Subjects((prev) => [...prev, subject])
+    else setSem3Subjects((prev) => [...prev, subject])
+
     notify('Subject added')
+    pushToCloud()
     return subject.id
-  }, [isUnlocked, setSubjects, notify, pushToCloud])
+  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
 
   const updateSubject = useCallback((id, updates) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    setSubjects((prev) => {
-      const next = prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-      pushToCloud({ subjects: next })
-      return next
-    })
+    const updateList = (prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    if (activeSemester === 'Semester 1') setSem1Subjects(updateList)
+    else if (activeSemester === 'Semester 2') setSem2Subjects(updateList)
+    else setSem3Subjects(updateList)
+
     notify('Subject updated')
-  }, [isUnlocked, setSubjects, notify, pushToCloud])
+    pushToCloud()
+  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
 
   const deleteSubject = useCallback((id) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    setSubjects((prev) => {
-      const next = prev.filter((s) => s.id !== id)
-      pushToCloud({ subjects: next })
-      return next
-    })
+    const filterList = (prev) => prev.filter((s) => s.id !== id)
+    if (activeSemester === 'Semester 1') setSem1Subjects(filterList)
+    else if (activeSemester === 'Semester 2') setSem2Subjects(filterList)
+    else setSem3Subjects(filterList)
+
     setHistory((prev) => prev.filter((h) => h.subjectId !== id))
     notify('Subject deleted', 'info')
-  }, [isUnlocked, setSubjects, setHistory, notify, pushToCloud])
+    pushToCloud()
+  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const addNote = useCallback((noteData) => {
     if (!isUnlocked) {
@@ -393,26 +418,29 @@ export function AttendanceProvider({ children }) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    setSubjects((prev) => prev.map((s) => ({ ...s, present: 0, total: 0 })))
+    const resetList = (prev) => prev.map((s) => ({ ...s, present: 0, total: 0 }))
+    setSem3Subjects(resetList)
+    setSem1Subjects(resetList)
+    setSem2Subjects(resetList)
     setHistory([])
     setBunks([])
     setAutoLoggedSlots([])
     notify('Attendance reset', 'info')
-    pushToCloud({ subjects: defaultSubjects.map(s => buildSubject(s, s.id)), history: [], bunks: [] })
-  }, [isUnlocked, setSubjects, setHistory, setBunks, setAutoLoggedSlots, notify, pushToCloud])
+    pushToCloud()
+  }, [isUnlocked, setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setAutoLoggedSlots, notify, pushToCloud])
 
   const updateTimetable = useCallback((subjectId, timetable) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    setSubjects((prev) => {
+    setSem3Subjects((prev) => {
       const next = prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
       pushToCloud({ subjects: next })
       return next
     })
     notify('Timetable updated')
-  }, [isUnlocked, setSubjects, notify, pushToCloud])
+  }, [isUnlocked, setSem3Subjects, notify, pushToCloud])
 
   const exportData = useCallback(() => {
     const data = collectAllData()
@@ -426,16 +454,19 @@ export function AttendanceProvider({ children }) {
       return
     }
     applyImportedData(data)
-    if (data.subjects) setSubjects(data.subjects)
+    if (data.subjects) setSem3Subjects(data.subjects)
+    if (data.sem1Subjects) setSem1Subjects(data.sem1Subjects)
+    if (data.sem2Subjects) setSem2Subjects(data.sem2Subjects)
     if (data.history) setHistory(data.history)
     if (data.settings) setSettings(data.settings)
     if (data.notes) setNotes(data.notes)
     notify('Data imported — reloaded from backup')
     pushToCloud(data)
-  }, [isUnlocked, setSubjects, setHistory, setSettings, setNotes, notify, pushToCloud])
+  }, [isUnlocked, setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setSettings, setNotes, notify, pushToCloud])
 
   const value = useMemo(() => ({
     subjects,
+    timetableSubjects,
     history,
     bunks,
     notes,
@@ -466,7 +497,7 @@ export function AttendanceProvider({ children }) {
     pushToCloud,
     pullFromCloud,
   }), [
-    subjects, history, bunks, notes, settings, isUnlocked, dbSynced, timetableHeader,
+    subjects, timetableSubjects, history, bunks, notes, settings, isUnlocked, dbSynced, timetableHeader,
     setTimetableHeader, snackbar, notify, closeSnackbar, unlockApp, lockApp,
     markAttendance, logBunkClass, deleteBunkClass, addSubject, updateSubject, deleteSubject,
     addNote, toggleNoteComplete, deleteNote, resetAttendance, updateTimetable, exportData, importData,

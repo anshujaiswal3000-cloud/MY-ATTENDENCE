@@ -58,7 +58,7 @@ function parseEndTime(timeRangeStr) {
 
 export default function Dashboard() {
   const {
-    subjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify
+    subjects, timetableSubjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify, settings
   } = useAttendance()
   
   const navigate = useNavigate()
@@ -73,6 +73,8 @@ export default function Dashboard() {
 
   // Subject Detail History Modal State
   const [selectedSubjectHistory, setSelectedSubjectHistory] = useState(null)
+
+  const activeSemester = settings?.semester || 'Semester 3'
 
   const handleBunkSubmit = (e) => {
     e.preventDefault()
@@ -111,13 +113,13 @@ export default function Dashboard() {
     [subjects]
   )
 
-  // ── Calculate Live Upcoming Lecture ──
+  // ── Calculate Live Upcoming Lecture (ALWAYS uses Sem 3 timetable) ──
   const upcomingClass = useMemo(() => {
     const now = new Date()
     const curMins = now.getHours() * 60 + now.getMinutes()
 
     const todaySlots = []
-    subjects.forEach((s) => {
+    timetableSubjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
         if (slot.day === today && !s.isIgnored && s.code !== 'LIBRARY-2') {
           const endMins = parseEndTime(slot.time)
@@ -137,7 +139,7 @@ export default function Dashboard() {
     for (let offset = 1; offset <= 6; offset++) {
       const nextDay = WEEKDAYS[(todayIdx + offset) % WEEKDAYS.length]
       const nextSlots = []
-      subjects.forEach((s) => {
+      timetableSubjects.forEach((s) => {
         ;(s.timetable || []).forEach((slot) => {
           if (slot.day === nextDay && !s.isIgnored && s.code !== 'LIBRARY-2') {
             nextSlots.push({ subject: s, time: slot.time, period: slot.period, startMins: getStartMinutes(slot.time) })
@@ -151,7 +153,7 @@ export default function Dashboard() {
     }
 
     return null
-  }, [subjects, today])
+  }, [timetableSubjects, today])
 
   const subjectLogs = useMemo(() => {
     if (!selectedSubjectHistory) return []
@@ -174,13 +176,18 @@ export default function Dashboard() {
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: .5, flexWrap: 'wrap' }}>
               <Typography variant="overline" sx={{ color: 'primary.light', letterSpacing: '.12em', fontWeight: 700, fontSize: '.68rem' }}>
-                ATTENDANCE OVERVIEW
+                ATTENDANCE OVERVIEW ({activeSemester.toUpperCase()})
               </Typography>
               <Chip
                 icon={<MdCalendarToday size={12} />}
                 label={todayFormatted}
                 size="small"
                 sx={{ fontSize: '.68rem', fontWeight: 700, bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+              />
+              <Chip
+                label={activeSemester}
+                size="small"
+                sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff' }}
               />
             </Box>
 
@@ -206,7 +213,7 @@ export default function Dashboard() {
 
         <Grid item xs={12} md={5} lg={4}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <AuroraGauge percentage={stats.percentage} label="Overall Attendance" />
+            <AuroraGauge percentage={stats.percentage} label={`${activeSemester} Attendance`} />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, fontWeight: 600 }}>
               {stats.present} present out of {stats.total} total lectures
             </Typography>
@@ -218,7 +225,7 @@ export default function Dashboard() {
           </GlassCard>
         </Grid>
 
-        {/* 🌟 Upcoming Lecture Card 🌟 */}
+        {/* 🌟 Upcoming Lecture Card (Sem 3 Active Timetable) 🌟 */}
         <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
@@ -322,7 +329,7 @@ export default function Dashboard() {
             icon={<MdListAlt />}
             label="Total classes"
             value={stats.total}
-            description="This semester"
+            description={activeSemester}
             accent="#3b82f6"
             delay={.15}
           />
@@ -355,8 +362,8 @@ export default function Dashboard() {
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Subject snapshot</Typography>
-              <Typography variant="body2" color="text.secondary">Tap any subject to view date-wise attendance history</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>Subject snapshot ({activeSemester})</Typography>
+              <Typography variant="body2" color="text.secondary">Tap any subject to view attendance details</Typography>
             </Box>
             <Button size="small" endIcon={<MdArrowForward />} onClick={() => navigate('/subjects')} sx={{ textTransform: 'none' }}>
               All subjects
@@ -444,12 +451,19 @@ export default function Dashboard() {
             </DialogTitle>
             <DialogContent sx={{ pt: 1 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <MdHistory color="#60a5fa" /> Date-Wise Class History ({subjectLogs.length} entries)
+                <MdHistory color="#60a5fa" /> Class Attendance Log ({selectedSubjectHistory.present} / {selectedSubjectHistory.total})
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2, maxHeight: 340, overflowY: 'auto' }}>
                 {subjectLogs.length === 0 ? (
-                  <EmptyState icon="📅" title="No history logs recorded" subtitle="Attendance logs will appear here date-wise as classes occur." />
+                  <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'rgba(148,163,184,.08)', borderRadius: '14px' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      Official ERP Record: {selectedSubjectHistory.present} Present / {selectedSubjectHistory.total - selectedSubjectHistory.present} Absent out of {selectedSubjectHistory.total} Total
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: .5 }}>
+                      Percentage: {getPercentage(selectedSubjectHistory.present, selectedSubjectHistory.total).toFixed(2)}%
+                    </Typography>
+                  </Box>
                 ) : (
                   subjectLogs.map((log) => (
                     <Box
