@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Box, Typography, Button, Chip, Avatar, Dialog } from '@mui/material'
+import { Box, Typography, Button, Chip, Avatar, Dialog, IconButton } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MdVerified, MdSchool, MdCheckCircle, MdDoorBack, MdCloudDone, MdClose, MdEmojiEvents } from 'react-icons/md'
 import confetti from 'canvas-confetti'
@@ -8,7 +8,7 @@ import { getOverallStats } from '../utils/attendanceUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function MascotProfileModal({ open, onClose }) {
-  const { subjects, bunks, dbSynced, settings } = useAttendance()
+  const { subjects = [], bunks = [], dbSynced, settings = {} } = useAttendance()
   const stats = getOverallStats(subjects)
   const activeSemester = settings?.semester || 'Semester 3'
 
