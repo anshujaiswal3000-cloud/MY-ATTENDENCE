@@ -2,13 +2,13 @@ import React, { useMemo, useState, useEffect } from 'react'
 import {
   Box, Typography, Grid, Chip, LinearProgress, Button, Avatar,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControl, InputLabel, Select, MenuItem, TextField
+  FormControl, InputLabel, Select, MenuItem, TextField, Tabs, Tab
 } from '@mui/material'
 import {
   MdCheckCircle, MdCancel, MdListAlt, MdEventAvailable,
   MdArrowForward, MdSchool, MdTrendingUp, MdTrendingDown,
   MdStar, MdWarning, MdDoorBack, MdAdd, MdSchedule, MdLocationOn,
-  MdTimer, MdClass, MdWavingHand
+  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory
 } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../components/GlassCard'
@@ -36,8 +36,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   useEffect(() => { const t = setTimeout(() => setLoading(false), 200); return () => clearTimeout(t) }, [])
 
-  // Bunk Modal State
+  // Bunk Modal State (Tab 0 = Log Bunk, Tab 1 = View Bunk History)
   const [bunkDialogOpen, setBunkDialogOpen] = useState(false)
+  const [bunkTab, setBunkTab] = useState(0)
   const [bunkSubjectId, setBunkSubjectId] = useState(subjects[0]?.id || '')
   const [bunkReason, setBunkReason] = useState('Personal / Event')
 
@@ -45,7 +46,7 @@ export default function Dashboard() {
     e.preventDefault()
     if (!bunkSubjectId) return
     logBunkClass(bunkSubjectId, bunkReason)
-    setBunkDialogOpen(false)
+    setBunkTab(1) // Switch to history tab after logging
   }
 
   // Live computed stats
@@ -55,6 +56,7 @@ export default function Dashboard() {
   const attendanceExcellent = stats.percentage >= 90
 
   const today = getTodayName()
+  const todayFormatted = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
   const greetingHour = new Date().getHours()
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening'
   const wishMessage = greetingHour < 12 
@@ -105,7 +107,7 @@ export default function Dashboard() {
 
   return (
     <Box>
-      {/* ── Wish & Hero Banner ── */}
+      {/* ── Wish & Hero Banner with Date & Day Chip ── */}
       <GlassCard sx={{ p: { xs: 2.5, sm: 3.25 }, mb: 3 }}>
         <Box className="dashboard-hero" sx={{
           mx: { xs: -2.5, sm: -3.25 }, my: { xs: -2.5, sm: -3.25 },
@@ -118,9 +120,19 @@ export default function Dashboard() {
           <Box sx={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', background: 'rgba(16,185,129,.12)', filter: 'blur(30px)', bottom: -20, left: 40, pointerEvents: 'none' }} />
 
           <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Typography variant="overline" sx={{ color: 'primary.light', letterSpacing: '.12em', fontWeight: 700, fontSize: '.68rem' }}>
-              ATTENDANCE OVERVIEW
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: .5, flexWrap: 'wrap' }}>
+              <Typography variant="overline" sx={{ color: 'primary.light', letterSpacing: '.12em', fontWeight: 700, fontSize: '.68rem' }}>
+                ATTENDANCE OVERVIEW
+              </Typography>
+              {/* Mini Date & Day Chip */}
+              <Chip
+                icon={<MdCalendarToday size={12} />}
+                label={todayFormatted}
+                size="small"
+                sx={{ fontSize: '.68rem', fontWeight: 700, bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+              />
+            </Box>
+
             <Typography variant="h4" sx={{ fontWeight: 800, mt: .25, letterSpacing: '-.02em' }}>
               {greeting}, Anshu 👋
             </Typography>
@@ -141,7 +153,7 @@ export default function Dashboard() {
       {/* ── Overall Attendance & Upcoming Class Grid ── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
 
-        {/* ── Restored Overall Attendance Widget (Clean Circular Gauge) ── */}
+        {/* Overall Attendance Widget */}
         <Grid item xs={12} md={5} lg={4}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <AuroraGauge percentage={stats.percentage} label="Overall Attendance" />
@@ -156,7 +168,7 @@ export default function Dashboard() {
           </GlassCard>
         </Grid>
 
-        {/* ── Live Upcoming Class Status Card ── */}
+        {/* Live Upcoming Class Status Card */}
         <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
@@ -266,7 +278,7 @@ export default function Dashboard() {
           />
         </Grid>
 
-        {/* Bunked Classes Logger Card */}
+        {/* Bunked Classes Logger & History Viewer Card */}
         <Grid item xs={6} sm={3}>
           <GlassCard delay={.2} sx={{ p: 2.25, minHeight: 122, cursor: 'pointer' }} onClick={() => setBunkDialogOpen(true)}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -281,7 +293,7 @@ export default function Dashboard() {
                   {bunks.length}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 700, display: 'flex', alignItems: 'center', gap: .3, mt: 0.2 }}>
-                  <MdAdd size={12} /> Log Bunk
+                  <MdHistory size={13} /> View / Add Bunks
                 </Typography>
               </Box>
             </Box>
@@ -332,7 +344,7 @@ export default function Dashboard() {
             <Grid item xs={12} sm={4}>
               <GlassCard delay={.45} sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'grid', placeItems: 'center', fontSize: 22, color: '#fff', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', flexShrink: 0 }}>
+                  <Box sx={{ width: 46, height: 46, borderRadius: '14px', display: 'grid', placeItems: 'center', fontSize: 22, color: '#fff', background: 'gradient(135deg,#8b5cf6,#7c3aed)', flexShrink: 0 }}>
                     <MdStar />
                   </Box>
                   <Box sx={{ minWidth: 0 }}>
@@ -423,38 +435,83 @@ export default function Dashboard() {
         </Box>
       )}
 
-      {/* Log Bunk Modal */}
-      <Dialog open={bunkDialogOpen} onClose={() => setBunkDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 800 }}>Log Bunked Class 🚪</DialogTitle>
-        <DialogContent>
-          <Box component="form" onSubmit={handleBunkSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Select Subject</InputLabel>
-              <Select
-                value={bunkSubjectId}
-                label="Select Subject"
-                onChange={(e) => setBunkSubjectId(e.target.value)}
-              >
-                {subjects.map(s => (
-                  <MenuItem key={s.id} value={s.id}>{s.name} ({s.code})</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Reason (Optional)"
-              value={bunkReason}
-              onChange={(e) => setBunkReason(e.target.value)}
-              placeholder="e.g. Festival / Event / Sick"
-              fullWidth
-              size="small"
-            />
-          </Box>
+      {/* ── Bunked Classes Log & History Manager Modal ── */}
+      <Dialog open={bunkDialogOpen} onClose={() => setBunkDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>
+          🚪 Bunked Classes Tracker
+        </DialogTitle>
+        <Box sx={{ px: 3 }}>
+          <Tabs value={bunkTab} onChange={(_, v) => setBunkTab(v)} sx={{ mb: 2 }}>
+            <Tab label="Log New Bunk" sx={{ fontWeight: 700, textTransform: 'none' }} />
+            <Tab label={`Bunk History (${bunks.length})`} sx={{ fontWeight: 700, textTransform: 'none' }} />
+          </Tabs>
+        </Box>
+
+        <DialogContent sx={{ pt: 0 }}>
+          {bunkTab === 0 ? (
+            <Box component="form" onSubmit={handleBunkSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Select the subject class you bunked for personal tracking.
+              </Typography>
+              <FormControl fullWidth size="small">
+                <InputLabel>Select Bunked Subject</InputLabel>
+                <Select
+                  value={bunkSubjectId}
+                  label="Select Bunked Subject"
+                  onChange={(e) => setBunkSubjectId(e.target.value)}
+                >
+                  {subjects.map(s => (
+                    <MenuItem key={s.id} value={s.id}>{s.name} ({s.code})</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Reason (Optional)"
+                value={bunkReason}
+                onChange={(e) => setBunkReason(e.target.value)}
+                placeholder="e.g. Festival / Event / Sick / College Fest"
+                fullWidth
+                size="small"
+              />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 320, overflowY: 'auto' }}>
+              {bunks.length === 0 ? (
+                <EmptyState icon="🚪" title="No bunks recorded" subtitle="Logged bunks will appear here with dates and reasons." />
+              ) : (
+                bunks.map((b) => (
+                  <Box
+                    key={b.id}
+                    sx={{
+                      p: 2, borderRadius: '14px', bgcolor: 'rgba(148,163,184,.1)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                        {b.subjectName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Reason: {b.reason} • Date: {b.date}
+                      </Typography>
+                    </Box>
+                    <IconButton size="small" onClick={() => deleteBunkClass(b.id)} sx={{ color: '#f43f5e' }}>
+                      <MdDelete size={18} />
+                    </IconButton>
+                  </Box>
+                ))
+              )}
+            </Box>
+          )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setBunkDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleBunkSubmit} sx={{ background: 'var(--aurora)', borderRadius: '10px' }}>
-            Record Bunk
-          </Button>
+
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+          <Button onClick={() => setBunkDialogOpen(false)}>Close</Button>
+          {bunkTab === 0 && (
+            <Button variant="contained" onClick={handleBunkSubmit} sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}>
+              Save Bunk Record
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

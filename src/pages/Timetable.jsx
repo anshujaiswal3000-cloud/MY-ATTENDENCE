@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Box, Typography, Chip, Button, LinearProgress, Tooltip, IconButton } from '@mui/material'
-import { MdCheckCircle, MdCancel, MdSchedule, MdChevronLeft, MdChevronRight, MdToday, MdLock, MdLockOpen, MdSchool, MdPhone } from 'react-icons/md'
+import { MdCheckCircle, MdCancel, MdSchedule, MdChevronLeft, MdChevronRight, MdToday, MdLock, MdLockOpen, MdSchool, MdPhone, MdLocationOn } from 'react-icons/md'
 import GlassCard from '../components/GlassCard'
 import EmptyState from '../components/EmptyState'
 import { getSubjectIcon } from '../utils/iconRegistry'
@@ -11,7 +11,7 @@ import { WEEKDAYS, getTodayName, getPercentage } from '../utils/attendanceUtils'
 function getStartMinutes(timeRangeStr) {
   try {
     if (!timeRangeStr) return 0
-    const startStr = timeRangeStr.split('-')[0].trim() // "09:00 AM"
+    const startStr = timeRangeStr.split('-')[0].trim()
     const [timeVal, modifier] = startStr.split(' ')
     let [hours, minutes] = timeVal.split(':').map(Number)
 
@@ -65,19 +65,12 @@ export default function Timetable() {
 
   return (
     <Box sx={{ pb: 4 }}>
-      {/* ── Header Banner (Overflow-Proof & Clean) ── */}
-      <GlassCard sx={{ p: { xs: 2, sm: 2.75 }, mb: 2.5, position: 'relative', overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1 }}>
+      {/* ── Ultra-Premium Header Banner (100% Inside-Box Guarantee) ── */}
+      <GlassCard sx={{ p: { xs: 2.25, sm: 2.75 }, mb: 2.5, position: 'relative', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, gap: 1 }}>
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-.01em', wordBreak: 'break-word', fontSize: { xs: '1.05rem', sm: '1.3rem' }, lineHeight: 1.25 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: '-.01em', fontSize: { xs: '1rem', sm: '1.25rem' }, lineHeight: 1.3 }}>
               {timetableHeader.title}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mt: .75, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', fontSize: '.78rem' }}>
-              <span>{timetableHeader.room}</span>
-              <span>•</span>
-              <span>W.E.F {timetableHeader.wef}</span>
-              <span>•</span>
-              <span>Facilitator: <strong>{timetableHeader.facilitator}</strong></span>
             </Typography>
           </Box>
 
@@ -92,6 +85,24 @@ export default function Timetable() {
               fontWeight: 700, fontSize: '.7rem', px: .5, flexShrink: 0
             }}
           />
+        </Box>
+
+        {/* Room & Facilitator Metadata Lines (Cleanly Padded) */}
+        <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(148,163,184,.12)', display: 'flex', flexDirection: 'column', gap: .5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              icon={<MdLocationOn size={12} />}
+              label={timetableHeader.room}
+              size="small"
+              sx={{ fontSize: '.7rem', fontWeight: 700, bgcolor: 'rgba(244,63,94,.14)', color: '#fb7185', height: 22 }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              W.E.F {timetableHeader.wef}
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ color: '#a5b4fc', fontWeight: 700, fontSize: '.78rem', mt: .2 }}>
+            Facilitator: {timetableHeader.facilitator}
+          </Typography>
         </Box>
       </GlassCard>
 
