@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
-import { Box, Typography, Button, Switch, TextField, MenuItem, Grid, Divider } from '@mui/material'
-import { MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload, MdRestartAlt, MdBackup, MdSettingsBackupRestore } from 'react-icons/md'
+import { Box, Typography, Button, Switch, TextField, MenuItem, Grid, Divider, Alert } from '@mui/material'
+import { MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload, MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock, MdKey } from 'react-icons/md'
 import GlassCard from '../components/GlassCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useThemeMode } from '../context/ThemeContext'
@@ -22,10 +22,17 @@ function SettingRow({ icon, title, subtitle, action }) {
 
 export default function Settings() {
   const { mode, toggleMode } = useThemeMode()
-  const { exportData, importData, resetAttendance, backup, restoreBackup, settings, setSettings, notify } = useAttendance()
+  const { exportData, importData, resetAttendance, backup, restoreBackup, settings, setSettings, notify, isUnlocked } = useAttendance()
   const fileInputRef = useRef(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
+
+  // Security Credentials form
+  const [oldPassword, setOldPassword] = useState('')
+  const [newUserId, setNewUserId] = useState('anshu')
+  const [newPassword, setNewPassword] = useState('')
+  const [secMsg, setSecMsg] = useState('')
+  const [secErr, setSecErr] = useState('')
 
   const handleImportClick = () => fileInputRef.current?.click()
 
@@ -47,8 +54,87 @@ export default function Settings() {
     setSettings((s) => ({ ...s, semesters: [...s.semesters, name] }))
   }
 
+  const handleChangeCredentials = async (e) => {
+    e.preventDefault()
+    setSecMsg('')
+    setSecErr('')
+    try {
+      const res = await fetch('/api/auth/change-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword, newUserId, newPassword })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setSecMsg('Private User ID & Password updated in MongoDB Atlas 🔒')
+        setOldPassword('')
+        setNewPassword('')
+      } else {
+        setSecErr(json.message || 'Failed to update credentials')
+      }
+    } catch (err) {
+      setSecErr('Network error — ensure MongoDB server is connected')
+    }
+  }
+
   return (
     <Box sx={{ maxWidth: 640 }}>
+      {/* ── Owner Credentials Security Card ── */}
+      <GlassCard sx={{ p: 3, mb: 3, border: '1px solid rgba(99,102,241,.3)' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MdKey color="#60a5fa" /> Owner Security Credentials (MongoDB Cloud)
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+          Set your private secret User ID & Password saved in MongoDB Atlas. Nobody else (including developers) can unlock your app without these.
+        </Typography>
+
+        {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
+        {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
+
+        <Box component="form" onSubmit={handleChangeCredentials} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Current Password"
+            type="password"
+            size="small"
+            required
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            placeholder="123456"
+          />
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField
+                label="New Secret User ID"
+                size="small"
+                required
+                value={newUserId}
+                onChange={(e) => setNewUserId(e.target.value)}
+                placeholder="anshu"
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="New Secret Password"
+                type="password"
+                size="small"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+            </Grid>
+          </Grid>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={!isUnlocked}
+            sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700 }}
+          >
+            {isUnlocked ? 'Save Secret Credentials to MongoDB' : 'Login Required to Change Credentials 🔒'}
+          </Button>
+        </Box>
+      </GlassCard>
+
       <GlassCard sx={{ p: 3, mb: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Appearance</Typography>
         <SettingRow
