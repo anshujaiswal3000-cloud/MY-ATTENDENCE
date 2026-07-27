@@ -12,7 +12,7 @@
     
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,6 +21,17 @@
       rel="stylesheet"
     />
     <script>
+      // Service Worker Registration for PWA & PWABuilder 100% Green Score
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            console.log('PWA ServiceWorker registered: ', reg.scope);
+          }).catch(function(err) {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+        });
+      }
+
       // Global Chunk Loading Error Handler — Auto-reloads on new version deployment
       window.addEventListener('error', function(e) {
         if (e && e.message && (e.message.indexOf('Importing a module script failed') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
