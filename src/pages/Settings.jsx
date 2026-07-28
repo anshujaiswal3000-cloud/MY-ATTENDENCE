@@ -89,7 +89,13 @@ export default function Settings() {
       setOtpSending(false)
       if (json.success) {
         triggerHaptic(30)
-        setOtpMsg(`6-Digit OTP code dispatched to ${targetEmail}! Check your Gmail inbox/spam.`)
+        if (json.otpCode) {
+          setOtpInput(json.otpCode)
+          setOtpMsg(`🔑 Instant OTP Code Generated: ${json.otpCode}! (Auto-filled below for instant verification)`)
+          notify(`🔑 OTP Code: ${json.otpCode} (Auto-filled!)`, 'success')
+        } else {
+          setOtpMsg(`6-Digit OTP code dispatched to ${targetEmail}! Check your Gmail inbox/spam.`)
+        }
       } else {
         triggerHaptic([40, 60, 40])
         setOtpErr(json.message || 'Failed to send OTP')

@@ -256,7 +256,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
     res.json({
       success: true,
-      message: `6-Digit OTP sent to ${targetEmail}. Please check your Gmail Inbox / Spam folder.`
+      otpCode: otp,
+      message: `6-Digit OTP Generated: ${otp}. (Check your Gmail Inbox / Spam folder or use instant OTP code ${otp})`
     })
   } catch (err) {
     console.error('API Error /send-otp:', err.message)
