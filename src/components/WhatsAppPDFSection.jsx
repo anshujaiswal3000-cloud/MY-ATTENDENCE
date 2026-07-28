@@ -1,18 +1,16 @@
 import React, { useState } from 'react'
 import {
-  Box, Typography, TextField, Button, Chip, Alert, CircularProgress
+  Box, Typography, Button, Chip, Alert, CircularProgress
 } from '@mui/material'
-import { MdSend, MdPictureAsPdf, MdCheckCircle, MdHelpOutline, MdAutoAwesome } from 'react-icons/md'
+import { MdPictureAsPdf, MdSend, MdCheckCircle, MdAutoAwesome, MdSmartphone } from 'react-icons/md'
 import jsPDF from 'jspdf'
 import GlassCard from './GlassCard'
 import { useAttendance } from '../context/AttendanceContext'
-import { getOverallStats, getPercentage } from '../utils/attendanceUtils'
+import { getOverallStats } from '../utils/attendanceUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function WhatsAppPDFSection() {
-  const { subjects = [], history = [], settings = {}, setSettings, pushToCloud, notify, isUnlocked } = useAttendance()
-  
-  const [phone, setPhone] = useState(settings?.whatsappNumber || '9125469499')
+  const { subjects = [], settings = {}, notify } = useAttendance()
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [testingAlert, setTestingAlert] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
@@ -20,15 +18,6 @@ export default function WhatsAppPDFSection() {
 
   const activeSemester = settings?.semester || 'Semester 3'
   const stats = getOverallStats(subjects)
-
-  const handleSavePhone = () => {
-    if (!isUnlocked) return notify('Login required to edit 🔒', 'warning')
-    triggerHaptic(20)
-    const updated = { ...settings, whatsappNumber: phone }
-    setSettings(updated)
-    pushToCloud({ settings: updated })
-    notify(`WhatsApp number updated to ${phone} 📱`, 'success')
-  }
 
   const handleGenerateAndSendPdf = () => {
     triggerHaptic([30, 50, 30])
@@ -50,7 +39,7 @@ export default function WhatsAppPDFSection() {
       
       doc.setFontSize(10)
       doc.setTextColor(148, 163, 184)
-      doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')} | Target: ${activeSemester}`, 14, 32)
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')} | Semester: ${activeSemester}`, 14, 32)
 
       // Student Profile
       doc.setTextColor(30, 41, 59)
@@ -110,17 +99,14 @@ export default function WhatsAppPDFSection() {
       // Save PDF locally
       doc.save(`AttendX_Report_Anshu_Jaiswal_${new Date().toISOString().slice(0, 10)}.pdf`)
 
-      // 2. Open WhatsApp Direct Message to 9125469499
-      const targetNum = (phone || '9125469499').replace(/\D/g, '')
-      const fullNum = targetNum.startsWith('91') ? targetNum : `91${targetNum}`
+      // 2. Open WhatsApp Direct Message pre-filled to target number 919125469499
+      const reportText = `*AttendX Official Attendance Report* 📄%0A%0A*Student*: Anshu Jaiswal (ID: 21250770)%0A*Branch*: B.Tech CSE (Sec B), UCER%0A*Active Semester*: ${activeSemester}%0A%0A*Overall Attendance*: *${stats.percentage.toFixed(2)}%*%0A*Total Lectures*: ${stats.present} / ${stats.total} Present%0A*Status*: ${stats.percentage >= 75 ? 'Safe Zone 🎯' : 'Warning Zone ⚠️'}%0A%0A📄 _Official PDF Report generated & ready._%0A_Powered by ATTIX Autonomous Engine_ ⚡`
 
-      const reportText = `*AttendX Official Attendance Report* 📊%0A%0A*Student*: Anshu Jaiswal (ID: 21250770)%0A*Branch*: B.Tech CSE (Sec B), UCER%0A*Active Semester*: ${activeSemester}%0A%0A*Overall Attendance*: *${stats.percentage.toFixed(2)}%*%0A*Total Lectures*: ${stats.present} / ${stats.total} Present%0A*Status*: ${stats.percentage >= 75 ? 'Safe Zone 🎯' : 'Warning Zone ⚠️'}%0A%0A📄 _PDF Report Document downloaded to device and dispatched._%0A_Powered by AttendX 24/7 Autonomous Engine_ ⚡`
-
-      const waUrl = `https://api.whatsapp.com/send?phone=${fullNum}&text=${reportText}`
+      const waUrl = `https://api.whatsapp.com/send?phone=919125469499&text=${reportText}`
       window.open(waUrl, '_blank')
 
-      setStatusMsg(`✨ PDF Report downloaded & WhatsApp dispatched to +${fullNum}!`)
-      notify(`📄 PDF Report generated & WhatsApp dispatched to +${fullNum}!`, 'success')
+      setStatusMsg('✨ PDF Report generated & WhatsApp dispatched!')
+      notify('📄 PDF Report generated & WhatsApp dispatched!', 'success')
     } catch (err) {
       setStatusErr('PDF Generation Error: ' + err.message)
     } finally {
@@ -138,12 +124,12 @@ export default function WhatsAppPDFSection() {
       const res = await fetch('/api/alerts/whatsapp/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone || '9125469499' })
+        body: JSON.stringify({ phone: '9125469499' })
       })
       const json = await res.json()
       if (json.success) {
-        setStatusMsg(`⚡ Real-Time ATTIX WhatsApp Alert delivered to +91 ${phone}!`)
-        notify(`⚡ ATTIX WhatsApp Alert sent to +91 ${phone}!`, 'success')
+        setStatusMsg('⚡ Real-Time ATTIX WhatsApp Alert delivered to your phone!')
+        notify('⚡ ATTIX WhatsApp Alert sent!', 'success')
       } else {
         setStatusErr(json.message || 'Failed to dispatch ATTIX alert')
       }
@@ -155,72 +141,124 @@ export default function WhatsAppPDFSection() {
   }
 
   return (
-    <GlassCard sx={{ p: 2.5, mb: 3, border: '2px solid rgba(16,185,129,0.45)', background: 'linear-gradient(135deg, rgba(6,78,59,0.25), rgba(15,23,42,0.95))' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.22)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+    <GlassCard
+      sx={{
+        p: { xs: 2.5, sm: 3 },
+        mb: 3,
+        borderRadius: '24px',
+        border: '1px solid rgba(16, 185, 129, 0.35)',
+        background: 'linear-gradient(145deg, rgba(6, 78, 59, 0.22) 0%, rgba(15, 23, 42, 0.95) 100%)',
+        boxShadow: '0 12px 32px rgba(0,0,0,0.25)',
+      }}
+    >
+      {/* Top Header Row */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+          <Box
+            sx={{
+              width: 46,
+              height: 46,
+              borderRadius: '16px',
+              bgcolor: 'rgba(16, 185, 129, 0.2)',
+              color: '#34d399',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 24,
+              border: '1px solid rgba(52, 211, 153, 0.3)',
+              boxShadow: '0 4px 16px rgba(16,185,129,0.2)',
+              flexShrink: 0,
+            }}
+          >
             📲
           </Box>
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-                1-Click WhatsApp PDF Report & ATTIX Alerts
-              </Typography>
-              <Chip label="● FAST 0ms" size="small" sx={{ bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', fontWeight: 800, fontSize: '.68rem' }} />
-            </Box>
-            <Typography variant="caption" sx={{ color: '#6ee7b7' }}>
-              Target Number: <strong>+91 9125469499</strong> (Configured & Active)
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.25 }}>
+              WhatsApp PDF Report & ATTIX Alerts
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.78rem', fontWeight: 600 }}>
+              1-Tap PDF Report Generation & Real-Time WhatsApp Alerts
             </Typography>
           </Box>
         </Box>
+
+        <Chip
+          label="● LIVE ATTIX"
+          size="small"
+          sx={{
+            bgcolor: 'rgba(16, 185, 129, 0.18)',
+            color: '#34d399',
+            fontWeight: 800,
+            fontSize: '.68rem',
+            border: '1px solid rgba(52, 211, 153, 0.3)',
+            height: 24,
+            px: 0.5,
+          }}
+        />
       </Box>
 
-      {statusMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{statusMsg}</Alert>}
-      {statusErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{statusErr}</Alert>}
+      {/* Status Alerts */}
+      {statusMsg && (
+        <Alert severity="success" sx={{ mb: 2.5, borderRadius: '14px', fontSize: '.82rem', fontWeight: 700 }}>
+          {statusMsg}
+        </Alert>
+      )}
+      {statusErr && (
+        <Alert severity="error" sx={{ mb: 2.5, borderRadius: '14px', fontSize: '.82rem', fontWeight: 700 }}>
+          {statusErr}
+        </Alert>
+      )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-          <TextField
-            label="Integrated WhatsApp Number"
-            size="small"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            sx={{ width: 220 }}
-            helperText="Default: 9125469499"
-          />
+      {/* Action Buttons Section (Clean Grid) */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.75, mt: 1 }}>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleGenerateAndSendPdf}
+          disabled={generatingPdf}
+          startIcon={generatingPdf ? <CircularProgress size={18} color="inherit" /> : <MdPictureAsPdf size={20} />}
+          sx={{
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            borderRadius: '16px',
+            py: 1.35,
+            px: 2,
+            fontWeight: 800,
+            fontSize: '.88rem',
+            textTransform: 'none',
+            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.35)',
+            letterSpacing: '0.01em',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              boxShadow: '0 10px 28px rgba(16, 185, 129, 0.45)',
+            },
+          }}
+        >
+          {generatingPdf ? 'Generating PDF...' : '📄 Send PDF Report to WhatsApp'}
+        </Button>
 
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleSavePhone}
-            disabled={!isUnlocked}
-            sx={{ borderRadius: '10px', height: 40, mt: -2.5, fontWeight: 700 }}
-          >
-            Save Number
-          </Button>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-          <Button
-            variant="contained"
-            onClick={handleGenerateAndSendPdf}
-            disabled={generatingPdf}
-            startIcon={generatingPdf ? <CircularProgress size={18} color="inherit" /> : <MdPictureAsPdf />}
-            sx={{ background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '12px', fontWeight: 800, px: 3, py: 1.2, textTransform: 'none' }}
-          >
-            {generatingPdf ? 'Generating PDF...' : '📄 Send PDF Report to WhatsApp 📲'}
-          </Button>
-
-          <Button
-            variant="outlined"
-            onClick={handleSendTestAttixAlert}
-            disabled={testingAlert}
-            startIcon={<MdSend />}
-            sx={{ borderRadius: '12px', borderColor: 'rgba(52,211,153,0.4)', color: '#34d399', fontWeight: 800, textTransform: 'none', px: 2.5 }}
-          >
-            {testingAlert ? 'Sending...' : 'Send Test ATTIX Alert ⚡'}
-          </Button>
-        </Box>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={handleSendTestAttixAlert}
+          disabled={testingAlert}
+          startIcon={<MdSend size={18} />}
+          sx={{
+            borderRadius: '16px',
+            py: 1.35,
+            px: 2,
+            borderColor: 'rgba(52, 211, 153, 0.4)',
+            color: '#34d399',
+            bgcolor: 'rgba(16, 185, 129, 0.06)',
+            fontWeight: 800,
+            fontSize: '.88rem',
+            textTransform: 'none',
+            '&:hover': {
+              borderColor: '#34d399',
+              bgcolor: 'rgba(16, 185, 129, 0.15)',
+            },
+          }}
+        >
+          {testingAlert ? 'Sending Alert...' : '⚡ Test ATTIX Alert'}
+        </Button>
       </Box>
     </GlassCard>
   )
