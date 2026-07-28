@@ -289,16 +289,16 @@ export default function Dashboard() {
 
         {/* 🌟 Live Now & Upcoming Lecture Card 🌟 */}
         <Grid item xs={12} md={7} lg={8}>
-          <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <GlassCard sx={{ p: { xs: 2, sm: 2.75 }, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
             <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   {lectureState.ongoing ? (
-                    <Chip label="🔴 LIVE NOW" size="small" sx={{ bgcolor: 'rgba(244,63,94,0.22)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.4)', fontWeight: 800, fontSize: '.72rem' }} />
+                    <Chip label="🔴 LIVE NOW" size="small" sx={{ bgcolor: 'rgba(244,63,94,0.22)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.4)', fontWeight: 800, fontSize: '.68rem' }} />
                   ) : (
-                    <Chip label="⏰ UPCOMING LECTURE" size="small" sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 800, fontSize: '.72rem' }} />
+                    <Chip label="⏰ UPCOMING" size="small" sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 800, fontSize: '.68rem' }} />
                   )}
-                  <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '.92rem', sm: '1.05rem' } }}>
                     {lectureState.ongoing ? 'Ongoing Lecture' : 'Next Schedule'}
                   </Typography>
                 </Box>
@@ -306,29 +306,29 @@ export default function Dashboard() {
                 <Chip
                   label={lectureState.ongoing ? `Ends in ${lectureState.ongoing.remainingMins}m` : (lectureState.next ? lectureState.next.dayLabel : 'No Classes')}
                   size="small"
-                  sx={{ bgcolor: lectureState.ongoing ? 'rgba(244,63,94,0.18)' : 'rgba(96,165,250,.18)', color: lectureState.ongoing ? '#f43f5e' : '#60a5fa', fontWeight: 800, fontSize: '.72rem' }}
+                  sx={{ bgcolor: lectureState.ongoing ? 'rgba(244,63,94,0.18)' : 'rgba(96,165,250,.18)', color: lectureState.ongoing ? '#f43f5e' : '#60a5fa', fontWeight: 800, fontSize: '.68rem' }}
                 />
               </Box>
 
               {/* 🔴 ONGOING LIVE CLASS BOX */}
               {lectureState.ongoing && (
-                <Box sx={{ p: 2.25, mb: 2, borderRadius: '18px', background: 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(244,63,94,0.35)' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ p: { xs: 1.75, sm: 2.25 }, mb: 2, borderRadius: '18px', background: 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(244,63,94,0.35)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {lectureState.ongoing.slot.period && (
-                        <Chip label={lectureState.ongoing.slot.period} size="small" sx={{ fontSize: '.7rem', fontWeight: 800, bgcolor: '#f43f5e', color: '#fff' }} />
+                        <Chip label={lectureState.ongoing.slot.period} size="small" sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: '#f43f5e', color: '#fff' }} />
                       )}
-                      <Chip icon={<MdSchedule size={12} />} label={lectureState.ongoing.slot.time} size="small" sx={{ fontSize: '.7rem', fontWeight: 800, bgcolor: 'rgba(244,63,94,0.25)', color: '#fda4af' }} />
+                      <Chip icon={<MdSchedule size={12} />} label={lectureState.ongoing.slot.time} size="small" sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: 'rgba(244,63,94,0.25)', color: '#fda4af' }} />
                     </Box>
-                    <Typography variant="caption" sx={{ color: '#f43f5e', fontWeight: 800 }}>
+                    <Typography variant="caption" sx={{ color: '#f43f5e', fontWeight: 800, fontSize: '.75rem' }}>
                       Ends in {lectureState.ongoing.remainingMins} mins
                     </Typography>
                   </Box>
 
-                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.25, color: '#fff', fontSize: { xs: '1rem', sm: '1.25rem' }, wordBreak: 'break-word' }}>
                     {lectureState.ongoing.slot.subject.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#fda4af', fontWeight: 700 }}>
+                  <Typography variant="caption" sx={{ color: '#fda4af', fontWeight: 700, fontSize: '.75rem' }}>
                     Code: {lectureState.ongoing.slot.subject.code} • Prof. {lectureState.ongoing.slot.subject.faculty}
                   </Typography>
 
@@ -339,38 +339,38 @@ export default function Dashboard() {
               )}
 
               {/* ⏭️ NEXT UPCOMING CLASS SUB-ROW */}
-              {lectureState.next ? (
-                <Box sx={{ p: 2, borderRadius: '16px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip label="⏭️ NEXT" size="small" sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff', height: 22 }} />
-                      <Chip icon={<MdSchedule size={12} />} label={lectureState.next.slot.time} size="small" sx={{ fontSize: '.68rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc', height: 22 }} />
+              {lectureState.next && (
+                <Box sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: '16px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8, flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Chip label="⏭️ NEXT" size="small" sx={{ fontSize: '.65rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff', height: 22 }} />
+                      <Chip icon={<MdSchedule size={12} />} label={lectureState.next.slot.time} size="small" sx={{ fontSize: '.65rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc', height: 22 }} />
                     </Box>
 
                     {lectureState.next.startsInMins !== null && (
-                      <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 800, fontSize: '.75rem' }}>
+                      <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 800, fontSize: '.72rem' }}>
                         Starts in {lectureState.next.startsInMins}m
                       </Typography>
                     )}
                   </Box>
 
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.25, color: '#fff', fontSize: { xs: '.92rem', sm: '1rem' }, wordBreak: 'break-word' }}>
                     {lectureState.next.slot.subject.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
                     <span><MdLocationOn size={13} color="#f43f5e" inline /> {timetableHeader.room}</span>
                     <span>•</span>
                     <span><MdClass size={13} color="#10b981" inline /> Prof. {lectureState.next.slot.subject.faculty}</span>
                   </Typography>
                 </Box>
-              ) : (
-                !lectureState.ongoing && (
-                  <Box sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      🎉 All classes completed for today! Check timetable for full schedule.
-                    </Typography>
-                  </Box>
-                )
+              )}
+
+              {!lectureState.ongoing && !lectureState.next && (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    🎉 All classes completed for today! Check timetable for full schedule.
+                  </Typography>
+                </Box>
               )}
             </Box>
 

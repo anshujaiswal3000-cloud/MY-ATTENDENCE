@@ -166,7 +166,7 @@ export default function Settings() {
   }
 
   return (
-    <Box sx={{ maxWidth: 680, pb: 4 }}>
+    <Box sx={{ width: '100%', maxWidth: 680, mx: 'auto', pb: 6, overflowX: 'hidden' }}>
 
       {/* 📄 1-Click WhatsApp PDF Report & Real-Time ATTIX Alerts Card 📲 */}
       <WhatsAppPDFSection />
