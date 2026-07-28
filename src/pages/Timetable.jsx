@@ -36,8 +36,9 @@ export default function Timetable() {
 
   // Guaranteed chronological time sorting (09:00 AM -> 09:50 AM -> 10:40 AM -> 11:30 AM ...)
   const daySlots = useMemo(() => {
+    const activeList = Array.isArray(timetableSubjects) ? timetableSubjects : []
     const slots = []
-    timetableSubjects.forEach((s) => {
+    activeList.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
         if (slot.day === activeDay) {
           slots.push({ ...slot, subject: s })

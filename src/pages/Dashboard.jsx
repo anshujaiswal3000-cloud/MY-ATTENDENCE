@@ -122,9 +122,10 @@ export default function Dashboard() {
   // ── Calculate Real-Time LIVE NOW & NEXT UPCOMING Lecture ──
   const lectureState = useMemo(() => {
     const curMins = nowDate.getHours() * 60 + nowDate.getMinutes()
+    const activeTimetable = Array.isArray(timetableSubjects) ? timetableSubjects : []
 
     const todaySlots = []
-    timetableSubjects.forEach((s) => {
+    activeTimetable.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
         if (slot.day === today && !s.isIgnored && s.code !== 'LIBRARY-2') {
           const endObj = parseEndTime(slot.time)
