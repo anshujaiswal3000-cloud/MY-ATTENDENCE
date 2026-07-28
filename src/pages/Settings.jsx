@@ -1,13 +1,12 @@
 import React, { useRef, useState } from 'react'
 import {
   Box, Typography, Button, Switch, TextField, Grid, Chip,
-  Divider, Alert, InputAdornment, IconButton, Select, MenuItem, Avatar, Dialog, DialogTitle, DialogContent, DialogActions
+  Divider, Alert, InputAdornment, IconButton, Select, MenuItem
 } from '@mui/material'
 import {
   MdArrowBack, MdChevronRight, MdBackup, MdSettingsBackupRestore,
   MdLock, MdSchool, MdSecurity, MdAutoAwesome, MdPhonelinkRing,
-  MdStorage, MdInsertDriveFile, MdLockOpen, MdVpnKey, MdPalette, MdVibration, MdTimer,
-  MdPersonAdd, MdSwapHoriz, MdCameraAlt, MdCloudUpload, MdCheckCircle, MdAssignmentInd
+  MdStorage, MdInsertDriveFile, MdLockOpen, MdVpnKey, MdPalette, MdVibration, MdTimer
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
@@ -21,8 +20,7 @@ export default function Settings() {
   const {
     subjects, history, bunks, notes, settings, setSettings,
     resetData, exportBackup, importBackup, pushToCloud, notify,
-    isUnlocked, lockApp, unlockApp,
-    studentProfiles, activeStudentId, registerStudentProfile, switchStudentAccount
+    isUnlocked, lockApp, unlockApp
   } = useAttendance()
 
   // Active Sub-Page View State (null = Main Menu, 'accounts' | 'permissions' | 'reports' | 'semester' | 'engine' | 'security' | 'data')
@@ -36,19 +34,7 @@ export default function Settings() {
   const [hapticsEnabled, setHapticsEnabled] = useState(settings?.hapticsEnabled !== false)
   const [autoLockTimeout, setAutoLockTimeout] = useState(settings?.autoLockTimeout || '30')
 
-  // Multi-Student Onboarding Wizard State
-  const [wizardOpen, setWizardOpen] = useState(false)
-  const [wizardStep, setWizardStep] = useState(1)
-  const [newStudentId, setNewStudentId] = useState('')
-  const [newName, setNewName] = useState('')
-  const [newBranch, setNewBranch] = useState('B.Tech CSE 2nd Year')
-  const [newCollege, setNewCollege] = useState('UCER')
-  const [newEmail, setNewEmail] = useState('')
-  const [newPass, setNewPass] = useState('')
-  const [avatarPreview, setAvatarPreview] = useState('/profile.jpg')
-  const [attendanceFile, setAttendanceFile] = useState(null)
-  const [timetableFile, setTimetableFile] = useState(null)
-  const [ocrStatusMsg, setOcrStatusMsg] = useState('')
+  // (Multi-Student Wizard removed — single owner mode)
 
   // Security Form State
   const [oldUserId, setOldUserId] = useState('')
@@ -63,9 +49,6 @@ export default function Settings() {
   // Dialog State
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const fileInputRef = useRef(null)
-  const avatarInputRef = useRef(null)
-  const attFileInputRef = useRef(null)
-  const ttFileInputRef = useRef(null)
 
   const activeSemester = settings?.semester || 'Semester 3'
 
@@ -312,154 +295,7 @@ export default function Settings() {
         </Box>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          3-STEP AUTOMATED ONBOARDING WIZARD DIALOG
-      ───────────────────────────────────────────────────────────── */}
-      <Dialog
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: '24px', p: 1, bgcolor: '#0b1120', border: '1px solid rgba(167,139,250,0.3)' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <MdAssignmentInd color="#a78bfa" size={26} /> Student Onboarding & Registration Wizard
-        </DialogTitle>
-
-        <DialogContent>
-          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-            {[1, 2, 3].map((st) => (
-              <Box
-                key={st}
-                sx={{
-                  flex: 1, height: 6, borderRadius: '4px',
-                  bgcolor: wizardStep >= st ? '#a78bfa' : 'rgba(255,255,255,0.1)'
-                }}
-              />
-            ))}
-          </Box>
-
-          {wizardStep === 1 && (
-            <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#a78bfa' }}>
-                Step 1: Student Identity & Profile Picture 📸
-              </Typography>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar src={avatarPreview} sx={{ width: 64, height: 64, border: '2px solid #a78bfa' }} />
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<MdCameraAlt />}
-                  onClick={() => avatarInputRef.current?.click()}
-                  sx={{ borderRadius: '10px', color: '#a78bfa', borderColor: 'rgba(167,139,250,0.4)', textTransform: 'none', fontWeight: 800 }}
-                >
-                  Upload Profile Photo
-                </Button>
-                <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarFileChange} />
-              </Box>
-
-              <TextField
-                fullWidth label="Full Name" size="small" required
-                value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Rahul Kumar"
-              />
-
-              <TextField
-                fullWidth label="Student ID / Roll No" size="small" required
-                value={newStudentId} onChange={(e) => setNewStudentId(e.target.value)} placeholder="e.g. 21250890"
-              />
-
-              <TextField
-                fullWidth label="Branch & Year" size="small"
-                value={newBranch} onChange={(e) => setNewBranch(e.target.value)}
-              />
-
-              <TextField
-                fullWidth label="Account Password" size="small" type="password"
-                value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Set password for account switch"
-              />
-            </Box>
-          )}
-
-          {wizardStep === 2 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399' }}>
-                Step 2: Upload Attendance Record ERP Photo/PDF 📸
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '.84rem' }}>
-                Upload screenshot or PDF of your college attendance ERP. AI OCR will parse present/total counts per subject:
-              </Typography>
-
-              <Box
-                onClick={() => attFileInputRef.current?.click()}
-                sx={{
-                  p: 3, border: '2px dashed rgba(16,185,129,0.4)', borderRadius: '18px',
-                  bgcolor: 'rgba(16,185,129,0.06)', textAlign: 'center', cursor: 'pointer'
-                }}
-              >
-                <MdCloudUpload size={36} color="#34d399" />
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399', mt: 1 }}>
-                  {attendanceFile ? `Uploaded: ${attendanceFile}` : 'Tap to Upload Attendance Screenshot / PDF'}
-                </Typography>
-              </Box>
-              <input ref={attFileInputRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleAttendanceFileUpload} />
-
-              {ocrStatusMsg && (
-                <Alert severity="success" icon={<MdCheckCircle size={20} />} sx={{ borderRadius: '12px' }}>
-                  {ocrStatusMsg}
-                </Alert>
-              )}
-            </Box>
-          )}
-
-          {wizardStep === 3 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#60a5fa' }}>
-                Step 3: Upload Current Timetable Photo 🗓️
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '.84rem' }}>
-                Upload your weekly timetable screenshot. AI will auto-configure Monday to Saturday lecture time ranges:
-              </Typography>
-
-              <Box
-                onClick={() => ttFileInputRef.current?.click()}
-                sx={{
-                  p: 3, border: '2px dashed rgba(96,165,250,0.4)', borderRadius: '18px',
-                  bgcolor: 'rgba(96,165,250,0.06)', textAlign: 'center', cursor: 'pointer'
-                }}
-              >
-                <MdCloudUpload size={36} color="#60a5fa" />
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#60a5fa', mt: 1 }}>
-                  {timetableFile ? `Uploaded: ${timetableFile}` : 'Tap to Upload Weekly Timetable Photo'}
-                </Typography>
-              </Box>
-              <input ref={ttFileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleTimetableFileUpload} />
-
-              {ocrStatusMsg && (
-                <Alert severity="info" sx={{ borderRadius: '12px' }}>{ocrStatusMsg}</Alert>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-          <Button disabled={wizardStep === 1} onClick={() => setWizardStep(s => s - 1)} sx={{ textTransform: 'none' }}>
-            Previous Step
-          </Button>
-
-          {wizardStep < 3 ? (
-            <Button variant="contained" onClick={() => setWizardStep(s => s + 1)} sx={{ background: 'var(--aurora)', borderRadius: '10px', textTransform: 'none', fontWeight: 800 }}>
-              Next Step ➔
-            </Button>
-          ) : (
-            <Button variant="contained" onClick={handleOnboardingSubmit} sx={{ background: 'linear-gradient(135deg, #10b981 0%, #6366f1 100%)', borderRadius: '10px', textTransform: 'none', fontWeight: 800 }}>
-              🎉 Save & Onboard Student
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+      {/* Wizard removed — single owner mode */}
 
       {/* ─────────────────────────────────────────────────────────────
           DEDICATED SUB-PAGE: APP MASTER CONTROLS & CREATIVE MODES
