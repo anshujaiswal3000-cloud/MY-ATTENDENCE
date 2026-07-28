@@ -102,7 +102,7 @@ function parseEndTimeServer(timeRangeStr) {
   }
 }
 
-// ── PRODUCTION-GRADE TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER ──
+// ── PRODUCTION-GRADE TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH LAB +2 LOGIC) ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
 
@@ -135,6 +135,10 @@ async function runServerAutoAttendance() {
       let newPresent = subj.present
       let newTotal = subj.total
 
+      // LAB subjects count as 2 continuous classes (+2 Present, +2 Total)
+      const isLab = subj.isLab || subj.name.toLowerCase().includes('lab')
+      const increment = isLab ? 2 : 1
+
       ;(subj.timetable || []).forEach((slot) => {
         if (slot.day !== todayName) return
 
@@ -147,8 +151,8 @@ async function runServerAutoAttendance() {
           const slotKey = `${dateFormatted}_${subj.id}_${slot.day}_${slot.time}`
 
           if (!updatedAutoSlots.includes(slotKey)) {
-            newPresent += 1
-            newTotal += 1
+            newPresent += increment
+            newTotal += increment
             subjModified = true
             updated = true
 
@@ -160,12 +164,14 @@ async function runServerAutoAttendance() {
               subjectName: subj.name,
               status: 'present',
               auto: true,
+              isLab: isLab,
+              increment: increment,
               date: dateFormatted,
               timestamp: now.getTime()
             }
 
             updatedHistory.unshift(logEntry)
-            console.log(`[SERVER AUTO-ATTENDANCE IST] ⏰ Logged Present for ${subj.name} (${slot.time}) on ${dateFormatted}`)
+            console.log(`[SERVER AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted}`)
           }
         }
       })

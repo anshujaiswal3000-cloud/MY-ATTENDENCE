@@ -168,7 +168,7 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + IMMEDIATE CLOUD SYNC */
+  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + LAB (+2) SUPPORT */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
@@ -189,11 +189,14 @@ export function AttendanceProvider({ children }) {
       prevList.map((s) => {
         if (s.id !== subjectId) return s
         subjectName = s.name
+        const isLab = s.isLab || s.name.toLowerCase().includes('lab')
+        const count = isLab ? 2 : 1
+
         if (status === 'present') {
-          return { ...s, present: s.present + 1, total: s.total + 1 }
+          return { ...s, present: s.present + count, total: s.total + count }
         } else {
-          const newPresent = Math.max(0, s.present - (s.present > 0 ? 1 : 0))
-          const newTotal = s.total > s.present ? s.total : s.total + 1
+          const newPresent = Math.max(0, s.present - (s.present >= count ? count : s.present))
+          const newTotal = s.total > s.present ? s.total : s.total + count
           return { ...s, present: newPresent, total: newTotal }
         }
       })
