@@ -96,6 +96,25 @@ function parseEndTimeServer(timeRangeStr) {
   }
 }
 
+// ── RENDER 24/7 KEEP-ALIVE SELF-PINGER (Prevents Render Server Sleep Permanently) ──
+function startKeepAlivePinger() {
+  const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://my-attendence.onrender.com/api/sync/anshu'
+  
+  // Self-ping every 5 minutes (300,000 ms) so Render NEVER sleeps
+  setInterval(async () => {
+    try {
+      const res = await fetch(targetUrl)
+      if (res.ok) {
+        console.log(`[KEEP-ALIVE ⚡] Self-ping successful — Server 100% Awake 24/7!`)
+      }
+    } catch (err) {
+      console.warn(`[KEEP-ALIVE NOTICE]:`, err.message)
+    }
+  }, 5 * 60 * 1000)
+}
+
+startKeepAlivePinger()
+
 // ── PRODUCTION-GRADE TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH LAB +2 LOGIC) ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
@@ -407,4 +426,5 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 AttendX Server running on http://localhost:${PORT}`)
   console.log(`⏰ Timezone-Aware (IST) Server Auto Attendance Background Scheduler Active.`)
+  console.log(`⚡ 24/7 Keep-Alive Self-Pinger Active (Prevents Render Server Sleep).`)
 })
