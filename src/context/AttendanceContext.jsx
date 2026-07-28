@@ -371,6 +371,76 @@ export function AttendanceProvider({ children }) {
     notify('Subject deleted 🗑️', 'info')
   }, [isUnlocked, activeSemester, sem1Subjects, sem2Subjects, sem3Subjects, history, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
+  const deleteHistoryEntry = useCallback((logId) => {
+    if (!isUnlocked) {
+      notify('Login to make any change 🔒', 'warning')
+      return
+    }
+
+    const targetLog = history.find(h => h.id === logId)
+    if (!targetLog) return
+
+    const inc = targetLog.increment || (targetLog.isLab ? 2 : 1)
+    const subjId = targetLog.subjectId
+
+    // Update subject counts live
+    const updateSubjectList = (list) =>
+      list.map((s) => {
+        if (s.id === subjId) {
+          if (targetLog.status === 'present') {
+            return {
+              ...s,
+              present: Math.max(0, s.present - inc),
+              total: Math.max(0, s.total - inc)
+            }
+          } else {
+            return {
+              ...s,
+              total: Math.max(0, s.total - 1)
+            }
+          }
+        }
+        return s
+      })
+
+    let updatedSubjects = []
+    if (activeSemester === 'Semester 1') {
+      setSem1Subjects((prev) => {
+        updatedSubjects = updateSubjectList(prev)
+        return updatedSubjects
+      })
+    } else if (activeSemester === 'Semester 2') {
+      setSem2Subjects((prev) => {
+        updatedSubjects = updateSubjectList(prev)
+        return updatedSubjects
+      })
+    } else {
+      setSem3Subjects((prev) => {
+        updatedSubjects = updateSubjectList(prev)
+        return updatedSubjects
+      })
+    }
+
+    const nextHistory = history.filter((h) => h.id !== logId)
+    setHistory(nextHistory)
+
+    // Clean up autoLoggedSlots matching this date and subject
+    const nextAutoSlots = autoLoggedSlots.filter(s => !s.includes(`${targetLog.date}_${subjId}`))
+    setAutoLoggedSlots(nextAutoSlots)
+
+    notify(`Deleted log for ${targetLog.subjectName} 🗑️ — Attendance updated live!`, 'info')
+
+    const syncPayload = {
+      history: nextHistory,
+      autoLoggedSlots: nextAutoSlots
+    }
+    if (activeSemester === 'Semester 1') syncPayload.sem1Subjects = updatedSubjects
+    else if (activeSemester === 'Semester 2') syncPayload.sem2Subjects = updatedSubjects
+    else syncPayload.subjects = updatedSubjects
+
+    pushToCloud(syncPayload)
+  }, [isUnlocked, activeSemester, history, autoLoggedSlots, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, setAutoLoggedSlots, notify, pushToCloud])
+
   const addNote = useCallback((noteData) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
@@ -493,6 +563,7 @@ export function AttendanceProvider({ children }) {
     addSubject,
     updateSubject,
     deleteSubject,
+    deleteHistoryEntry,
     addNote,
     toggleNoteComplete,
     deleteNote,
