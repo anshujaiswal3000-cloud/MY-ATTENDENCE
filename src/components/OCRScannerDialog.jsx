@@ -10,7 +10,7 @@ import { useAttendance } from '../context/AttendanceContext'
 import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function OCRScannerDialog({ open, onClose }) {
-  const { subjects, updateTimetable, notify, isUnlocked } = useAttendance()
+  const { subjects, updateTimetable, notify, isUnlocked, pushToCloud } = useAttendance()
   const [imageSrc, setImageSrc] = useState(null)
   const [scanning, setScanning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -140,7 +140,10 @@ export default function OCRScannerDialog({ open, onClose }) {
       updateTimetable(subId, slots)
     })
 
-    notify('✨ Scanned timetable slots imported successfully!', 'success')
+    // Auto push updated timetable to MongoDB Atlas Cloud
+    pushToCloud()
+
+    notify('✨ Scanned timetable imported & saved to MongoDB Atlas Cloud! ☁️', 'success')
     onClose()
   }
 
