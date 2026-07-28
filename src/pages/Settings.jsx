@@ -18,7 +18,7 @@ import { useAttendance } from '../context/AttendanceContext'
 import { readJSONFile } from '../utils/storageUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
-function SettingRow({ icon, title, subtitle, action }) {
+const SettingRow = React.memo(function SettingRow({ icon, title, subtitle, action }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
       <Box sx={{ fontSize: 22, opacity: 0.75, width: 30, display: 'flex', justifyContent: 'center' }}>{icon}</Box>
@@ -29,7 +29,7 @@ function SettingRow({ icon, title, subtitle, action }) {
       {action}
     </Box>
   )
-}
+})
 
 export default function Settings() {
   const { mode, toggleMode } = useThemeMode()

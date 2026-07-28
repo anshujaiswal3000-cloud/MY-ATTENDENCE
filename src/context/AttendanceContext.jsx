@@ -112,26 +112,47 @@ export function AttendanceProvider({ children }) {
   const pullFromCloud = useCallback(async () => {
     try {
       const res = await fetch('/api/sync/anshu')
-      if (res.ok) {
-        const json = await res.json()
-        if (json.success && json.data) {
-          const cloud = json.data
-          if (cloud.subjects && cloud.subjects.length > 0) setSem3Subjects(cloud.subjects)
-          if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) setSem1Subjects(cloud.sem1Subjects)
-          if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) setSem2Subjects(cloud.sem2Subjects)
-          if (cloud.history) setHistory(cloud.history)
-          if (cloud.bunks) setBunks(cloud.bunks)
-          if (cloud.notes) setNotes(cloud.notes)
-          if (cloud.settings) setSettings(cloud.settings)
-          if (cloud.timetableHeader) setTimetableHeader(cloud.timetableHeader)
-          if (cloud.autoLoggedSlots) setAutoLoggedSlots(cloud.autoLoggedSlots)
-          setDbSynced(true)
+      if (!res.ok) return
+      const json = await res.json()
+      if (json.success && json.data) {
+        const cloud = json.data
+        setDbSynced(true)
+
+        if (cloud.subjects && cloud.subjects.length > 0) {
+          setSem3Subjects((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.subjects) ? cloud.subjects : prev))
+        }
+        if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) {
+          setSem1Subjects((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.sem1Subjects) ? cloud.sem1Subjects : prev))
+        }
+        if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) {
+          setSem2Subjects((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.sem2Subjects) ? cloud.sem2Subjects : prev))
+        }
+        if (Array.isArray(cloud.history)) {
+          setHistory((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.history) ? cloud.history : prev))
+        }
+        if (Array.isArray(cloud.bunks)) {
+          setBunks((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.bunks) ? cloud.bunks : prev))
+        }
+        if (Array.isArray(cloud.notes)) {
+          setNotes((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.notes) ? cloud.notes : prev))
+        }
+        if (cloud.settings && typeof cloud.settings === 'object') {
+          setSettings((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.settings) ? cloud.settings : prev))
+        }
+        if (cloud.timetableHeader && typeof cloud.timetableHeader === 'object') {
+          setTimetableHeader((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.timetableHeader) ? cloud.timetableHeader : prev))
+        }
+        if (Array.isArray(cloud.autoLoggedSlots)) {
+          setAutoLoggedSlots((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.autoLoggedSlots) ? cloud.autoLoggedSlots : prev))
         }
       }
     } catch (err) {
       setDbSynced(false)
     }
-  }, [setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader, setAutoLoggedSlots])
+  }, [
+    setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory,
+    setBunks, setNotes, setSettings, setTimetableHeader, setAutoLoggedSlots
+  ])
 
   useEffect(() => {
     pullFromCloud()

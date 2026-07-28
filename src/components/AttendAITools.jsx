@@ -67,7 +67,7 @@ function findMatchingSubject(queryStr, subjectsList) {
   return null
 }
 
-export default function AttendAITools() {
+function AttendAITools() {
   const { subjects, history, bunks, settings } = useAttendance()
   const activeSemester = settings?.semester || 'Semester 3'
   const targetGoal = settings?.targetPercentage || 75
@@ -505,3 +505,5 @@ export default function AttendAITools() {
     </Box>
   )
 }
+
+export default React.memo(AttendAITools)

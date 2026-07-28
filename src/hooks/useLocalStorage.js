@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 /**
  * useLocalStorage
  * A useState-like hook that automatically persists its value to localStorage
- * under the given key, and rehydrates from localStorage on mount.
+ * under the given key asynchronously, preventing main thread I/O blocking.
  */
 export default function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
@@ -17,11 +17,16 @@ export default function useLocalStorage(key, initialValue) {
   })
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value))
-    } catch (err) {
-      console.warn(`useLocalStorage: failed to write key "${key}"`, err)
-    }
+    // Schedule disk I/O asynchronously off the main frame render budget
+    const timeoutId = setTimeout(() => {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(value))
+      } catch (err) {
+        console.warn(`useLocalStorage: failed to write key "${key}"`, err)
+      }
+    }, 0)
+
+    return () => clearTimeout(timeoutId)
   }, [key, value])
 
   // Allows other parts of the app (e.g. Import Data) to force-refresh this
