@@ -33,10 +33,33 @@ const SettingRow = React.memo(function SettingRow({ icon, title, subtitle, actio
 
 export default function Settings() {
   const { mode, toggleMode } = useThemeMode()
-  const { exportData, importData, resetAttendance, pushToCloud, settings = {}, setSettings, notify, isUnlocked } = useAttendance()
+  const { exportData, importData, resetAttendance, pushToCloud, history = [], notes = [], settings = {}, setSettings, notify, isUnlocked } = useAttendance()
   const fileInputRef = useRef(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
+
+  // Safe fallback implementations for Local Backup & Restore
+  const backup = () => {
+    try {
+      const snapshot = { history, notes, settings, timestamp: Date.now() }
+      window.localStorage.setItem('attendx_local_backup', JSON.stringify(snapshot))
+      notify('Local snapshot backup saved 💾')
+    } catch (err) {
+      notify('Backup failed', 'error')
+    }
+  }
+
+  const restoreBackup = () => {
+    try {
+      const stored = window.localStorage.setItem ? window.localStorage.getItem('attendx_local_backup') : null
+      if (!stored) return notify('No local backup snapshot found ⚠️', 'warning')
+      const data = JSON.parse(stored)
+      importData(data)
+      notify('Restored from local backup snapshot 🔄')
+    } catch (err) {
+      notify('Restore failed', 'error')
+    }
+  }
 
   // Collapsible states
   const [attendAiExpanded, setAttendAiExpanded] = useState(true)
