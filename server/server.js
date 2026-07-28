@@ -127,7 +127,6 @@ async function runServerAutoAttendance() {
     const activeSemester = settings.semester || 'Semester 3'
 
     // Server Auto-Attendance strictly runs for active timetable subjects
-    // ADVANCED GUARDS: Skips auto-logging if autoAttendance is false, massBunkToday is true, officialHolidayToday is true, or semester isn't Sem 3
     if (
       settings.autoAttendance === false ||
       settings.massBunkToday === true ||
@@ -281,9 +280,7 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Incorrect OTP code! Please check your Gmail inbox.' })
     }
 
-    let userDoc = await UserData.findOne({ userId: 'anshu' })
-    if (!userDoc) userDoc = await UserData.findOne({})
-
+    let userDoc = await UserData.findOne({})
     if (!userDoc) {
       userDoc = new UserData({ userId: 'anshu', password: newPassword.trim(), email: targetEmail })
       await userDoc.save()
@@ -307,14 +304,9 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
 app.post('/api/auth/verify', async (req, res) => {
   try {
     const { userId, password } = req.body
-    const inputUser = (userId || '').trim().toLowerCase()
     const inputPass = (password || '').trim()
 
-    let userDoc = await UserData.findOne({ userId: inputUser })
-    if (!userDoc && inputUser === 'anshu') {
-      userDoc = await UserData.findOne({})
-    }
-
+    let userDoc = await UserData.findOne({})
     if (!userDoc) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' })
     }
@@ -335,8 +327,7 @@ app.post('/api/auth/change-credentials', async (req, res) => {
   try {
     const { oldUserId, oldPassword, newUserId, newPassword } = req.body
 
-    let userDoc = await UserData.findOne({ userId: (oldUserId || 'anshu').trim().toLowerCase() })
-    if (!userDoc) userDoc = await UserData.findOne({})
+    let userDoc = await UserData.findOne({})
 
     if (!userDoc || userDoc.password !== (oldPassword || '').trim()) {
       return res.status(401).json({ success: false, message: 'Incorrect Current Password!' })
@@ -364,12 +355,10 @@ app.post('/api/auth/change-credentials', async (req, res) => {
   }
 })
 
-// GET /api/sync/:userId -> Pull cloud state
+// GET /api/sync/:userId -> Pull cloud state (STRICT SINGLE DOCUMENT RESOLUTION)
 app.get('/api/sync/:userId', async (req, res) => {
   try {
-    const userId = (req.params.userId || 'anshu').toLowerCase()
-    let data = await UserData.findOne({ userId })
-    if (!data && userId === 'anshu') data = await UserData.findOne({})
+    let data = await UserData.findOne({})
     if (!data) return res.status(404).json({ success: false, message: 'No cloud data found' })
 
     const safeData = data.toObject()
@@ -381,16 +370,13 @@ app.get('/api/sync/:userId', async (req, res) => {
   }
 })
 
-// POST /api/sync/:userId -> Targeted Atomic Update (Avoids Overwriting Unmodified Fields)
+// POST /api/sync/:userId -> Targeted Atomic Update (STRICT SINGLE DOCUMENT RESOLUTION)
 app.post('/api/sync/:userId', async (req, res) => {
   try {
-    const userId = (req.params.userId || 'anshu').toLowerCase()
     const { subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader, autoLoggedSlots } = req.body
 
-    let userDoc = await UserData.findOne({ userId })
-    if (!userDoc && userId === 'anshu') userDoc = await UserData.findOne({})
-
-    const filter = userDoc ? { _id: userDoc._id } : { userId }
+    let userDoc = await UserData.findOne({})
+    const filter = userDoc ? { _id: userDoc._id } : {}
 
     // Build atomic $set object containing ONLY fields passed in request
     const updateFields = { updatedAt: new Date() }
