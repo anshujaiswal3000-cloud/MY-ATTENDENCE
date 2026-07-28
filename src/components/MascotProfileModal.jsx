@@ -8,7 +8,7 @@ import { getOverallStats } from '../utils/attendanceUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function MascotProfileModal({ open, onClose }) {
-  const { subjects = [], bunks = [], settings = {} } = useAttendance()
+  const { subjects = [], bunks = [], settings = {}, activeProfile } = useAttendance()
   const stats = getOverallStats(subjects)
   const activeSemester = settings?.semester || 'Semester 3'
 
@@ -129,8 +129,8 @@ export default function MascotProfileModal({ open, onClose }) {
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                 <Avatar
-                  src="/profile.jpg"
-                  alt="Anshu Jaiswal"
+                  src={activeProfile?.avatarPic || '/profile.jpg'}
+                  alt={activeProfile?.name || 'Student'}
                   sx={{
                     width: 48, height: 48,
                     border: '2px solid #60a5fa',
@@ -140,16 +140,22 @@ export default function MascotProfileModal({ open, onClose }) {
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff', fontSize: '.95rem', lineHeight: 1.2 }} noWrap>
-                      Anshu Jaiswal
+                      {activeProfile?.name || 'Anshu Jaiswal'}
                     </Typography>
                     <MdVerified color="#60a5fa" size={16} />
                   </Box>
                   <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.72rem', display: 'block' }}>
-                    ID: 21250770 • B.Tech CSE (Sec B)
+                    ID: <strong>{activeProfile?.studentId || '21250770'}</strong> • {activeProfile?.branch || 'B.Tech CSE'}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#60a5fa', fontWeight: 700, fontSize: '.72rem' }}>
-                    United College of Eng. & Research
-                  </Typography>
+                  <Chip
+                    label={activeProfile?.studentId === '21250770' ? 'SUPER ADMIN 👑' : 'STUDENT MEMBER 🎓'}
+                    size="small"
+                    sx={{
+                      bgcolor: activeProfile?.studentId === '21250770' ? 'rgba(245,158,11,0.2)' : 'rgba(96,165,250,0.2)',
+                      color: activeProfile?.studentId === '21250770' ? '#f59e0b' : '#60a5fa',
+                      fontWeight: 800, fontSize: '.64rem', height: 18, mt: 0.25
+                    }}
+                  />
                 </Box>
               </Box>
 

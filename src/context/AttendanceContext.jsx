@@ -73,14 +73,30 @@ export function AttendanceProvider({ children }) {
     branch: 'B.Tech CSE 2nd Year (Sec B)',
     college: 'UCER',
     email: 'anshujaiswal3000@gmail.com',
+    role: 'SUPER ADMIN 👑',
     avatarPic: '/profile.jpg'
   }
 
-  const [studentProfiles, setStudentProfiles] = useLocalStorage('attendx_student_profiles', [DEFAULT_ANSHU_PROFILE])
+  const DEFAULT_ANSHUMAN_PROFILE = {
+    studentId: '21250800',
+    name: 'Anshuman',
+    branch: 'B.Tech CSE 2nd Year (Sec B)',
+    college: 'UCER',
+    email: 'anshuman@gmail.com',
+    role: 'STUDENT MEMBER 🎓',
+    avatarPic: ''
+  }
+
+  const [studentProfiles, setStudentProfiles] = useLocalStorage('attendx_student_profiles', [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE])
   const [activeStudentId, setActiveStudentId] = useLocalStorage('attendx_active_student_id', '21250770')
 
+  const activeProfile = useMemo(() => {
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE]
+    return currentList.find(p => p.studentId === activeStudentId) || DEFAULT_ANSHU_PROFILE
+  }, [studentProfiles, activeStudentId])
+
   const registerStudentProfile = useCallback(async (profileData) => {
-    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE]
     const updatedProfiles = [...currentList.filter(p => p.studentId !== profileData.studentId), profileData]
     setStudentProfiles(updatedProfiles)
     setActiveStudentId(profileData.studentId)
@@ -101,14 +117,14 @@ export function AttendanceProvider({ children }) {
   }, [studentProfiles, setStudentProfiles, setActiveStudentId, setSem3Subjects, notify])
 
   const switchStudentAccount = useCallback((studentId) => {
-    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE]
     const target = currentList.find(p => p.studentId === studentId)
     if (!target) return
     setActiveStudentId(studentId)
     if (target.subjects && target.subjects.length > 0) {
       setSem3Subjects(target.subjects)
     }
-    notify(`Switched account to ${target.name} [${studentId}]! 👤`, 'success')
+    notify(`Switched account to ${target.name} [ID: ${studentId}]! 👤`, 'success')
   }, [studentProfiles, setActiveStudentId, setSem3Subjects, notify])
 
   // Tap debouncer ref to prevent accidental rapid double-taps
@@ -140,7 +156,7 @@ export function AttendanceProvider({ children }) {
         timetableHeader: overrides.timetableHeader !== undefined ? overrides.timetableHeader : timetableHeader,
         autoLoggedSlots: overrides.autoLoggedSlots !== undefined ? overrides.autoLoggedSlots : autoLoggedSlots
       }
-      const res = await fetch('/api/sync/anshu', {
+      const res = await fetch(`/api/sync/${activeStudentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -151,11 +167,11 @@ export function AttendanceProvider({ children }) {
     } catch (err) {
       setDbSynced(false)
     }
-  }, [sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader, autoLoggedSlots])
+  }, [activeStudentId, sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader, autoLoggedSlots])
 
   const pullFromCloud = useCallback(async () => {
     try {
-      const res = await fetch('/api/sync/anshu')
+      const res = await fetch(`/api/sync/${activeStudentId}`)
       if (!res.ok) return
       const json = await res.json()
       if (json.success && json.data) {
@@ -643,6 +659,7 @@ export function AttendanceProvider({ children }) {
     pullFromCloud,
     studentProfiles,
     activeStudentId,
+    activeProfile,
     registerStudentProfile,
     switchStudentAccount
   }), [
@@ -650,7 +667,7 @@ export function AttendanceProvider({ children }) {
     setTimetableHeader, snackbar, notify, closeSnackbar, unlockApp, lockApp,
     markAttendance, logBunkClass, deleteBunkClass, addSubject, updateSubject, deleteSubject,
     addNote, toggleNoteComplete, deleteNote, resetAttendance, updateTimetable, exportData, importData,
-    pushToCloud, pullFromCloud, setSettings, studentProfiles, activeStudentId, registerStudentProfile, switchStudentAccount
+    pushToCloud, pullFromCloud, setSettings, studentProfiles, activeStudentId, activeProfile, registerStudentProfile, switchStudentAccount
   ])
 
   return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>

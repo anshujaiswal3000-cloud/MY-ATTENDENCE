@@ -20,7 +20,7 @@ export default function Topbar() {
   const theme = useTheme()
   const location = useLocation()
   const current = NAV_ITEMS.find((n) => n.path === location.pathname)
-  const { subjects, isUnlocked, unlockApp, lockApp, bunks, dbSynced, notify } = useAttendance()
+  const { subjects, isUnlocked, unlockApp, lockApp, bunks, dbSynced, notify, activeProfile, activeStudentId } = useAttendance()
   const stats = getOverallStats(subjects)
 
   // Animated Mascot Celebration Profile Modal
@@ -28,6 +28,12 @@ export default function Topbar() {
 
   const openProfile = () => {
     triggerHaptic([30, 50, 30])
+    // Protection: If guest taps on Anshu Jaiswal (Super Admin) profile when locked, require Admin Password!
+    if (activeStudentId === '21250770' && !isUnlocked) {
+      notify('🔒 Super Admin Profile Protected: Enter Admin Password', 'warning')
+      setLoginOpen(true)
+      return
+    }
     setMascotModalOpen(true)
   }
 
@@ -168,11 +174,11 @@ export default function Topbar() {
         </Tooltip>
 
         {/* 🌟 Profile Avatar with Live Attendance Badge (Triggers Opening Ball Mascot Modal) 🌟 */}
-        <Tooltip title="Anshu Jaiswal (Profile Celebration)">
+        <Tooltip title={`${activeProfile?.name || 'Student Profile'} (${activeProfile?.role || 'Active Profile'})`}>
           <Box sx={{ position: 'relative', cursor: 'pointer' }} onClick={openProfile}>
             <Avatar
-              src="/profile.jpg"
-              alt="Anshu Jaiswal"
+              src={activeProfile?.avatarPic || '/profile.jpg'}
+              alt={activeProfile?.name || 'Student'}
               sx={{
                 width: 38, height: 38,
                 border: '2px solid transparent',
