@@ -112,47 +112,70 @@ export default function Dashboard() {
     [subjects]
   )
 
-  // ── Calculate Live Upcoming Lecture (ALWAYS uses Sem 3 timetable) ──
-  const upcomingClass = useMemo(() => {
-    const now = new Date()
-    const curMins = now.getHours() * 60 + now.getMinutes()
+  // Live 30-second clock ticker for real-time countdown updates
+  const [nowDate, setNowDate] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNowDate(new Date()), 30000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // ── Calculate Real-Time LIVE NOW & NEXT UPCOMING Lecture ──
+  const lectureState = useMemo(() => {
+    const curMins = nowDate.getHours() * 60 + nowDate.getMinutes()
 
     const todaySlots = []
     timetableSubjects.forEach((s) => {
       ;(s.timetable || []).forEach((slot) => {
         if (slot.day === today && !s.isIgnored && s.code !== 'LIBRARY-2') {
-          const endMins = parseEndTime(slot.time)
+          const endObj = parseEndTime(slot.time)
           const startMins = getStartMinutes(slot.time)
+          const endMins = endObj ? endObj.hours * 60 + endObj.minutes : startMins + 50
           todaySlots.push({ subject: s, time: slot.time, period: slot.period, startMins, endMins })
         }
       })
     })
     todaySlots.sort((a, b) => a.startMins - b.startMins)
 
-    const nextToday = todaySlots.find(s => !s.endMins || curMins < (s.endMins.hours * 60 + s.endMins.minutes))
-    if (nextToday) {
-      return { slot: nextToday, dayLabel: `Today (${today})` }
+    // Ongoing class right now
+    const liveSlot = todaySlots.find(s => curMins >= s.startMins && curMins < s.endMins)
+    let ongoing = null
+    if (liveSlot) {
+      const remainingMins = liveSlot.endMins - curMins
+      const totalMins = Math.max(1, liveSlot.endMins - liveSlot.startMins)
+      const elapsedPct = Math.min(100, Math.max(0, ((curMins - liveSlot.startMins) / totalMins) * 100))
+      ongoing = { slot: liveSlot, remainingMins, elapsedPct }
     }
 
-    const todayIdx = WEEKDAYS.indexOf(today)
-    for (let offset = 1; offset <= 6; offset++) {
-      const nextDay = WEEKDAYS[(todayIdx + offset) % WEEKDAYS.length]
-      const nextSlots = []
-      timetableSubjects.forEach((s) => {
-        ;(s.timetable || []).forEach((slot) => {
-          if (slot.day === nextDay && !s.isIgnored && s.code !== 'LIBRARY-2') {
-            nextSlots.push({ subject: s, time: slot.time, period: slot.period, startMins: getStartMinutes(slot.time) })
-          }
+    // Next upcoming class today
+    const minTime = ongoing ? ongoing.slot.endMins : curMins
+    const nextTodaySlot = todaySlots.find(s => s.startMins >= minTime)
+    let next = null
+    if (nextTodaySlot) {
+      const startsInMins = Math.max(0, nextTodaySlot.startMins - curMins)
+      next = { slot: nextTodaySlot, dayLabel: `Today (${today})`, startsInMins }
+    } else {
+      // Find upcoming class in next days
+      const todayIdx = WEEKDAYS.indexOf(today)
+      for (let offset = 1; offset <= 6; offset++) {
+        const nextDay = WEEKDAYS[(todayIdx + offset) % WEEKDAYS.length]
+        const nextSlots = []
+        timetableSubjects.forEach((s) => {
+          ;(s.timetable || []).forEach((slot) => {
+            if (slot.day === nextDay && !s.isIgnored && s.code !== 'LIBRARY-2') {
+              nextSlots.push({ subject: s, time: slot.time, period: slot.period, startMins: getStartMinutes(slot.time) })
+            }
+          })
         })
-      })
-      if (nextSlots.length > 0) {
-        nextSlots.sort((a, b) => a.startMins - b.startMins)
-        return { slot: nextSlots[0], dayLabel: `Upcoming (${nextDay})` }
+        if (nextSlots.length > 0) {
+          nextSlots.sort((a, b) => a.startMins - b.startMins)
+          next = { slot: nextSlots[0], dayLabel: `Upcoming (${nextDay})`, startsInMins: null }
+          break
+        }
       }
     }
 
-    return null
-  }, [timetableSubjects, today])
+    return { ongoing, next }
+  }, [timetableSubjects, today, nowDate])
 
   const subjectLogs = useMemo(() => {
     if (!selectedSubjectHistory) return []
@@ -264,68 +287,90 @@ export default function Dashboard() {
           </GlassCard>
         </Grid>
 
-        {/* 🌟 Upcoming Lecture Card 🌟 */}
+        {/* 🌟 Live Now & Upcoming Lecture Card 🌟 */}
         <Grid item xs={12} md={7} lg={8}>
           <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MdTimer size={22} color="#60a5fa" />
-                  <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                    Upcoming Lecture
+                  {lectureState.ongoing ? (
+                    <Chip label="🔴 LIVE NOW" size="small" sx={{ bgcolor: 'rgba(244,63,94,0.22)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.4)', fontWeight: 800, fontSize: '.72rem' }} />
+                  ) : (
+                    <Chip label="⏰ UPCOMING LECTURE" size="small" sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 800, fontSize: '.72rem' }} />
+                  )}
+                  <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem' }}>
+                    {lectureState.ongoing ? 'Ongoing Lecture' : 'Next Schedule'}
                   </Typography>
                 </Box>
+
                 <Chip
-                  label={upcomingClass ? upcomingClass.dayLabel : 'No Classes'}
+                  label={lectureState.ongoing ? `Ends in ${lectureState.ongoing.remainingMins}m` : (lectureState.next ? lectureState.next.dayLabel : 'No Classes')}
                   size="small"
-                  sx={{ bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontWeight: 700, fontSize: '.7rem' }}
+                  sx={{ bgcolor: lectureState.ongoing ? 'rgba(244,63,94,0.18)' : 'rgba(96,165,250,.18)', color: lectureState.ongoing ? '#f43f5e' : '#60a5fa', fontWeight: 800, fontSize: '.72rem' }}
                 />
               </Box>
 
-              {upcomingClass ? (
-                <Box sx={{ p: 2.25, borderRadius: '18px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Box>
-                      <Box sx={{ display: 'flex', gap: 1, mb: .8 }}>
-                        {upcomingClass.slot.period && (
-                          <Chip
-                            label={upcomingClass.slot.period}
-                            size="small"
-                            sx={{ fontSize: '.72rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff' }}
-                          />
-                        )}
-                        <Chip
-                          icon={<MdSchedule size={12} />}
-                          label={upcomingClass.slot.time}
-                          size="small"
-                          className="mono-num"
-                          sx={{ fontSize: '.72rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc' }}
-                        />
-                      </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.25 }}>
-                        {upcomingClass.slot.subject.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 700 }}>
-                        Code: {upcomingClass.slot.subject.code}
-                      </Typography>
+              {/* 🔴 ONGOING LIVE CLASS BOX */}
+              {lectureState.ongoing && (
+                <Box sx={{ p: 2.25, mb: 2, borderRadius: '18px', background: 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(244,63,94,0.35)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      {lectureState.ongoing.slot.period && (
+                        <Chip label={lectureState.ongoing.slot.period} size="small" sx={{ fontSize: '.7rem', fontWeight: 800, bgcolor: '#f43f5e', color: '#fff' }} />
+                      )}
+                      <Chip icon={<MdSchedule size={12} />} label={lectureState.ongoing.slot.time} size="small" sx={{ fontSize: '.7rem', fontWeight: 800, bgcolor: 'rgba(244,63,94,0.25)', color: '#fda4af' }} />
                     </Box>
+                    <Typography variant="caption" sx={{ color: '#f43f5e', fontWeight: 800 }}>
+                      Ends in {lectureState.ongoing.remainingMins} mins
+                    </Typography>
                   </Box>
 
-                  <Box sx={{ display: 'flex', gap: 2.5, mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,.1)' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: .5, fontWeight: 600 }}>
-                      <MdLocationOn size={15} color="#f43f5e" /> {timetableHeader.room}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: .5, fontWeight: 600 }}>
-                      <MdClass size={15} color="#10b981" /> Prof. {upcomingClass.slot.subject.faculty}
-                    </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
+                    {lectureState.ongoing.slot.subject.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#fda4af', fontWeight: 700 }}>
+                    Code: {lectureState.ongoing.slot.subject.code} • Prof. {lectureState.ongoing.slot.subject.faculty}
+                  </Typography>
+
+                  <Box sx={{ width: '100%', bgcolor: 'rgba(255,255,255,0.1)', height: 6, borderRadius: 3, mt: 1.5, overflow: 'hidden' }}>
+                    <Box sx={{ width: `${lectureState.ongoing.elapsedPct}%`, bgcolor: '#f43f5e', height: '100%', borderRadius: 3, transition: 'width 300ms ease' }} />
                   </Box>
                 </Box>
-              ) : (
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    🎉 All classes completed for today! Check timetable for full schedule.
+              )}
+
+              {/* ⏭️ NEXT UPCOMING CLASS SUB-ROW */}
+              {lectureState.next ? (
+                <Box sx={{ p: 2, borderRadius: '16px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip label="⏭️ NEXT" size="small" sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff', height: 22 }} />
+                      <Chip icon={<MdSchedule size={12} />} label={lectureState.next.slot.time} size="small" sx={{ fontSize: '.68rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc', height: 22 }} />
+                    </Box>
+
+                    {lectureState.next.startsInMins !== null && (
+                      <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 800, fontSize: '.75rem' }}>
+                        Starts in {lectureState.next.startsInMins}m
+                      </Typography>
+                    )}
+                  </Box>
+
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
+                    {lectureState.next.slot.subject.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
+                    <span><MdLocationOn size={13} color="#f43f5e" inline /> {timetableHeader.room}</span>
+                    <span>•</span>
+                    <span><MdClass size={13} color="#10b981" inline /> Prof. {lectureState.next.slot.subject.faculty}</span>
                   </Typography>
                 </Box>
+              ) : (
+                !lectureState.ongoing && (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      🎉 All classes completed for today! Check timetable for full schedule.
+                    </Typography>
+                  </Box>
+                )
               )}
             </Box>
 
