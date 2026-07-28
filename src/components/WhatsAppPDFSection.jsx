@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import {
   Box, Typography, Button, Chip, Alert, CircularProgress
 } from '@mui/material'
-import { MdPictureAsPdf, MdSend, MdCheckCircle, MdAutoAwesome, MdSmartphone } from 'react-icons/md'
+import { MdPictureAsPdf, MdSend, MdCheckCircle, MdAutoAwesome } from 'react-icons/md'
 import jsPDF from 'jspdf'
 import GlassCard from './GlassCard'
 import { useAttendance } from '../context/AttendanceContext'
@@ -19,94 +19,139 @@ export default function WhatsAppPDFSection() {
   const activeSemester = settings?.semester || 'Semester 3'
   const stats = getOverallStats(subjects)
 
-  const handleGenerateAndSendPdf = () => {
+  const handleDownloadPdfReport = () => {
     triggerHaptic([30, 50, 30])
     setGeneratingPdf(true)
     setStatusMsg('')
     setStatusErr('')
 
     try {
-      // 1. Generate Official PDF Document
-      const doc = new jsPDF()
+      // 1. Generate Executive Ultra-Premium PDF Document
+      const doc = new jsPDF('p', 'mm', 'a4')
 
-      // Header Banner
-      doc.setFillColor(15, 23, 42)
-      doc.rect(0, 0, 210, 40, 'F')
+      // Sleek Dark Header Banner
+      doc.setFillColor(11, 17, 32)
+      doc.rect(0, 0, 210, 48, 'F')
+
+      // Aurora Gradient Accent Strip
+      doc.setFillColor(99, 102, 241)
+      doc.rect(0, 46, 210, 2, 'F')
 
       doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
       doc.setFontSize(22)
-      doc.text('AttendX Official Attendance Report', 14, 22)
-      
+      doc.text('AttendX — Official Academic Attendance Report', 14, 20)
+
+      doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
       doc.setTextColor(148, 163, 184)
-      doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')} | Semester: ${activeSemester}`, 14, 32)
+      doc.text(`United College of Engineering & Research | ${activeSemester}`, 14, 30)
+      doc.text(`Issued On: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`, 14, 38)
 
-      // Student Profile
-      doc.setTextColor(30, 41, 59)
-      doc.setFontSize(12)
-      doc.text('Student Profile:', 14, 52)
+      // Student Profile Card Box
+      doc.setFillColor(248, 250, 252)
+      doc.rect(14, 54, 182, 36, 'F')
+      doc.setDrawColor(226, 232, 240)
+      doc.rect(14, 54, 182, 36, 'S')
 
-      doc.setFontSize(10)
-      doc.text('• Name: Anshu Jaiswal', 16, 60)
-      doc.text('• Student ID: 21250770', 16, 67)
-      doc.text('• Branch & Sec: B.Tech CSE (Sec B)', 16, 74)
-      doc.text('• College: United College of Engineering & Research', 16, 81)
-
-      // Stats Summary Box
-      doc.setFillColor(241, 245, 249)
-      doc.rect(14, 90, 182, 28, 'F')
-
-      doc.setFontSize(12)
-      doc.setTextColor(15, 23, 42)
-      doc.text(`Overall Attendance: ${stats.percentage.toFixed(2)}%`, 20, 102)
-      doc.setFontSize(10)
-      doc.text(`Attended: ${stats.present} / ${stats.total} Total Lectures | Status: ${stats.percentage >= 75 ? 'Safe Zone' : 'Warning'}`, 20, 110)
-
-      // Subject Table Header
-      let y = 130
+      doc.setFont('helvetica', 'bold')
       doc.setFontSize(11)
       doc.setTextColor(15, 23, 42)
-      doc.text('Subject Name', 14, y)
-      doc.text('Code', 110, y)
-      doc.text('Present/Total', 145, y)
-      doc.text('%', 185, y)
+      doc.text('STUDENT PROFILE', 20, 64)
 
-      doc.setLineWidth(0.5)
-      doc.line(14, y + 2, 196, y + 2)
-
-      // Subject Table Rows
-      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
       doc.setTextColor(51, 65, 85)
-      
-      subjects.forEach((sub) => {
-        y += 8
+      doc.text('Name: Anshu Jaiswal', 20, 72)
+      doc.text('Student ID: 21250770', 20, 79)
+
+      doc.text('Branch: B.Tech CSE (Section B)', 110, 72)
+      doc.text(`Active Semester: ${activeSemester}`, 110, 79)
+
+      // Overall Percentage Metric Banner
+      const isSafe = stats.percentage >= 75
+      doc.setFillColor(isSafe ? 236 : 254, isSafe ? 253 : 242, isSafe ? 245 : 242)
+      doc.rect(14, 96, 182, 26, 'F')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(14)
+      doc.setTextColor(isSafe ? 16 : 244, isSafe ? 185 : 63, isSafe ? 129 : 94)
+      doc.text(`OVERALL ATTENDANCE: ${stats.percentage.toFixed(2)}%`, 20, 108)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      doc.setTextColor(71, 85, 105)
+      doc.text(`Total Lectures Attended: ${stats.present} / ${stats.total}  |  Status: ${isSafe ? 'SAFE ZONE (Eligible for Exams)' : 'WARNING ZONE'}`, 20, 116)
+
+      // Subject Breakdown Table Header
+      let y = 132
+      doc.setFillColor(241, 245, 249)
+      doc.rect(14, y, 182, 10, 'F')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(15, 23, 42)
+      doc.text('SUBJECT NAME', 18, y + 7)
+      doc.text('CODE', 105, y + 7)
+      doc.text('LECTURES', 140, y + 7)
+      doc.text('STATUS %', 172, y + 7)
+
+      // Rows
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+
+      subjects.forEach((sub, idx) => {
+        y += 10
         if (y > 270) {
           doc.addPage()
           y = 20
         }
+
+        // Alternating row background
+        if (idx % 2 === 0) {
+          doc.setFillColor(250, 250, 250)
+          doc.rect(14, y - 6, 182, 10, 'F')
+        }
+
         const pct = sub.total > 0 ? ((sub.present / sub.total) * 100).toFixed(1) : '0.0'
-        doc.text(sub.name.substring(0, 38), 14, y)
-        doc.text(sub.code || 'N/A', 110, y)
-        doc.text(`${sub.present}/${sub.total}`, 145, y)
-        doc.text(sub.isIgnored ? 'N/A' : `${pct}%`, 185, y)
+        doc.setTextColor(30, 41, 59)
+        doc.text(sub.name.substring(0, 36), 18, y)
+        doc.text(sub.code || 'N/A', 105, y)
+        doc.text(`${sub.present} / ${sub.total}`, 140, y)
+
+        if (sub.isIgnored) {
+          doc.setTextColor(148, 163, 184)
+          doc.text('N/A (Ignored)', 172, y)
+        } else {
+          const subPct = parseFloat(pct)
+          if (subPct >= 85) doc.setTextColor(16, 185, 129)
+          else if (subPct >= 75) doc.setTextColor(245, 158, 11)
+          else doc.setTextColor(244, 63, 94)
+
+          doc.text(`${pct}%`, 172, y)
+        }
       })
 
-      // Footer
+      // Digital Seal & Footer
+      y += 18
+      if (y > 265) {
+        doc.addPage()
+        y = 30
+      }
+
+      doc.setLineWidth(0.3)
+      doc.setDrawColor(203, 213, 225)
+      doc.line(14, y, 196, y)
+
       doc.setFontSize(8)
       doc.setTextColor(148, 163, 184)
-      doc.text('AttendX 24/7 Autonomous Attendance Engine — Official Record Document', 14, 285)
+      doc.text('AttendX Digital Verified Academic Document — Generated for Anshu Jaiswal (UCER)', 14, y + 8)
 
-      // Save PDF locally
-      doc.save(`AttendX_Report_Anshu_Jaiswal_${new Date().toISOString().slice(0, 10)}.pdf`)
+      // Save PDF directly to local storage (No WhatsApp redirection)
+      doc.save(`AttendX_Official_Report_Anshu_Jaiswal_${new Date().toISOString().slice(0, 10)}.pdf`)
 
-      // 2. Open WhatsApp Direct Message pre-filled to target number 919125469499
-      const reportText = `*AttendX Official Attendance Report* 📄%0A%0A*Student*: Anshu Jaiswal (ID: 21250770)%0A*Branch*: B.Tech CSE (Sec B), UCER%0A*Active Semester*: ${activeSemester}%0A%0A*Overall Attendance*: *${stats.percentage.toFixed(2)}%*%0A*Total Lectures*: ${stats.present} / ${stats.total} Present%0A*Status*: ${stats.percentage >= 75 ? 'Safe Zone 🎯' : 'Warning Zone ⚠️'}%0A%0A📄 _Official PDF Report generated & ready._%0A_Powered by ATTIX Autonomous Engine_ ⚡`
-
-      const waUrl = `https://api.whatsapp.com/send?phone=919125469499&text=${reportText}`
-      window.open(waUrl, '_blank')
-
-      setStatusMsg('✨ PDF Report generated & WhatsApp dispatched!')
-      notify('📄 PDF Report generated & WhatsApp dispatched!', 'success')
+      setStatusMsg('✨ Premium Official PDF Report downloaded successfully to your device!')
+      notify('📄 Official PDF Report downloaded to device!', 'success')
     } catch (err) {
       setStatusErr('PDF Generation Error: ' + err.message)
     } finally {
@@ -124,12 +169,15 @@ export default function WhatsAppPDFSection() {
       const res = await fetch('/api/alerts/whatsapp/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: '9125469499' })
+        body: JSON.stringify({
+          phone: '9125469499',
+          message: 'your DSTL attendance of today lecture 09:00 AM - 09:50 AM has been marked by automarker'
+        })
       })
       const json = await res.json()
       if (json.success) {
-        setStatusMsg('⚡ Real-Time ATTIX WhatsApp Alert delivered to your phone!')
-        notify('⚡ ATTIX WhatsApp Alert sent!', 'success')
+        setStatusMsg('⚡ Soft ATTIX alert text dispatched: "your DSTL attendance of today lecture 09:00 AM - 09:50 AM has been marked by automarker"')
+        notify('⚡ ATTIX Soft WhatsApp text alert sent to +91 9125469499!', 'success')
       } else {
         setStatusErr(json.message || 'Failed to dispatch ATTIX alert')
       }
@@ -173,10 +221,10 @@ export default function WhatsAppPDFSection() {
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.25 }}>
-              WhatsApp PDF Report & ATTIX Alerts
+              Official PDF Report & ATTIX WhatsApp Alerts
             </Typography>
             <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.78rem', fontWeight: 600 }}>
-              1-Tap PDF Report Generation & Real-Time WhatsApp Alerts
+              Real-time soft alerts to +91 9125469499 & Executive PDF Exports
             </Typography>
           </Box>
         </Box>
@@ -208,12 +256,12 @@ export default function WhatsAppPDFSection() {
         </Alert>
       )}
 
-      {/* Action Buttons Section (Clean Grid) */}
+      {/* Action Buttons Section */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.75, mt: 1 }}>
         <Button
           fullWidth
           variant="contained"
-          onClick={handleGenerateAndSendPdf}
+          onClick={handleDownloadPdfReport}
           disabled={generatingPdf}
           startIcon={generatingPdf ? <CircularProgress size={18} color="inherit" /> : <MdPictureAsPdf size={20} />}
           sx={{
@@ -232,7 +280,7 @@ export default function WhatsAppPDFSection() {
             },
           }}
         >
-          {generatingPdf ? 'Generating PDF...' : '📄 Send PDF Report to WhatsApp'}
+          {generatingPdf ? 'Generating PDF...' : '📄 Download Official PDF Report'}
         </Button>
 
         <Button
@@ -257,7 +305,7 @@ export default function WhatsAppPDFSection() {
             },
           }}
         >
-          {testingAlert ? 'Sending Alert...' : '⚡ Test ATTIX Alert'}
+          {testingAlert ? 'Sending Alert...' : '⚡ Test ATTIX Soft Alert'}
         </Button>
       </Box>
     </GlassCard>
