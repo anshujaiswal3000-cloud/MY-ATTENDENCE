@@ -266,27 +266,6 @@ export default function AttendAITools() {
           </Box>
         </Box>
 
-        {/* Quick Suggestion Chips */}
-        <Box sx={{ display: 'flex', gap: 1, my: 1.5, flexWrap: 'wrap' }}>
-          {[
-            'agr mai digital electronic ki class aaj na kru toh kitne % attendance ho jayega?',
-            'Kin-kin subjects mein safe bunks hain?',
-            '75% target pahochnay ke liye kitni classes chahiye?',
-            'Library classes count kitne hue hain?'
-          ].map((prompt) => (
-            <Chip
-              key={prompt}
-              label={prompt}
-              size="small"
-              onClick={() => {
-                setQuery(prompt)
-                setAiResponse(null)
-              }}
-              sx={{ fontSize: '.7rem', fontWeight: 700, bgcolor: 'rgba(148,163,184,0.12)', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(99,102,241,0.2)' } }}
-            />
-          ))}
-        </Box>
-
         {/* Search / Ask Input */}
         <Box component="form" onSubmit={handleAiAsk} sx={{ display: 'flex', gap: 1, mt: 1 }}>
           <TextField
