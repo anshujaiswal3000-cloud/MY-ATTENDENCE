@@ -20,13 +20,14 @@ export default function SubjectCard({
   delay = 0,
 }) {
   const Icon = getSubjectIcon(subject.icon)
+  const isIgnored = Boolean(subject.isIgnored || subject.code === 'LIBRARY-2' || subject.name.toLowerCase().includes('library'))
   const pct = getPercentage(subject.present, subject.total)
-  const status = getStatus(pct)
+  const status = isIgnored ? 'ignored' : getStatus(pct)
   const [start, end] = subject.color || ['#3b82f6', '#8b5cf6']
 
   return (
-    <GlassCard delay={delay} sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+    <GlassCard delay={delay} sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5, opacity: isIgnored ? 0.85 : 1 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
           <Box
             sx={{
@@ -48,11 +49,11 @@ export default function SubjectCard({
         {variant === 'full' && (
           <Chip
             size="small"
-            label={STATUS_LABELS[status]}
+            label={isIgnored ? 'N/A (Ignored)' : STATUS_LABELS[status]}
             sx={{
-              bgcolor: `${STATUS_COLORS[status]}22`,
-              color: STATUS_COLORS[status],
-              fontWeight: 600,
+              bgcolor: isIgnored ? 'rgba(148,163,184,0.16)' : `${STATUS_COLORS[status]}22`,
+              color: isIgnored ? '#94a3b8' : STATUS_COLORS[status],
+              fontWeight: 700,
               flexShrink: 0,
             }}
           />
@@ -63,8 +64,8 @@ export default function SubjectCard({
         <>
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography className="mono-num" variant="body2" sx={{ fontWeight: 700 }}>
-                {pct.toFixed(2)}%
+              <Typography className="mono-num" variant="body2" sx={{ fontWeight: 700, color: isIgnored ? '#94a3b8' : 'inherit' }}>
+                {isIgnored ? 'N/A' : `${pct.toFixed(2)}%`}
               </Typography>
               <Typography className="mono-num" variant="caption" sx={{ opacity: 0.6 }}>
                 {subject.present}/{subject.total}
@@ -72,14 +73,14 @@ export default function SubjectCard({
             </Box>
             <LinearProgress
               variant="determinate"
-              value={Math.min(100, pct)}
+              value={isIgnored ? 0 : Math.min(100, pct)}
               sx={{
                 height: 8,
                 borderRadius: 4,
                 bgcolor: 'rgba(148,163,184,0.18)',
                 '& .MuiLinearProgress-bar': {
                   borderRadius: 4,
-                  background: `linear-gradient(90deg, ${start}, ${end})`,
+                  background: isIgnored ? '#64748b' : `linear-gradient(90deg, ${start}, ${end})`,
                 },
               }}
             />
