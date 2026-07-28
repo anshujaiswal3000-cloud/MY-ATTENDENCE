@@ -325,7 +325,7 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
   }
 })
 
-// POST /api/auth/verify -> Verify Owner Credentials
+// POST /api/auth/verify -> Verify Owner Credentials (Default Pass: anshu123, User ID: 21250770)
 app.post('/api/auth/verify', async (req, res) => {
   try {
     const { userId, password } = req.body
@@ -333,14 +333,16 @@ app.post('/api/auth/verify', async (req, res) => {
 
     let userDoc = await UserData.findOne({})
     if (!userDoc) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' })
+      userDoc = new UserData({ userId: '21250770', password: 'anshu123', email: 'anshujaiswal3000@gmail.com' })
+      await userDoc.save()
     }
 
-    if (userDoc.password === inputPass) {
-      return res.json({ success: true, userId: userDoc.userId })
+    // Accept set password OR fallback default password 'anshu123' or '21250770'
+    if (userDoc.password === inputPass || inputPass === 'anshu123' || inputPass === '21250770') {
+      return res.json({ success: true, userId: '21250770' })
     }
 
-    res.status(401).json({ success: false, message: 'Invalid credentials' })
+    res.status(401).json({ success: false, message: 'Invalid Owner Password' })
   } catch (err) {
     console.error('API Error /verify:', err.message)
     res.status(500).json({ success: false, message: 'Server authentication error' })
@@ -353,9 +355,11 @@ app.post('/api/auth/change-credentials', async (req, res) => {
     const { oldUserId, oldPassword, newUserId, newPassword } = req.body
 
     let userDoc = await UserData.findOne({})
+    const curPass = userDoc ? userDoc.password : 'anshu123'
+    const inputOld = (oldPassword || '').trim()
 
-    if (!userDoc || userDoc.password !== (oldPassword || '').trim()) {
-      return res.status(401).json({ success: false, message: 'Incorrect Current Password!' })
+    if (inputOld !== curPass && inputOld !== 'anshu123' && inputOld !== '21250770') {
+      return res.status(401).json({ success: false, message: 'Incorrect Current Password! Default password is: anshu123' })
     }
 
     if (!newPassword || newPassword.trim().length < 3) {
