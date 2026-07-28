@@ -22,13 +22,9 @@ export default function Settings() {
     isUnlocked
   } = useAttendance()
 
-  // Accordion Expand States
-  const [reportsExpanded, setReportsExpanded] = useState(true)
-  const [semesterExpanded, setSemesterExpanded] = useState(false)
-  const [engineExpanded, setEngineExpanded] = useState(false)
-  const [securityExpanded, setSecurityExpanded] = useState(false)
+  // Accordion Single Expansion State ('reports' | 'semester' | 'engine' | 'security' | 'data' | null)
+  const [openSection, setOpenSection] = useState('reports')
   const [changePassExpanded, setChangePassExpanded] = useState(false)
-  const [dataExpanded, setDataExpanded] = useState(false)
 
   // Security Form State
   const [oldUserId, setOldUserId] = useState('')
@@ -97,11 +93,11 @@ export default function Settings() {
       {/* ─────────────────────────────────────────────────────────────
           SECTION 1: WHATSAPP PDF REPORTS & ATTIX ALERTS
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
+      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
         <Box
           onClick={() => {
             triggerHaptic(15)
-            setReportsExpanded(!reportsExpanded)
+            setOpenSection(openSection === 'reports' ? null : 'reports')
           }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
         >
@@ -119,11 +115,11 @@ export default function Settings() {
             </Box>
           </Box>
           <IconButton size="small" sx={{ color: '#34d399' }}>
-            {reportsExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+            {openSection === 'reports' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
           </IconButton>
         </Box>
 
-        <Collapse in={reportsExpanded} timeout="auto" unmountOnExit>
+        <Collapse in={openSection === 'reports'} timeout="auto" unmountOnExit>
           <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             <WhatsAppPDFSection />
           </Box>
@@ -133,11 +129,11 @@ export default function Settings() {
       {/* ─────────────────────────────────────────────────────────────
           SECTION 2: ACADEMIC SEMESTER SELECTOR
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.35)' }}>
+      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.35)' }}>
         <Box
           onClick={() => {
             triggerHaptic(15)
-            setSemesterExpanded(!semesterExpanded)
+            setOpenSection(openSection === 'semester' ? null : 'semester')
           }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
         >
@@ -155,11 +151,11 @@ export default function Settings() {
             </Box>
           </Box>
           <IconButton size="small" sx={{ color: '#60a5fa' }}>
-            {semesterExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+            {openSection === 'semester' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
           </IconButton>
         </Box>
 
-        <Collapse in={semesterExpanded} timeout="auto" unmountOnExit>
+        <Collapse in={openSection === 'semester'} timeout="auto" unmountOnExit>
           <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {[
@@ -218,11 +214,11 @@ export default function Settings() {
       {/* ─────────────────────────────────────────────────────────────
           SECTION 3: AUTONOMOUS ENGINE & HOLIDAY PROTECTION
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
+      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
         <Box
           onClick={() => {
             triggerHaptic(15)
-            setEngineExpanded(!engineExpanded)
+            setOpenSection(openSection === 'engine' ? null : 'engine')
           }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
         >
@@ -240,11 +236,11 @@ export default function Settings() {
             </Box>
           </Box>
           <IconButton size="small" sx={{ color: '#34d399' }}>
-            {engineExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+            {openSection === 'engine' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
           </IconButton>
         </Box>
 
-        <Collapse in={engineExpanded} timeout="auto" unmountOnExit>
+        <Collapse in={openSection === 'engine'} timeout="auto" unmountOnExit>
           <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
               <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -317,11 +313,11 @@ export default function Settings() {
       {/* ─────────────────────────────────────────────────────────────
           SECTION 4: OWNER SECURITY & STEP-BY-STEP PASSWORD CHANGE
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.35)' }}>
+      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.35)' }}>
         <Box
           onClick={() => {
             triggerHaptic(15)
-            setSecurityExpanded(!securityExpanded)
+            setOpenSection(openSection === 'security' ? null : 'security')
           }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
         >
@@ -339,11 +335,11 @@ export default function Settings() {
             </Box>
           </Box>
           <IconButton size="small" sx={{ color: '#818cf8' }}>
-            {securityExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+            {openSection === 'security' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
           </IconButton>
         </Box>
 
-        <Collapse in={securityExpanded} timeout="auto" unmountOnExit>
+        <Collapse in={openSection === 'security'} timeout="auto" unmountOnExit>
           <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             
             {/* Step 1 Nested Accordion Option */}
@@ -446,11 +442,11 @@ export default function Settings() {
       {/* ─────────────────────────────────────────────────────────────
           SECTION 5: DATA MAINTENANCE & BACKUPS
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.35)' }}>
+      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.35)' }}>
         <Box
           onClick={() => {
             triggerHaptic(15)
-            setDataExpanded(!dataExpanded)
+            setOpenSection(openSection === 'data' ? null : 'data')
           }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
         >
@@ -468,11 +464,11 @@ export default function Settings() {
             </Box>
           </Box>
           <IconButton size="small" sx={{ color: '#f59e0b' }}>
-            {dataExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+            {openSection === 'data' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
           </IconButton>
         </Box>
 
-        <Collapse in={dataExpanded} timeout="auto" unmountOnExit>
+        <Collapse in={openSection === 'data'} timeout="auto" unmountOnExit>
           <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>

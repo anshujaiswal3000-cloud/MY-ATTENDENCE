@@ -326,7 +326,7 @@ export default function Dashboard() {
 
               {/* 🔴 ONGOING LIVE CLASS BOX */}
               {lectureState.ongoing && (
-                <Box sx={{ p: { xs: 1.75, sm: 2.25 }, mb: 2, borderRadius: '18px', background: 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(244,63,94,0.35)' }}>
+                <Box sx={{ p: { xs: 2, sm: 2.25 }, mb: 2, borderRadius: '18px', background: 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(15,23,42,0.92) 100%)', border: '1.5px solid rgba(244,63,94,0.4)', boxShadow: '0 8px 24px rgba(244,63,94,0.15)' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {lectureState.ongoing.slot.period && (
@@ -352,26 +352,26 @@ export default function Dashboard() {
                 </Box>
               )}
 
-              {/* ⏭️ NEXT UPCOMING CLASS SUB-ROW */}
+              {/* ⏭️ NEXT UPCOMING CLASS SUB-ROW (Matching Layout & Styling) */}
               {lectureState.next && (
-                <Box sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: '16px', background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.25)' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8, flexWrap: 'wrap', gap: 1 }}>
+                <Box sx={{ p: { xs: 2, sm: 2.25 }, borderRadius: '18px', background: 'linear-gradient(135deg, rgba(99,102,241,.14) 0%, rgba(15,23,42,0.92) 100%)', border: '1.5px solid rgba(99,102,241,.35)', boxShadow: '0 8px 24px rgba(99,102,241,0.15)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Chip label="⏭️ NEXT" size="small" sx={{ fontSize: '.65rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff', height: 22 }} />
-                      <Chip icon={<MdSchedule size={12} />} label={lectureState.next.slot.time} size="small" sx={{ fontSize: '.65rem', fontWeight: 700, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc', height: 22 }} />
+                      <Chip label="⏭️ NEXT UPCOMING" size="small" sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: 'var(--aurora)', color: '#fff', height: 24 }} />
+                      <Chip icon={<MdSchedule size={12} />} label={lectureState.next.slot.time} size="small" sx={{ fontSize: '.68rem', fontWeight: 800, bgcolor: 'rgba(99,102,241,.25)', color: '#a5b4fc', height: 24 }} />
                     </Box>
 
                     {lectureState.next.startsInMins !== null && (
-                      <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 800, fontSize: '.72rem' }}>
-                        Starts in {lectureState.next.startsInMins}m
+                      <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 800, fontSize: '.75rem' }}>
+                        Starts in {lectureState.next.startsInMins} mins
                       </Typography>
                     )}
                   </Box>
 
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.25, color: '#fff', fontSize: { xs: '.92rem', sm: '1rem' }, wordBreak: 'break-word' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.25, color: '#fff', fontSize: { xs: '1rem', sm: '1.15rem' }, wordBreak: 'break-word' }}>
                     {lectureState.next.slot.subject.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
+                  <Typography variant="caption" sx={{ color: '#a5b4fc', fontWeight: 700, fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
                     <span><MdLocationOn size={13} color="#f43f5e" inline /> {timetableHeader.room}</span>
                     <span>•</span>
                     <span><MdClass size={13} color="#10b981" inline /> Prof. {lectureState.next.slot.subject.faculty}</span>
