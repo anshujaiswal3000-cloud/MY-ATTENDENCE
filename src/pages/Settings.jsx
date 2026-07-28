@@ -40,8 +40,10 @@ export default function Settings() {
 
   // Collapsible states
   const [attendAiExpanded, setAttendAiExpanded] = useState(true)
+  const [autoAiExpanded, setAutoAiExpanded] = useState(true)
   const [semesterExpanded, setSemesterExpanded] = useState(false)
   const [securityExpanded, setSecurityExpanded] = useState(false)
+
 
   // Security Credentials form state
   const [oldUserId, setOldUserId] = useState('anshu')
@@ -181,6 +183,121 @@ export default function Settings() {
         <Collapse in={attendAiExpanded} timeout="auto" unmountOnExit>
           <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
             <AttendAITools />
+          </Box>
+        </Collapse>
+      </GlassCard>
+
+      {/* 🤖 NEW TAB / CARD: AutoAttendance AI Control Hub & Holiday Guards 🤖 */}
+      <GlassCard sx={{ p: 2.5, mb: 3, border: '2px solid rgba(16,185,129,0.45)', background: 'linear-gradient(135deg, rgba(6,78,59,0.25), rgba(15,23,42,0.95))' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setAutoAiExpanded(!autoAiExpanded)
+          }}
+          sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            cursor: 'pointer', userSelect: 'none'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              width: 44, height: 44, borderRadius: '14px', display: 'grid', placeItems: 'center',
+              bgcolor: 'rgba(16,185,129,0.22)', color: '#34d399', fontSize: 24
+            }}>
+              🤖
+            </Box>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
+                  AutoAttendance AI Control Hub & Holiday Guards
+                </Typography>
+                <Chip label="● 24/7 LIVE AWAKE" size="small" sx={{ bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', fontWeight: 800, fontSize: '.68rem' }} />
+              </Box>
+              <Typography variant="caption" sx={{ color: '#6ee7b7' }}>
+                Configure 24/7 Server Auto-Attendance, Mass Bunks & Official Holiday Guards
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton size="small" sx={{ color: '#34d399' }}>
+            {autoAiExpanded ? <MdExpandLess size={26} /> : <MdExpandMore size={26} />}
+          </IconButton>
+        </Box>
+
+        {/* Collapsible AutoAttendance AI Control Hub Body */}
+        <Collapse in={autoAiExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            
+            {/* Setting 1: Master Server Auto-Attendance Switch */}
+            <SettingRow
+              icon="⚡"
+              title="24/7 Server Autonomous Auto-Attendance"
+              subtitle="Runs on Render server every 30s in IST timezone even when phone is turned off"
+              action={
+                <Switch
+                  checked={settings?.autoAttendance !== false}
+                  onChange={(e) => {
+                    if (!isUnlocked) return notify('Login required to change 🔒', 'warning')
+                    const updated = { ...settings, autoAttendance: e.target.checked }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                    notify(e.target.checked ? 'Server Auto-Attendance Enabled ⚡' : 'Server Auto-Attendance Disabled ⏸️')
+                  }}
+                />
+              }
+            />
+            <Divider sx={{ opacity: 0.1, my: 1 }} />
+
+            {/* Setting 2: Declare Mass Bunk Today */}
+            <SettingRow
+              icon="⚠️"
+              title="Declare Today as Mass Bunk / Cancelled Day"
+              subtitle="Pauses server auto-logging today so cancelled classes/mass bunks don't increment attendance"
+              action={
+                <Switch
+                  checked={Boolean(settings?.massBunkToday)}
+                  onChange={(e) => {
+                    if (!isUnlocked) return notify('Login required to change 🔒', 'warning')
+                    const updated = { ...settings, massBunkToday: e.target.checked }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                    notify(e.target.checked ? 'Mass Bunk Mode Enabled: Auto-logging paused for today ⚠️' : 'Mass Bunk Mode Disabled ✅')
+                  }}
+                />
+              }
+            />
+            <Divider sx={{ opacity: 0.1, my: 1 }} />
+
+            {/* Setting 3: Declare Official College Holiday Today */}
+            <SettingRow
+              icon="🎉"
+              title="Declare Today as Official College Holiday / Fest"
+              subtitle="Guarantees 0 lectures counted or incremented on official college holidays & fest days"
+              action={
+                <Switch
+                  checked={Boolean(settings?.officialHolidayToday)}
+                  onChange={(e) => {
+                    if (!isUnlocked) return notify('Login required to change 🔒', 'warning')
+                    const updated = { ...settings, officialHolidayToday: e.target.checked }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                    notify(e.target.checked ? 'Official Holiday Mode Enabled: 0 lectures counted today 🎉' : 'Official Holiday Mode Disabled ✅')
+                  }}
+                />
+              }
+            />
+            <Divider sx={{ opacity: 0.1, my: 1 }} />
+
+            {/* Automatic Calendar Exceptions Info */}
+            <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', mt: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399', mb: 0.5 }}>
+                🌴 Automatic Calendar Exclusions
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '.78rem', color: '#94a3b8' }}>
+                System automatically excludes **Every Sunday**, **1st Saturday**, and **3rd Saturday** of the month from attendance counts. No manual action needed!
+              </Typography>
+            </Box>
+
           </Box>
         </Collapse>
       </GlassCard>

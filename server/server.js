@@ -115,7 +115,7 @@ function startKeepAlivePinger() {
 
 startKeepAlivePinger()
 
-// ── ADVANCED TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH MASS BUNK PROTECTION & LAB +2 LOGIC) ──
+// ── ADVANCED TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH HOLIDAY & MASS BUNK GUARDS) ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
 
@@ -127,8 +127,13 @@ async function runServerAutoAttendance() {
     const activeSemester = settings.semester || 'Semester 3'
 
     // Server Auto-Attendance strictly runs for active timetable subjects
-    // ADVANCED GUARD: Skips auto-logging if autoAttendance is disabled, massBunkToday is active, or semester isn't Sem 3
-    if (settings.autoAttendance === false || settings.massBunkToday === true || activeSemester !== 'Semester 3') return
+    // ADVANCED GUARDS: Skips auto-logging if autoAttendance is false, massBunkToday is true, officialHolidayToday is true, or semester isn't Sem 3
+    if (
+      settings.autoAttendance === false ||
+      settings.massBunkToday === true ||
+      settings.officialHolidayToday === true ||
+      activeSemester !== 'Semester 3'
+    ) return
 
     const subjects = userDoc.subjects || []
     if (subjects.length === 0) return
