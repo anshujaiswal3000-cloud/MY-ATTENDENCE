@@ -223,8 +223,8 @@ async function runServerAutoAttendance() {
   }
 }
 
-// Start Server-Side Auto Attendance Background Scheduler (Runs every 30s 24/7)
-setInterval(runServerAutoAttendance, 30000)
+// Start Server-Side Auto Attendance Background Scheduler (Backup: 15s — Python engine runs at 5s)
+setInterval(runServerAutoAttendance, 15000)
 
 // POST /api/auth/send-otp -> Generate 6-digit OTP and send via Email
 app.post('/api/auth/send-otp', async (req, res) => {
