@@ -115,7 +115,7 @@ function startKeepAlivePinger() {
 
 startKeepAlivePinger()
 
-// ── PRODUCTION-GRADE TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH LAB +2 LOGIC) ──
+// ── ADVANCED TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH MASS BUNK PROTECTION & LAB +2 LOGIC) ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
 
@@ -127,7 +127,8 @@ async function runServerAutoAttendance() {
     const activeSemester = settings.semester || 'Semester 3'
 
     // Server Auto-Attendance strictly runs for active timetable subjects
-    if (settings.autoAttendance === false || activeSemester !== 'Semester 3') return
+    // ADVANCED GUARD: Skips auto-logging if autoAttendance is disabled, massBunkToday is active, or semester isn't Sem 3
+    if (settings.autoAttendance === false || settings.massBunkToday === true || activeSemester !== 'Semester 3') return
 
     const subjects = userDoc.subjects || []
     if (subjects.length === 0) return
@@ -184,7 +185,7 @@ async function runServerAutoAttendance() {
             }
 
             updatedHistory.unshift(logEntry)
-            console.log(`[SERVER AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted}`)
+            console.log(`[ADVANCED AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted}`)
           }
         }
       })
@@ -207,10 +208,10 @@ async function runServerAutoAttendance() {
           }
         }
       )
-      console.log(`[SERVER AUTO-ATTENDANCE IST] ✅ MongoDB Cloud Document updated atomically.`)
+      console.log(`[ADVANCED AUTO-ATTENDANCE IST] ✅ MongoDB Cloud Document updated atomically.`)
     }
   } catch (err) {
-    console.error(`[SERVER AUTO-ATTENDANCE ERROR]:`, err.message)
+    console.error(`[ADVANCED AUTO-ATTENDANCE ERROR]:`, err.message)
   }
 }
 

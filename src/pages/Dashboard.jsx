@@ -58,8 +58,9 @@ function parseEndTime(timeRangeStr) {
 
 export default function Dashboard() {
   const {
-    subjects, timetableSubjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify, settings
+    subjects, timetableSubjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify, settings, setSettings, pushToCloud
   } = useAttendance()
+
   
   const navigate = useNavigate()
 
@@ -202,6 +203,53 @@ export default function Dashboard() {
           </Box>
           <Box sx={{ position: 'relative', zIndex: 1, display: { xs: 'none', sm: 'flex' }, width: 76, height: 76, borderRadius: '24px', alignItems: 'center', justifyContent: 'center', background: 'var(--aurora)', color: '#fff', fontSize: 36, boxShadow: '0 16px 32px rgba(59,130,246,.28)' }}>
             <MdSchool />
+          </Box>
+        </Box>
+      </GlassCard>
+
+      {/* 🤖 Autonomous Server Auto-Attendance Monitor & Mass Bunk Protection Widget */}
+      <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(16,185,129,0.3)', background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(11,17,32,0.95) 100%)' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+              🤖
+            </Box>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                  Autonomous Server Auto-Attendance Engine
+                </Typography>
+                <Chip label="● 24/7 LIVE AWAKE" size="small" sx={{ bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', fontWeight: 800, fontSize: '.68rem' }} />
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '.78rem' }}>
+                Server runs every 30s in IST timezone. Auto-logs +1 for Lectures & +2 for Continuous Labs.
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Chip
+              label={settings?.massBunkToday ? '⚠️ Mass Bunk Override Active (Auto-Log Paused)' : '✅ Auto-Log Active'}
+              color={settings?.massBunkToday ? 'warning' : 'success'}
+              variant="outlined"
+              size="small"
+              sx={{ fontWeight: 700, fontSize: '.72rem' }}
+            />
+            <Button
+              size="small"
+              variant={settings?.massBunkToday ? 'contained' : 'outlined'}
+              color={settings?.massBunkToday ? 'warning' : 'primary'}
+              onClick={() => {
+                if (!isUnlocked) return notify('Login required to edit 🔒', 'warning')
+                const updated = { ...settings, massBunkToday: !settings?.massBunkToday }
+                setSettings(updated)
+                pushToCloud({ settings: updated })
+                notify(updated.massBunkToday ? 'Mass Bunk Mode Enabled: Auto-logging paused for today ⚠️' : 'Auto-logging resumed ✅')
+              }}
+              sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 700, fontSize: '.75rem' }}
+            >
+              {settings?.massBunkToday ? 'Resume Auto-Log' : 'Toggle Mass Bunk Today'}
+            </Button>
           </Box>
         </Box>
       </GlassCard>
