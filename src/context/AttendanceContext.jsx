@@ -3,7 +3,6 @@ import useLocalStorage from '../hooks/useLocalStorage'
 import { STORAGE_KEYS, collectAllData, downloadJSON, applyImportedData } from '../utils/storageUtils'
 import { defaultSubjects, buildSubject, DEFAULT_TIMETABLE_HEADER, generateSeedHistory } from '../data/defaultSubjects'
 import { SEMESTER_1_SUBJECTS, SEMESTER_2_SUBJECTS } from '../data/semestersSeedData'
-import { getTodayName, WEEKDAYS } from '../utils/attendanceUtils'
 
 const AttendanceContext = createContext(null)
 
@@ -301,17 +300,20 @@ export function AttendanceProvider({ children }) {
     let nextList = []
 
     if (activeSemester === 'Semester 1') {
-      setSem1Subjects((prev) => { nextList = [...prev, subject]; return nextList })
+      nextList = [...sem1Subjects, subject]
+      setSem1Subjects(nextList)
       pushToCloud({ sem1Subjects: nextList })
     } else if (activeSemester === 'Semester 2') {
-      setSem2Subjects((prev) => { nextList = [...prev, subject]; return nextList })
+      nextList = [...sem2Subjects, subject]
+      setSem2Subjects(nextList)
       pushToCloud({ sem2Subjects: nextList })
     } else {
-      setSem3Subjects((prev) => { nextList = [...prev, subject]; return nextList })
+      nextList = [...sem3Subjects, subject]
+      setSem3Subjects(nextList)
       pushToCloud({ subjects: nextList })
     }
 
-    notify('Subject added')
+    notify('Subject added ✨')
     return subject.id
   }, [isUnlocked, activeSemester, sem1Subjects, sem2Subjects, sem3Subjects, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
 
@@ -320,49 +322,54 @@ export function AttendanceProvider({ children }) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    const updateList = (prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-    let updatedList = []
 
+    let updatedList = []
     if (activeSemester === 'Semester 1') {
-      setSem1Subjects((prev) => { updatedList = updateList(prev); return updatedList })
+      updatedList = sem1Subjects.map((s) => (s.id === id ? { ...s, ...updates } : s))
+      setSem1Subjects(updatedList)
       pushToCloud({ sem1Subjects: updatedList })
     } else if (activeSemester === 'Semester 2') {
-      setSem2Subjects((prev) => { updatedList = updateList(prev); return updatedList })
+      updatedList = sem2Subjects.map((s) => (s.id === id ? { ...s, ...updates } : s))
+      setSem2Subjects(updatedList)
       pushToCloud({ sem2Subjects: updatedList })
     } else {
-      setSem3Subjects((prev) => { updatedList = updateList(prev); return updatedList })
+      updatedList = sem3Subjects.map((s) => (s.id === id ? { ...s, ...updates } : s))
+      setSem3Subjects(updatedList)
       pushToCloud({ subjects: updatedList })
     }
 
-    notify('Subject updated')
-  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
+    notify('Subject updated live ✏️')
+  }, [isUnlocked, activeSemester, sem1Subjects, sem2Subjects, sem3Subjects, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
 
   const deleteSubject = useCallback((id) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    const filterList = (prev) => prev.filter((s) => s.id !== id)
-    let filteredList = []
 
+    let filteredList = []
     if (activeSemester === 'Semester 1') {
-      setSem1Subjects((prev) => { filteredList = filterList(prev); return filteredList })
-      pushToCloud({ sem1Subjects: filteredList })
+      filteredList = sem1Subjects.filter((s) => s.id !== id)
+      setSem1Subjects(filteredList)
     } else if (activeSemester === 'Semester 2') {
-      setSem2Subjects((prev) => { filteredList = filterList(prev); return filteredList })
-      pushToCloud({ sem2Subjects: filteredList })
+      filteredList = sem2Subjects.filter((s) => s.id !== id)
+      setSem2Subjects(filteredList)
     } else {
-      setSem3Subjects((prev) => { filteredList = filterList(prev); return filteredList })
-      pushToCloud({ subjects: filteredList })
+      filteredList = sem3Subjects.filter((s) => s.id !== id)
+      setSem3Subjects(filteredList)
     }
 
-    setHistory((prev) => {
-      const nextHist = prev.filter((h) => h.subjectId !== id)
-      pushToCloud({ history: nextHist })
-      return nextHist
-    })
-    notify('Subject deleted', 'info')
-  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
+    const nextHist = history.filter((h) => h.subjectId !== id)
+    setHistory(nextHist)
+
+    const syncPayload = { history: nextHist }
+    if (activeSemester === 'Semester 1') syncPayload.sem1Subjects = filteredList
+    else if (activeSemester === 'Semester 2') syncPayload.sem2Subjects = filteredList
+    else syncPayload.subjects = filteredList
+
+    pushToCloud(syncPayload)
+    notify('Subject deleted 🗑️', 'info')
+  }, [isUnlocked, activeSemester, sem1Subjects, sem2Subjects, sem3Subjects, history, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const addNote = useCallback((noteData) => {
     if (!isUnlocked) {
@@ -435,14 +442,11 @@ export function AttendanceProvider({ children }) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
-    let updatedList = []
-    setSem3Subjects((prev) => {
-      updatedList = prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
-      pushToCloud({ subjects: updatedList })
-      return updatedList
-    })
+    let updatedList = sem3Subjects.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
+    setSem3Subjects(updatedList)
+    pushToCloud({ subjects: updatedList })
     notify('Timetable updated')
-  }, [isUnlocked, setSem3Subjects, notify, pushToCloud])
+  }, [isUnlocked, sem3Subjects, setSem3Subjects, notify, pushToCloud])
 
   const exportData = useCallback(() => {
     const data = collectAllData()
