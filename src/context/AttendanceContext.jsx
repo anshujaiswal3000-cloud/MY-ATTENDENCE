@@ -77,26 +77,16 @@ export function AttendanceProvider({ children }) {
     avatarPic: '/profile.jpg'
   }
 
-  const DEFAULT_ANSHUMAN_PROFILE = {
-    studentId: '21250800',
-    name: 'Anshuman',
-    branch: 'B.Tech CSE 2nd Year (Sec B)',
-    college: 'UCER',
-    email: 'anshuman@gmail.com',
-    role: 'STUDENT MEMBER 🎓',
-    avatarPic: ''
-  }
-
-  const [studentProfiles, setStudentProfiles] = useLocalStorage('attendx_student_profiles', [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE])
+  const [studentProfiles, setStudentProfiles] = useLocalStorage('attendx_student_profiles', [DEFAULT_ANSHU_PROFILE])
   const [activeStudentId, setActiveStudentId] = useLocalStorage('attendx_active_student_id', '21250770')
 
   const activeProfile = useMemo(() => {
-    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE]
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
     return currentList.find(p => p.studentId === activeStudentId) || DEFAULT_ANSHU_PROFILE
   }, [studentProfiles, activeStudentId])
 
   const registerStudentProfile = useCallback(async (profileData) => {
-    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE]
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
     const updatedProfiles = [...currentList.filter(p => p.studentId !== profileData.studentId), profileData]
     setStudentProfiles(updatedProfiles)
     setActiveStudentId(profileData.studentId)
@@ -117,7 +107,7 @@ export function AttendanceProvider({ children }) {
   }, [studentProfiles, setStudentProfiles, setActiveStudentId, setSem3Subjects, notify])
 
   const switchStudentAccount = useCallback((studentId) => {
-    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE, DEFAULT_ANSHUMAN_PROFILE]
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
     const target = currentList.find(p => p.studentId === studentId)
     if (!target) return
     setActiveStudentId(studentId)

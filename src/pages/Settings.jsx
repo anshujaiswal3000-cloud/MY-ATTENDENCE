@@ -192,15 +192,6 @@ export default function Settings() {
   // ── MENU LIST CONFIGURATION ──
   const menuItems = [
     {
-      id: 'accounts',
-      icon: '👥',
-      color: '#a78bfa',
-      bg: 'rgba(167,139,250,0.18)',
-      border: 'rgba(167,139,250,0.3)',
-      title: 'Multi-Student Account Switcher & Onboarding Portal',
-      subtitle: `Active: ${(Array.isArray(studentProfiles) ? studentProfiles : []).find(p => p.studentId === activeStudentId)?.name || 'Anshu Jaiswal'} • Register ID & Auto-Upload OCR`
-    },
-    {
       id: 'permissions',
       icon: '🎨',
       color: isUnlocked ? '#34d399' : '#60a5fa',
@@ -255,37 +246,6 @@ export default function Settings() {
       subtitle: 'Export JSON backup, restore files, or reset app state'
     }
   ]
-
-  const displayProfiles = React.useMemo(() => {
-    const current = Array.isArray(studentProfiles) ? studentProfiles : []
-    const hasAnshu = current.some(p => p.studentId === '21250770')
-    const hasAnshuman = current.some(p => p.studentId === '21250800')
-
-    const list = [...current]
-    if (!hasAnshu) {
-      list.unshift({
-        studentId: '21250770',
-        name: 'Anshu Jaiswal',
-        branch: 'B.Tech CSE 2nd Year (Sec B)',
-        college: 'UCER',
-        email: 'anshujaiswal3000@gmail.com',
-        role: 'SUPER ADMIN 👑',
-        avatarPic: '/profile.jpg'
-      })
-    }
-    if (!hasAnshuman) {
-      list.push({
-        studentId: '21250800',
-        name: 'Anshuman',
-        branch: 'B.Tech CSE 2nd Year (Sec B)',
-        college: 'UCER',
-        email: 'anshuman@gmail.com',
-        role: 'STUDENT MEMBER 🎓',
-        avatarPic: ''
-      })
-    }
-    return list
-  }, [studentProfiles])
 
   return (
     <Box sx={{ width: '100%', maxWidth: 680, mx: 'auto', pb: 6, overflowX: 'hidden' }}>
@@ -349,113 +309,6 @@ export default function Settings() {
               </GlassCard>
             ))}
           </Box>
-        </Box>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────────
-          DEDICATED SUB-PAGE: MULTI-STUDENT ACCOUNT SWITCHER & PORTAL
-      ───────────────────────────────────────────────────────────── */}
-      {activeSubPage === 'accounts' && (
-        <Box>
-          <Button
-            startIcon={<MdArrowBack />}
-            onClick={() => {
-              triggerHaptic(15)
-              setActiveSubPage(null)
-            }}
-            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
-          >
-            Back to Settings
-          </Button>
-
-          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(167,139,250,0.4)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(167,139,250,0.2)', color: '#a78bfa', display: 'grid', placeItems: 'center', fontSize: 24 }}>
-                  👥
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
-                    Multi-Student Account Switcher
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 600, fontSize: '.78rem' }}>
-                    1-Tap Switch Accounts or Onboard New Student Profile
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<MdPersonAdd />}
-                onClick={() => {
-                  triggerHaptic(20)
-                  setWizardOpen(true)
-                }}
-                sx={{ background: 'linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)', borderRadius: '12px', fontWeight: 800, textTransform: 'none' }}
-              >
-                ➕ Register Profile
-              </Button>
-            </Box>
-
-            {/* Saved Student Account Cards */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', mb: 1.5, textTransform: 'uppercase', fontSize: '.72rem', letterSpacing: '.05em' }}>
-              Saved Student Profiles:
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              {displayProfiles.map((prof) => {
-                const isActive = activeStudentId === prof.studentId
-                return (
-                  <Box
-                    key={prof.studentId}
-                    sx={{
-                      p: 2, borderRadius: '18px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      border: isActive ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.08)',
-                      bgcolor: isActive ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.03)',
-                      transition: 'all 200ms ease'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar
-                        src={prof.avatarPic || '/profile.jpg'}
-                        sx={{ width: 44, height: 44, border: '2px solid rgba(167,139,250,0.5)' }}
-                      />
-                      <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', fontSize: '.92rem' }}>
-                            {prof.name}
-                          </Typography>
-                          {isActive && (
-                            <Chip label="Active 👤" size="small" sx={{ bgcolor: 'rgba(167,139,250,0.3)', color: '#a78bfa', fontWeight: 800, fontSize: '.68rem', height: 20 }} />
-                          )}
-                        </Box>
-                        <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.76rem', display: 'block' }}>
-                          ID: <strong>{prof.studentId}</strong> • {prof.branch || 'B.Tech CSE'}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {!isActive && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<MdSwapHoriz />}
-                        onClick={() => {
-                          triggerHaptic(20)
-                          switchStudentAccount(prof.studentId)
-                        }}
-                        sx={{ borderRadius: '10px', color: '#a78bfa', borderColor: 'rgba(167,139,250,0.4)', textTransform: 'none', fontWeight: 800, fontSize: '.75rem' }}
-                      >
-                        Switch Account
-                      </Button>
-                    )}
-                  </Box>
-                )
-              })}
-            </Box>
-          </GlassCard>
         </Box>
       )}
 
