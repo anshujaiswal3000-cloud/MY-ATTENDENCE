@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react'
 import {
   Box, Typography, Button, Switch, TextField, MenuItem, Grid, Chip,
-  Divider, Alert, Slider, InputAdornment, IconButton, Collapse, Dialog,
-  DialogTitle, DialogContent, DialogActions
+  Divider, Alert, Slider, InputAdornment, IconButton, Tabs, Tab
 } from '@mui/material'
 import {
   MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
   MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock,
-  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdExpandMore, MdExpandLess, MdSchool, MdSmartToy
+  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdSchool, MdSmartToy,
+  MdPhoneAndroid, MdOutlineFolderZip, MdCheckCircle
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
@@ -18,129 +18,37 @@ import { useAttendance } from '../context/AttendanceContext'
 import { readJSONFile } from '../utils/storageUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
-const SettingRow = React.memo(function SettingRow({ icon, title, subtitle, action }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
-      <Box sx={{ fontSize: 22, opacity: 0.75, width: 30, display: 'flex', justifyContent: 'center' }}>{icon}</Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontWeight: 600 }}>{title}</Typography>
-        {subtitle && <Typography variant="caption" sx={{ opacity: 0.6 }}>{subtitle}</Typography>}
-      </Box>
-      {action}
-    </Box>
-  )
-})
-
 export default function Settings() {
   const { mode, toggleMode } = useThemeMode()
-  const { exportData, importData, resetAttendance, pushToCloud, history = [], notes = [], settings = {}, setSettings, notify, isUnlocked } = useAttendance()
-  const fileInputRef = useRef(null)
-  const [confirmReset, setConfirmReset] = useState(false)
-  const [confirmRestore, setConfirmRestore] = useState(false)
+  const {
+    subjects, history, bunks, notes, settings, setSettings,
+    resetData, exportBackup, importBackup, pushToCloud, notify,
+    isUnlocked, lockApp
+  } = useAttendance()
 
-  // Safe fallback implementations for Local Backup & Restore
-  const backup = () => {
-    try {
-      const snapshot = { history, notes, settings, timestamp: Date.now() }
-      window.localStorage.setItem('attendx_local_backup', JSON.stringify(snapshot))
-      notify('Local snapshot backup saved 💾')
-    } catch (err) {
-      notify('Backup failed', 'error')
-    }
-  }
+  // Pro Tabbed Sub-Navigation State (0: Reports, 1: Semester, 2: Engine, 3: Security, 4: Data)
+  const [activeTab, setActiveTab] = useState(0)
 
-  const restoreBackup = () => {
-    try {
-      const stored = window.localStorage.setItem ? window.localStorage.getItem('attendx_local_backup') : null
-      if (!stored) return notify('No local backup snapshot found ⚠️', 'warning')
-      const data = JSON.parse(stored)
-      importData(data)
-      notify('Restored from local backup snapshot 🔄')
-    } catch (err) {
-      notify('Restore failed', 'error')
-    }
-  }
-
-  // Collapsible states
-  const [attendAiExpanded, setAttendAiExpanded] = useState(true)
-  const [autoAiExpanded, setAutoAiExpanded] = useState(true)
-  const [semesterExpanded, setSemesterExpanded] = useState(false)
-  const [securityExpanded, setSecurityExpanded] = useState(false)
-
-
-  // Security Credentials form state
-  const [oldUserId, setOldUserId] = useState('anshu')
+  // Security Form State
+  const [oldUserId, setOldUserId] = useState('')
   const [oldPassword, setOldPassword] = useState('')
   const [newUserId, setNewUserId] = useState('')
   const [newPassword, setNewPassword] = useState('')
-
-  // Password Prompt Modal for Sensitive Data Operations
-  const [authDialogOpen, setAuthDialogOpen] = useState(false)
-  const [authPassword, setAuthPassword] = useState('')
-  const [showAuthPass, setShowAuthPass] = useState(false)
-  const [authError, setAuthError] = useState('')
-  const [pendingAction, setPendingAction] = useState(null)
-
-  // Show/Hide password toggles
-  const [showOldUser, setShowOldUser] = useState(false)
   const [showOldPass, setShowOldPass] = useState(false)
   const [showNewPass, setShowNewPass] = useState(false)
-
   const [secMsg, setSecMsg] = useState('')
   const [secErr, setSecErr] = useState('')
 
-  const handleImportClick = () => fileInputRef.current?.click()
+  // Dialog State
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const fileInputRef = useRef(null)
 
   const activeSemester = settings?.semester || 'Semester 3'
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    try {
-      const data = await readJSONFile(file)
-      importData(data)
-    } catch (err) {
-      notify('Import failed — invalid file', 'error')
-    } finally {
-      e.target.value = ''
-    }
-  }
-
-  // Password verification wrapper for sensitive actions
-  const requirePasswordThen = (actionFn) => {
-    triggerHaptic(20)
-    setPendingAction(() => actionFn)
-    setAuthPassword('')
-    setAuthError('')
-    setAuthDialogOpen(true)
-  }
-
-  const handleAuthSubmit = async (e) => {
+  const handleCredentialsSubmit = async (e) => {
     e.preventDefault()
-    setAuthError('')
-    try {
-      const res = await fetch('/api/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'anshu', password: authPassword })
-      })
-      const json = await res.json()
-      if (json.success) {
-        setAuthDialogOpen(false)
-        triggerHaptic(30)
-        if (pendingAction) pendingAction()
-        setPendingAction(null)
-      } else {
-        triggerHaptic([40, 60, 40])
-        setAuthError('Incorrect password! Operation denied.')
-      }
-    } catch (err) {
-      setAuthError('Network error during verification')
-    }
-  }
+    if (!isUnlocked) return notify('Login required to change credentials 🔒', 'warning')
 
-  const handleChangeCredentials = async (e) => {
-    e.preventDefault()
     triggerHaptic(20)
     setSecMsg('')
     setSecErr('')
@@ -165,304 +73,283 @@ export default function Settings() {
     }
   }
 
+  const handleBackup = () => {
+    triggerHaptic(30)
+    exportBackup()
+  }
+
+  const handleRestoreBackup = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    triggerHaptic(30)
+    try {
+      const data = await readJSONFile(file)
+      importBackup(data)
+    } catch (err) {
+      notify('Failed to restore backup file', 'error')
+    }
+  }
+
   return (
     <Box sx={{ width: '100%', maxWidth: 680, mx: 'auto', pb: 6, overflowX: 'hidden' }}>
 
-      {/* 📄 1-Click WhatsApp PDF Report & Real-Time ATTIX Alerts Card 📲 */}
-      <WhatsAppPDFSection />
-
-      {/* 🤖 NEW TAB / CARD: AutoAttendance AI Control Hub & Holiday Guards 🤖 */}
-      <GlassCard sx={{ p: 2.5, mb: 3, border: '2px solid rgba(16,185,129,0.45)', background: 'linear-gradient(135deg, rgba(6,78,59,0.25), rgba(15,23,42,0.95))' }}>
-        <Box
-          onClick={() => {
+      {/* 🎛️ PRO SUB-NAVIGATION TABS BAR (Tab > Option > Data) 🎛️ */}
+      <GlassCard sx={{ p: 1, mb: 3, borderRadius: '20px' }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, val) => {
             triggerHaptic(15)
-            setAutoAiExpanded(!autoAiExpanded)
+            setActiveTab(val)
           }}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            cursor: 'pointer', userSelect: 'none'
+            minHeight: 44,
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: 2,
+              bgcolor: '#60a5fa'
+            },
+            '& .MuiTab-root': {
+              minHeight: 44,
+              textTransform: 'none',
+              fontWeight: 800,
+              fontSize: '.82rem',
+              color: '#94a3b8',
+              px: 2,
+              '&.Mui-selected': { color: '#fff' }
+            }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{
-              width: 44, height: 44, borderRadius: '14px', display: 'grid', placeItems: 'center',
-              bgcolor: 'rgba(16,185,129,0.22)', color: '#34d399', fontSize: 24
-            }}>
-              🤖
-            </Box>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#fff' }}>
-                  AutoAttendance AI Control Hub & Holiday Guards
-                </Typography>
-                <Chip label="● 24/7 LIVE AWAKE" size="small" sx={{ bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', fontWeight: 800, fontSize: '.68rem' }} />
-              </Box>
-              <Typography variant="caption" sx={{ color: '#6ee7b7' }}>
-                Configure 24/7 Server Auto-Attendance, Mass Bunks & Official Holiday Guards
-              </Typography>
-            </Box>
-          </Box>
-
-          <IconButton size="small" sx={{ color: '#34d399' }}>
-            {autoAiExpanded ? <MdExpandLess size={26} /> : <MdExpandMore size={26} />}
-          </IconButton>
-        </Box>
-
-        {/* Collapsible AutoAttendance AI Control Hub Body */}
-        <Collapse in={autoAiExpanded} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            
-            {/* Setting 1: Master Server Auto-Attendance Switch */}
-            <SettingRow
-              icon="⚡"
-              title="24/7 Server Autonomous Auto-Attendance"
-              subtitle="Runs on Render server every 30s in IST timezone even when phone is turned off"
-              action={
-                <Switch
-                  checked={settings?.autoAttendance !== false}
-                  onChange={(e) => {
-                    if (!isUnlocked) return notify('Login required to change 🔒', 'warning')
-                    const updated = { ...settings, autoAttendance: e.target.checked }
-                    setSettings(updated)
-                    pushToCloud({ settings: updated })
-                    notify(e.target.checked ? 'Server Auto-Attendance Enabled ⚡' : 'Server Auto-Attendance Disabled ⏸️')
-                  }}
-                />
-              }
-            />
-            <Divider sx={{ opacity: 0.1, my: 1 }} />
-
-            {/* Setting 2: Declare Mass Bunk Today */}
-            <SettingRow
-              icon="⚠️"
-              title="Declare Today as Mass Bunk / Cancelled Day"
-              subtitle="Pauses server auto-logging today so cancelled classes/mass bunks don't increment attendance"
-              action={
-                <Switch
-                  checked={Boolean(settings?.massBunkToday)}
-                  onChange={(e) => {
-                    if (!isUnlocked) return notify('Login required to change 🔒', 'warning')
-                    const updated = { ...settings, massBunkToday: e.target.checked }
-                    setSettings(updated)
-                    pushToCloud({ settings: updated })
-                    notify(e.target.checked ? 'Mass Bunk Mode Enabled: Auto-logging paused for today ⚠️' : 'Mass Bunk Mode Disabled ✅')
-                  }}
-                />
-              }
-            />
-            <Divider sx={{ opacity: 0.1, my: 1 }} />
-
-            {/* Setting 3: Declare Official College Holiday Today */}
-            <SettingRow
-              icon="🎉"
-              title="Declare Today as Official College Holiday / Fest"
-              subtitle="Guarantees 0 lectures counted or incremented on official college holidays & fest days"
-              action={
-                <Switch
-                  checked={Boolean(settings?.officialHolidayToday)}
-                  onChange={(e) => {
-                    if (!isUnlocked) return notify('Login required to change 🔒', 'warning')
-                    const updated = { ...settings, officialHolidayToday: e.target.checked }
-                    setSettings(updated)
-                    pushToCloud({ settings: updated })
-                    notify(e.target.checked ? 'Official Holiday Mode Enabled: 0 lectures counted today 🎉' : 'Official Holiday Mode Disabled ✅')
-                  }}
-                />
-              }
-            />
-            <Divider sx={{ opacity: 0.1, my: 1 }} />
-
-            {/* Automatic Calendar Exceptions Info */}
-            <Box sx={{ p: 2, borderRadius: '12px', bgcolor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', mt: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#34d399', mb: 0.5 }}>
-                🌴 Automatic Calendar Exclusions
-              </Typography>
-              <Typography variant="body2" sx={{ fontSize: '.78rem', color: '#94a3b8' }}>
-                System automatically excludes **Every Sunday**, **1st Saturday**, and **3rd Saturday** of the month from attendance counts. No manual action needed!
-              </Typography>
-            </Box>
-
-          </Box>
-        </Collapse>
+          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>📲</Typography>} label="Reports" />
+          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>🎓</Typography>} label="Semester" />
+          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>⚡</Typography>} label="Auto-Engine" />
+          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>🔒</Typography>} label="Security" />
+          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>💾</Typography>} label="Data & Backup" />
+        </Tabs>
       </GlassCard>
 
-      {/* 🎓 Collapsible Select Semester Card 🎓 */}
-      <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setSemesterExpanded(!semesterExpanded)
-          }}
-          sx={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            cursor: 'pointer', userSelect: 'none'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{
-              width: 40, height: 40, borderRadius: '12px', display: 'grid', placeItems: 'center',
-              bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontSize: 22
-            }}>
-              <MdSchool />
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 0: REPORTS & WHATSAPP
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 0 && (
+        <WhatsAppPDFSection />
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 1: SEMESTER SELECTOR
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 1 && (
+        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.35)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(96,165,250,0.2)', color: '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+              🎓
             </Box>
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-                Select Semester (Active: {activeSemester})
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                Academic Semester Management
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Tap to expand and choose between Semester 1, 2 & 3 ERP records
+              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.78rem' }}>
+                Currently Active: <strong>{activeSemester}</strong>
               </Typography>
             </Box>
           </Box>
 
-          <IconButton size="small" sx={{ color: '#60a5fa' }}>
-            {semesterExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '.84rem' }}>
+            Choose a semester to load its official ERP attendance history across Dashboard, Subjects, and Reports:
+          </Typography>
 
-        {/* Collapsible Semester Options Body */}
-        <Collapse in={semesterExpanded} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              Choose a semester to load its official ERP attendance history:
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {[
-                { id: 'Semester 1', label: 'Semester 1', subtitle: 'Load Semester 1 Official ERP Attendance Records' },
-                { id: 'Semester 2', label: 'Semester 2', subtitle: 'Load Semester 2 Official ERP Attendance Records' },
-                { id: 'Semester 3', label: 'Semester 3', subtitle: 'Load Semester 3 Active ERP Attendance Records' },
-              ].map((sem) => {
-                const isSelected = activeSemester === sem.id
-                return (
-                  <Box
-                    key={sem.id}
-                    onClick={() => {
-                      triggerHaptic(20)
-                      const updated = { ...settings, semester: sem.id }
-                      setSettings(updated)
-                      pushToCloud({ settings: updated })
-                      notify(`Switched to ${sem.label} official attendance records!`, 'success')
-                    }}
-                    sx={{
-                      p: 2,
-                      borderRadius: '16px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justify: 'space-between',
-                      border: isSelected ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.1)',
-                      bgcolor: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
-                      transition: 'all 200ms ease',
-                      '&:hover': { bgcolor: 'rgba(96,165,250,0.2)' }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Box sx={{
-                        width: 38, height: 38, borderRadius: '12px', display: 'grid', placeItems: 'center',
-                        bgcolor: isSelected ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)',
-                        color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 18
-                      }}>
-                        🎓
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
-                          {sem.label}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.75rem' }}>
-                          {sem.subtitle}
-                        </Typography>
-                      </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {[
+              { id: 'Semester 1', label: 'Semester 1', subtitle: 'Load Semester 1 Official ERP Attendance Records' },
+              { id: 'Semester 2', label: 'Semester 2', subtitle: 'Load Semester 2 Official ERP Attendance Records' },
+              { id: 'Semester 3', label: 'Semester 3', subtitle: 'Load Semester 3 Active ERP Attendance Records' },
+            ].map((sem) => {
+              const isSelected = activeSemester === sem.id
+              return (
+                <Box
+                  key={sem.id}
+                  onClick={() => {
+                    triggerHaptic(20)
+                    const updated = { ...settings, semester: sem.id }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                    notify(`Switched to ${sem.label} official attendance records!`, 'success')
+                  }}
+                  sx={{
+                    p: 2,
+                    borderRadius: '16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justify: 'space-between',
+                    border: isSelected ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.1)',
+                    bgcolor: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
+                    transition: 'all 200ms ease',
+                    '&:hover': { bgcolor: 'rgba(96,165,250,0.2)' }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                      width: 38, height: 38, borderRadius: '12px', display: 'grid', placeItems: 'center',
+                      bgcolor: isSelected ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)',
+                      color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 18
+                    }}>
+                      🎓
                     </Box>
-
-                    {isSelected && (
-                      <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.7rem' }} />
-                    )}
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
+                        {sem.label}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.75rem' }}>
+                        {sem.subtitle}
+                      </Typography>
+                    </Box>
                   </Box>
-                )
-              })}
-            </Box>
-          </Box>
-        </Collapse>
-      </GlassCard>
 
-      {/* 🛡️ Collapsible Security Card 🛡️ */}
-      <GlassCard sx={{ p: 2.5, mb: 3, border: '1px solid rgba(99,102,241,.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setSecurityExpanded(!securityExpanded)
-          }}
-          sx={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            cursor: 'pointer', userSelect: 'none'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{
-              width: 40, height: 40, borderRadius: '12px', display: 'grid', placeItems: 'center',
-              bgcolor: 'rgba(96,165,250,.18)', color: '#60a5fa', fontSize: 22
-            }}>
-              <MdSecurity />
+                  {isSelected && (
+                    <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.7rem' }} />
+                  )}
+                </Box>
+              )
+            })}
+          </Box>
+        </GlassCard>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 2: AUTONOMOUS ENGINE & HOLIDAY GUARDS
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 2 && (
+        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+              ⚡
             </Box>
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-                Security (Change Owner Credentials)
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                24/7 Autonomous Server Engine
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Tap to expand and update private Owner User ID & Password
+              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600, fontSize: '.78rem' }}>
+                Runs every 30s in IST timezone on Render server
               </Typography>
             </Box>
           </Box>
 
-          <IconButton size="small" sx={{ color: '#60a5fa' }}>
-            {securityExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                  24/7 Autonomous Server Auto-Attendance
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                  Automatically logs Present (+1) when class end minute is reached
+                </Typography>
+              </Box>
+              <Switch
+                checked={settings.serverAutoAttendanceEnabled !== false}
+                disabled={!isUnlocked}
+                onChange={(e) => {
+                  triggerHaptic(20)
+                  const updated = { ...settings, serverAutoAttendanceEnabled: e.target.checked }
+                  setSettings(updated)
+                  pushToCloud({ settings: updated })
+                }}
+              />
+            </Box>
 
-        {/* Collapsible Content Body */}
-        <Collapse in={securityExpanded} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2.5, mt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
-            {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                  Mass Bunk Protection Guard
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                  Prevents auto-logging when class has a mass bunk
+                </Typography>
+              </Box>
+              <Switch
+                checked={Boolean(settings.massBunkActive)}
+                disabled={!isUnlocked}
+                onChange={(e) => {
+                  triggerHaptic(20)
+                  const updated = { ...settings, massBunkActive: e.target.checked }
+                  setSettings(updated)
+                  pushToCloud({ settings: updated })
+                }}
+              />
+            </Box>
 
-            <Box component="form" onSubmit={handleChangeCredentials} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                  Official College Holiday Guard
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                  Pauses auto-attendance on declared college holidays
+                </Typography>
+              </Box>
+              <Switch
+                checked={Boolean(settings.officialHolidayActive)}
+                disabled={!isUnlocked}
+                onChange={(e) => {
+                  triggerHaptic(20)
+                  const updated = { ...settings, officialHolidayActive: e.target.checked }
+                  setSettings(updated)
+                  pushToCloud({ settings: updated })
+                }}
+              />
+            </Box>
+          </Box>
+        </GlassCard>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 3: SECURITY & CREDENTIALS
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 3 && (
+        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.35)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(99,102,241,0.2)', color: '#818cf8', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+              🔒
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                Owner Credentials & Cloud Security
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, fontSize: '.78rem' }}>
+                Change Private User ID & Access Password in MongoDB Atlas
+              </Typography>
+            </Box>
+          </Box>
+
+          {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
+          {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
+
+          <form onSubmit={handleCredentialsSubmit}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField
-                    label="Current User ID"
-                    type={showOldUser ? 'text' : 'password'}
-                    size="small"
                     fullWidth
-                    required
+                    label="Current User ID"
+                    size="small"
                     value={oldUserId}
                     onChange={(e) => setOldUserId(e.target.value)}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowOldUser(!showOldUser)} edge="end" size="small">
-                            {showOldUser ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
+                    placeholder="anshujaiswal3000@gmail.com"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
-                    label="Current Password"
-                    type={showOldPass ? 'text' : 'password'}
-                    size="small"
                     fullWidth
-                    required
+                    label="Current Password"
+                    size="small"
+                    type={showOldPass ? 'text' : 'password'}
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    placeholder="Enter current password"
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton onClick={() => setShowOldPass(!showOldPass)} edge="end" size="small">
+                          <IconButton size="small" onClick={() => setShowOldPass(!showOldPass)}>
                             {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                           </IconButton>
                         </InputAdornment>
@@ -470,36 +357,28 @@ export default function Settings() {
                     }}
                   />
                 </Grid>
-              </Grid>
 
-              <Divider sx={{ my: .5, opacity: .3 }} />
-
-              <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField
-                    label="New Secret User ID"
-                    size="small"
                     fullWidth
-                    required
+                    label="New User ID (Optional)"
+                    size="small"
                     value={newUserId}
                     onChange={(e) => setNewUserId(e.target.value)}
-                    placeholder="anshu_owner"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
-                    label="New Secret Password"
-                    type={showNewPass ? 'text' : 'password'}
-                    size="small"
                     fullWidth
-                    required
+                    label="New Password"
+                    size="small"
+                    type={showNewPass ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton onClick={() => setShowNewPass(!showNewPass)} edge="end" size="small">
+                          <IconButton size="small" onClick={() => setShowNewPass(!showNewPass)}>
                             {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                           </IconButton>
                         </InputAdornment>
@@ -513,219 +392,99 @@ export default function Settings() {
                 type="submit"
                 variant="contained"
                 disabled={!isUnlocked}
-                sx={{ background: 'var(--aurora)', borderRadius: '12px', textTransform: 'none', fontWeight: 700, mt: 1, py: 1 }}
+                sx={{ background: 'var(--aurora)', borderRadius: '12px', py: 1.2, fontWeight: 800, textTransform: 'none', mt: 1 }}
               >
-                {isUnlocked ? 'Save to Cloud ☁️' : 'Login to make any change 🔒'}
+                Update Cloud Credentials 🔒
+              </Button>
+            </Box>
+          </form>
+        </GlassCard>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 4: DATA BACKUP & RESET
+      ───────────────────────────────────────────────────────────── */}
+      {activeTab === 4 && (
+        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.35)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(245,158,11,0.2)', color: '#f59e0b', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+              💾
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                Data Maintenance & Backups
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600, fontSize: '.78rem' }}>
+                Export JSON backups, restore files, or reset app state
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                startIcon={<MdBackup />}
+                onClick={handleBackup}
+                sx={{ borderRadius: '12px', borderColor: 'rgba(245,158,11,0.4)', color: '#f59e0b', fontWeight: 800, textTransform: 'none' }}
+              >
+                Export JSON Backup
+              </Button>
+
+              <Button
+                variant="outlined"
+                startIcon={<MdSettingsBackupRestore />}
+                onClick={() => fileInputRef.current?.click()}
+                sx={{ borderRadius: '12px', borderColor: 'rgba(96,165,250,0.4)', color: '#60a5fa', fontWeight: 800, textTransform: 'none' }}
+              >
+                Import JSON Backup
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                style={{ display: 'none' }}
+                onChange={handleRestoreBackup}
+              />
+            </Box>
+
+            <Divider sx={{ my: 1, borderColor: 'rgba(255,255,255,0.08)' }} />
+
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#f43f5e' }}>
+                  Danger Zone: Reset App State
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                  Resets local state back to default semester configuration
+                </Typography>
+              </Box>
+
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                disabled={!isUnlocked}
+                onClick={() => setResetDialogOpen(true)}
+                sx={{ borderRadius: '10px', fontWeight: 800, textTransform: 'none' }}
+              >
+                Reset App
               </Button>
             </Box>
           </Box>
-        </Collapse>
-      </GlassCard>
+        </GlassCard>
+      )}
 
-      {/* ── App Preferences & Automation ── */}
-      <GlassCard sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Preferences & Automation</Typography>
-        
-        <SettingRow
-          icon={mode === 'dark' ? <MdDarkMode /> : <MdLightMode />}
-          title="Dark Mode"
-          subtitle={mode === 'dark' ? 'Currently on' : 'Currently off — using Light Mode'}
-          action={<Switch checked={mode === 'dark'} onChange={() => { triggerHaptic(15); toggleMode(); }} />}
-        />
-        <Divider sx={{ opacity: 0.3 }} />
-        <SettingRow
-          icon={<MdAutoAwesome color="#34d399" />}
-          title="Auto-Attendance Engine"
-          subtitle="Automatically marks classes Present when lecture end-time passes"
-          action={
-            <Switch
-              checked={settings?.autoAttendance !== false}
-              onChange={(e) => {
-                triggerHaptic(15)
-                setSettings((s) => ({ ...s, autoAttendance: e.target.checked }))
-              }}
-            />
-          }
-        />
-        <Divider sx={{ opacity: 0.3 }} />
-        <SettingRow
-          icon={<MdVibration color="#a78bfa" />}
-          title="Haptic Touch Vibration"
-          subtitle="Vibrate on tab switches, profile tap, and attendance clicks"
-          action={
-            <Switch
-              checked={settings?.hapticFeedback !== false}
-              onChange={(e) => {
-                triggerHaptic(20)
-                setSettings((s) => ({ ...s, hapticFeedback: e.target.checked }))
-              }}
-            />
-          }
-        />
-      </GlassCard>
-
-      {/* ── Target Goal Slider ── */}
-      <GlassCard delay={0.05} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Target Attendance Goal</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Current Target Goal: <strong>{settings?.targetPercentage || 75}%</strong>
-        </Typography>
-        <Slider
-          value={settings?.targetPercentage || 75}
-          onChange={(_, v) => {
-            setSettings((s) => ({ ...s, targetPercentage: v }))
-          }}
-          onChangeCommitted={() => triggerHaptic(15)}
-          step={5}
-          marks
-          min={60}
-          max={95}
-          valueLabelDisplay="auto"
-          sx={{ mb: 2 }}
-        />
-      </GlassCard>
-
-      {/* 🔒 Data Export & Backup (PASSWORD PROTECTED) 🔒 */}
-      <GlassCard delay={0.1} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Data Management (Password Protected)</Typography>
-        <Divider sx={{ opacity: 0.3 }} />
-        <SettingRow
-          icon={<MdFileDownload />}
-          title="Export Data (JSON)"
-          subtitle="Download a full backup of subjects, history, and settings"
-          action={
-            <Button
-              variant="outlined"
-              onClick={() => requirePasswordThen(exportData)}
-              sx={{ borderRadius: '12px' }}
-            >
-              Export
-            </Button>
-          }
-        />
-        <Divider sx={{ opacity: 0.3 }} />
-        <SettingRow
-          icon={<MdFileUpload />}
-          title="Import Data (JSON)"
-          subtitle="Restore from a previously exported file"
-          action={
-            <Button
-              variant="outlined"
-              onClick={() => requirePasswordThen(handleImportClick)}
-              sx={{ borderRadius: '12px' }}
-            >
-              Import
-            </Button>
-          }
-        />
-        <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={handleFileChange} />
-        <Divider sx={{ opacity: 0.3 }} />
-        <SettingRow
-          icon={<MdBackup />}
-          title="Backup Local Storage"
-          subtitle="Save a snapshot inside this browser"
-          action={
-            <Button
-              variant="outlined"
-              onClick={() => requirePasswordThen(backup)}
-              sx={{ borderRadius: '12px' }}
-            >
-              Backup
-            </Button>
-          }
-        />
-        <Divider sx={{ opacity: 0.3 }} />
-        <SettingRow
-          icon={<MdSettingsBackupRestore />}
-          title="Restore Backup"
-          subtitle="Load the most recent local snapshot"
-          action={
-            <Button
-              variant="outlined"
-              onClick={() => requirePasswordThen(() => setConfirmRestore(true))}
-              sx={{ borderRadius: '12px' }}
-            >
-              Restore
-            </Button>
-          }
-        />
-      </GlassCard>
-
-      {/* ── Danger Zone (PASSWORD PROTECTED) ── */}
-      <GlassCard delay={0.15} sx={{ p: 3, borderColor: 'rgba(244,63,94,0.3)' }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#f43f5e' }}>Danger Zone</Typography>
-        <SettingRow
-          icon={<MdRestartAlt />}
-          title="Reset Attendance"
-          subtitle="Clears all present/absent counters and history — subjects remain"
-          action={
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => requirePasswordThen(() => setConfirmReset(true))}
-              sx={{ borderRadius: '12px' }}
-            >
-              Reset
-            </Button>
-          }
-        />
-      </GlassCard>
-
-      {/* 🔐 Password Authorization Dialog 🔐 */}
-      <Dialog open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 800, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-          <MdLock color="#60a5fa" /> Enter Owner Password
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-            Please enter your Owner Password to perform this data operation.
-          </Typography>
-          {authError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{authError}</Alert>}
-          <Box component="form" onSubmit={handleAuthSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Owner Password"
-              type={showAuthPass ? 'text' : 'password'}
-              fullWidth
-              required
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              placeholder="Enter password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowAuthPass(!showAuthPass)} edge="end">
-                      {showAuthPass ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-          <Button onClick={() => setAuthDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAuthSubmit} sx={{ background: 'var(--aurora)', borderRadius: '10px', px: 3 }}>
-            Verify & Proceed
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+      {/* Confirm Reset Dialog */}
       <ConfirmDialog
-        open={confirmReset}
-        title="Reset all attendance?"
-        message="This clears every subject's present/absent counters and deletes the full history log. This cannot be undone."
-        confirmLabel="Reset"
-        destructive
-        onConfirm={resetAttendance}
-        onClose={() => setConfirmReset(false)}
-      />
-      <ConfirmDialog
-        open={confirmRestore}
-        title="Restore last backup?"
-        message="This will overwrite your current subjects, history, and settings with the last local backup."
-        confirmLabel="Restore"
-        onConfirm={restoreBackup}
-        onClose={() => setConfirmRestore(false)}
+        open={resetDialogOpen}
+        title="Reset All Attendance Data?"
+        message="This will reset all subject counts, history logs, and bunks back to defaults. Are you sure?"
+        onConfirm={() => {
+          resetData()
+          setResetDialogOpen(false)
+        }}
+        onCancel={() => setResetDialogOpen(false)}
       />
     </Box>
   )
