@@ -4,13 +4,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import mongoose from 'mongoose'
 import cors from 'cors'
-import dns from 'dns'
 import nodemailer from 'nodemailer'
-
-// Fallback DNS resolution for SRV records
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1'])
-} catch (e) {}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -400,12 +394,15 @@ app.post('/api/sync/:userId', async (req, res) => {
 
 // Serve static frontend files in production
 const distPath = path.join(__dirname, '../dist')
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath))
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'))
-  })
-}
+app.use(express.static(distPath))
+app.get('*', (req, res) => {
+  const indexPath = path.join(distPath, 'index.html')
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath)
+  } else {
+    res.status(503).send('App is building... Please refresh in a few seconds.')
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`🚀 AttendX Server running on http://localhost:${PORT}`)
