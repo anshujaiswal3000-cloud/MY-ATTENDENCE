@@ -13,6 +13,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import AttendAITools from '../components/AttendAITools'
+import TelegramAlertsSection from '../components/TelegramAlertsSection'
 import { useThemeMode } from '../context/ThemeContext'
 import { useAttendance } from '../context/AttendanceContext'
 import { readJSONFile } from '../utils/storageUtils'
@@ -209,6 +210,9 @@ export default function Settings() {
           </Box>
         </Collapse>
       </GlassCard>
+
+      {/* 📲 NEW CARD: Daily Telegram & WhatsApp Automated Alerts 📲 */}
+      <TelegramAlertsSection />
 
       {/* 🤖 NEW TAB / CARD: AutoAttendance AI Control Hub & Holiday Guards 🤖 */}
       <GlassCard sx={{ p: 2.5, mb: 3, border: '2px solid rgba(16,185,129,0.45)', background: 'linear-gradient(135deg, rgba(6,78,59,0.25), rgba(15,23,42,0.95))' }}>

@@ -3,6 +3,7 @@ import { Box, Typography, Chip, Button, LinearProgress, Tooltip, IconButton } fr
 import { MdCheckCircle, MdCancel, MdSchedule, MdChevronLeft, MdChevronRight, MdToday, MdLock, MdLockOpen, MdSchool, MdPhone, MdLocationOn } from 'react-icons/md'
 import GlassCard from '../components/GlassCard'
 import EmptyState from '../components/EmptyState'
+import OCRScannerDialog from '../components/OCRScannerDialog'
 import { getSubjectIcon } from '../utils/iconRegistry'
 import { useAttendance } from '../context/AttendanceContext'
 import { WEEKDAYS, getTodayName, getPercentage } from '../utils/attendanceUtils'
@@ -29,6 +30,7 @@ export default function Timetable() {
   const today = getTodayName()
   const defaultTab = WEEKDAYS.includes(today) ? WEEKDAYS.indexOf(today) : 0
   const [tab, setTab] = useState(defaultTab)
+  const [ocrOpen, setOcrOpen] = useState(false)
   const activeDay = WEEKDAYS[tab]
   const isToday = activeDay === today
 
@@ -83,7 +85,15 @@ export default function Timetable() {
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: { xs: 'flex-start', md: 'center' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: { xs: 'flex-start', md: 'center' }, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => setOcrOpen(true)}
+              sx={{ background: 'var(--aurora)', borderRadius: '10px', textTransform: 'none', fontWeight: 800, fontSize: '.75rem' }}
+            >
+              📸 Scan Photo
+            </Button>
             <Chip
               icon={isUnlocked ? <MdLockOpen size={12} color="#34d399" /> : <MdLock size={12} color="#60a5fa" />}
               label={isUnlocked ? 'Editing Mode' : 'View Only Mode'}
@@ -242,6 +252,9 @@ export default function Timetable() {
           })}
         </Box>
       )}
+
+      {/* 📸 Timetable Photo OCR Scanner Dialog 📸 */}
+      <OCRScannerDialog open={ocrOpen} onClose={() => setOcrOpen(false)} />
     </Box>
   )
 }

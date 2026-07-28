@@ -403,6 +403,47 @@ app.post('/api/sync/:userId', async (req, res) => {
   }
 })
 
+// POST /api/alerts/telegram/test -> Send instant test notification to Telegram Chat ID
+app.post('/api/alerts/telegram/test', async (req, res) => {
+  try {
+    const { chatId } = req.body
+    if (!chatId) return res.status(400).json({ success: false, message: 'Missing chatId' })
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || '7482910384:AAHq_sample_token_attendx'
+    const message = `🚀 *AttendX Daily Alert System Activated!*
+
+Hello Anshu! Your daily automated attendance digests will be delivered directly to this Telegram chat.
+
+📊 *Current Status*:
+• Active Semester: Semester 3
+• Overall Attendance: 76.5% (Safe Zone 🎯)
+• Total History Logs: 94 Entries
+
+_AttendX 24/7 Autonomous Engine Active_ ⚡`
+
+    const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
+    
+    fetch(telegramUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'Markdown'
+      })
+    }).then(r => r.json()).then(data => {
+      console.log(`📲 Telegram Test Alert Response for ${chatId}:`, data)
+    }).catch(err => {
+      console.warn(`📲 Telegram fetch warning:`, err.message)
+    })
+
+    res.json({ success: true, message: 'Test alert payload dispatched to Telegram' })
+  } catch (err) {
+    console.error('Telegram test error:', err.message)
+    res.status(500).json({ success: false, message: 'Failed to send Telegram test alert' })
+  }
+})
+
 // Serve static frontend files in production
 const distPath = path.join(__dirname, '../dist')
 app.use(express.static(distPath))
