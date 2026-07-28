@@ -230,57 +230,7 @@ export default function Dashboard() {
         </Box>
       </GlassCard>
 
-      {/* 🤖 Autonomous Server Auto-Attendance Widget with Editing Mode & Mass Bunk Shifted Right */}
-      <GlassCard sx={{ p: 2, mb: 3, border: '1px solid rgba(16,185,129,0.3)', background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(11,17,32,0.95) 100%)' }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-            <Box sx={{ width: 36, height: 36, borderRadius: '12px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-              🤖
-            </Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-              Server Auto-Attendance Engine
-            </Typography>
-            <Chip label="● 24/7 AWAKE" size="small" sx={{ bgcolor: 'rgba(16,185,129,0.18)', color: '#34d399', fontWeight: 800, fontSize: '.65rem', height: 22 }} />
-            
-            {/* Editing Mode Indicator Launcher */}
-            <Chip
-              icon={isUnlocked ? <MdLockOpen size={12} color="#34d399" /> : <MdLock size={12} color="#60a5fa" />}
-              label={isUnlocked ? "Editing Mode (Unlocked 🔓)" : "View Only Mode (Tap to Unlock 🔒)"}
-              onClick={() => {
-                triggerHaptic(20)
-                if (isUnlocked) lockApp()
-                else notify('Tap top right lock icon to login 🔒', 'info')
-              }}
-              size="small"
-              sx={{
-                bgcolor: isUnlocked ? 'rgba(16,185,129,.18)' : 'rgba(96,165,250,.18)',
-                color: isUnlocked ? '#34d399' : '#60a5fa',
-                fontWeight: 800, fontSize: '.7rem', height: 24, cursor: 'pointer',
-                border: isUnlocked ? '1px solid rgba(16,185,129,.35)' : '1px solid rgba(96,165,250,.35)'
-              }}
-            />
-          </Box>
 
-          {/* Mass Bunk Shifted Right */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, ml: 'auto' }}>
-            <Button
-              size="small"
-              variant={settings?.massBunkToday ? 'contained' : 'outlined'}
-              color={settings?.massBunkToday ? 'warning' : 'primary'}
-              onClick={() => {
-                if (!isUnlocked) return notify('Login required to edit 🔒', 'warning')
-                const updated = { ...settings, massBunkToday: !settings?.massBunkToday }
-                setSettings(updated)
-                pushToCloud({ settings: updated })
-                notify(updated.massBunkToday ? 'Mass Bunk Mode Enabled ⚠️' : 'Auto-logging resumed ✅')
-              }}
-              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 800, fontSize: '.72rem', px: 2, py: 0.35 }}
-            >
-              {settings?.massBunkToday ? '⚠️ Resume Auto-Log' : '⚠️ Mass Bunk Today'}
-            </Button>
-          </Box>
-        </Box>
-      </GlassCard>
 
       {/* ── Overall Attendance & Live Upcoming Lecture Grid ── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>

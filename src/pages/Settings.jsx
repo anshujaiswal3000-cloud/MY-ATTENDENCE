@@ -6,7 +6,7 @@ import {
 import {
   MdArrowBack, MdChevronRight, MdBackup, MdSettingsBackupRestore,
   MdLock, MdSchool, MdSecurity, MdAutoAwesome, MdPhonelinkRing,
-  MdStorage, MdInsertDriveFile, MdLockOpen
+  MdStorage, MdInsertDriveFile, MdLockOpen, MdVpnKey
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
@@ -20,11 +20,15 @@ export default function Settings() {
   const {
     subjects, history, bunks, notes, settings, setSettings,
     resetData, exportBackup, importBackup, pushToCloud, notify,
-    isUnlocked
+    isUnlocked, lockApp, unlockApp
   } = useAttendance()
 
-  // Active Sub-Page View State (null = Main Menu, 'reports' | 'semester' | 'engine' | 'security' | 'data')
+  // Active Sub-Page View State (null = Main Menu, 'permissions' | 'reports' | 'semester' | 'engine' | 'security' | 'data')
   const [activeSubPage, setActiveSubPage] = useState(null)
+
+  // Mode Unlock Form State
+  const [unlockPasswordInput, setUnlockPasswordInput] = useState('')
+  const [showUnlockPass, setShowUnlockPass] = useState(false)
 
   // Security Form State
   const [oldUserId, setOldUserId] = useState('')
@@ -41,6 +45,21 @@ export default function Settings() {
   const fileInputRef = useRef(null)
 
   const activeSemester = settings?.semester || 'Semester 3'
+
+  const handleOwnerUnlockSubmit = (e) => {
+    e.preventDefault()
+    if (!unlockPasswordInput.trim()) return
+    triggerHaptic(20)
+    const success = unlockApp(unlockPasswordInput)
+    if (success) {
+      triggerHaptic(40)
+      setUnlockPasswordInput('')
+      notify('Editing Mode Unlocked 🔓', 'success')
+    } else {
+      triggerHaptic([40, 60, 40])
+      notify('Incorrect Owner Password ❌', 'error')
+    }
+  }
 
   const handleCredentialsSubmit = async (e) => {
     e.preventDefault()
@@ -89,6 +108,15 @@ export default function Settings() {
 
   // ── MENU LIST CONFIGURATION ──
   const menuItems = [
+    {
+      id: 'permissions',
+      icon: '🔑',
+      color: isUnlocked ? '#34d399' : '#60a5fa',
+      bg: isUnlocked ? 'rgba(16,185,129,0.18)' : 'rgba(96,165,250,0.18)',
+      border: isUnlocked ? 'rgba(16,185,129,0.3)' : 'rgba(96,165,250,0.3)',
+      title: 'App Mode & Permissions',
+      subtitle: isUnlocked ? 'Status: Unlocked (Editing Mode 🔓)' : 'Status: View Only Mode (Locked 🔒)'
+    },
     {
       id: 'reports',
       icon: '📲',
@@ -198,6 +226,111 @@ export default function Settings() {
               </GlassCard>
             ))}
           </Box>
+        </Box>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          DEDICATED SUB-PAGE: APP MODE & PERMISSIONS (Editing / View Only)
+      ───────────────────────────────────────────────────────────── */}
+      {activeSubPage === 'permissions' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => {
+              triggerHaptic(15)
+              setActiveSubPage(null)
+            }}
+            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
+
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: isUnlocked ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(96,165,250,0.4)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: isUnlocked ? 'rgba(16,185,129,0.2)' : 'rgba(96,165,250,0.2)', color: isUnlocked ? '#34d399' : '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+                {isUnlocked ? <MdLockOpen size={26} /> : <MdLock size={26} />}
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                  App Mode & Permissions
+                </Typography>
+                <Typography variant="caption" sx={{ color: isUnlocked ? '#34d399' : '#60a5fa', fontWeight: 700, fontSize: '.78rem' }}>
+                  Current Status: <strong>{isUnlocked ? 'Unlocked (Editing Mode 🔓)' : 'Locked (View Only Mode 🔒)'}</strong>
+                </Typography>
+              </Box>
+            </Box>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '.86rem', lineHeight: 1.5 }}>
+              {isUnlocked
+                ? 'Editing Mode is currently UNLOCKED. You have full owner permissions to edit subjects, mark attendance, and configure settings.'
+                : 'Editing Mode is currently LOCKED in View Only mode. Enter your owner password to enable editing rights.'}
+            </Typography>
+
+            {isUnlocked ? (
+              <Box sx={{ p: 2, borderRadius: '18px', bgcolor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Chip
+                  icon={<MdLockOpen size={14} color="#34d399" />}
+                  label="Editing Mode Active 🔓"
+                  size="small"
+                  sx={{ bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', fontWeight: 800, fontSize: '.75rem', alignSelf: 'flex-start' }}
+                />
+
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="warning"
+                  startIcon={<MdLock />}
+                  onClick={() => {
+                    triggerHaptic(20)
+                    lockApp()
+                    notify('Editing Mode Locked (Switched to View Only) 🔒', 'info')
+                  }}
+                  sx={{ borderRadius: '14px', py: 1.2, fontWeight: 800, textTransform: 'none' }}
+                >
+                  🔒 Lock Editing Mode (Switch to View Only)
+                </Button>
+              </Box>
+            ) : (
+              <form onSubmit={handleOwnerUnlockSubmit}>
+                <Box sx={{ p: 2, borderRadius: '18px', bgcolor: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.25)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Chip
+                    icon={<MdLock size={14} color="#60a5fa" />}
+                    label="View Only Mode Active 🔒"
+                    size="small"
+                    sx={{ bgcolor: 'rgba(96,165,250,0.2)', color: '#60a5fa', fontWeight: 800, fontSize: '.75rem', alignSelf: 'flex-start' }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Enter Owner Password"
+                    size="small"
+                    type={showUnlockPass ? 'text' : 'password'}
+                    value={unlockPasswordInput}
+                    onChange={(e) => setUnlockPasswordInput(e.target.value)}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton size="small" onClick={() => setShowUnlockPass(!showUnlockPass)}>
+                            {showUnlockPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    startIcon={<MdLockOpen />}
+                    sx={{ background: 'var(--aurora)', borderRadius: '14px', py: 1.2, fontWeight: 800, textTransform: 'none' }}
+                  >
+                    🔓 Unlock Editing Mode (Owner Login)
+                  </Button>
+                </Box>
+              </form>
+            )}
+          </GlassCard>
         </Box>
       )}
 

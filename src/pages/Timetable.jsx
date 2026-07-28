@@ -94,16 +94,6 @@ export default function Timetable() {
             >
               📸 Scan Photo
             </Button>
-            <Chip
-              icon={isUnlocked ? <MdLockOpen size={12} color="#34d399" /> : <MdLock size={12} color="#60a5fa" />}
-              label={isUnlocked ? 'Editing Mode' : 'View Only Mode'}
-              size="small"
-              sx={{
-                bgcolor: isUnlocked ? 'rgba(16,185,129,.18)' : 'rgba(96,165,250,.18)',
-                color: isUnlocked ? '#34d399' : '#60a5fa',
-                fontWeight: 700, fontSize: '.7rem'
-              }}
-            />
           </Box>
 
         </Box>
