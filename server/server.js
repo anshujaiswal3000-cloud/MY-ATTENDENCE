@@ -189,8 +189,9 @@ async function runServerAutoAttendance() {
             }
 
             updatedHistory.unshift(logEntry)
-            const softMsg = `your ${subj.name} attendance of today lecture ${slot.time} has been marked by automarker`
-            console.log(`[ADVANCED AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted}`)
+            const markedTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })
+            const softMsg = `your ${subj.name} attendance of today lecture ${slot.time} has been marked by automarker at ${markedTimeStr}`
+            console.log(`[ADVANCED AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted} at ${markedTimeStr}`)
             console.log(`⚡ [ATTIX REAL-TIME WHATSAPP ALERT] Sent to +91 9125469499: "${softMsg}"`)
           }
         }
