@@ -1,12 +1,12 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { useTheme } from '@mui/material/styles'
 import { motion } from 'framer-motion'
 
 /**
  * GlassCard — Ultra-fast glassmorphism surface.
- * Optimized for instant tab switching & lightning performance.
+ * Wrapped in React.memo for instant tab switching & lightning performance.
  */
-export default function GlassCard({ children, sx = {}, delay = 0, ...props }) {
+function GlassCard({ children, sx = {}, delay = 0, ...props }) {
   const theme = useTheme()
 
   return (
@@ -35,3 +35,5 @@ export default function GlassCard({ children, sx = {}, delay = 0, ...props }) {
     </motion.div>
   )
 }
+
+export default memo(GlassCard)

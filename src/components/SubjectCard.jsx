@@ -10,7 +10,7 @@ import { getPercentage, getStatus, STATUS_COLORS, STATUS_LABELS } from '../utils
  * variant="compact" -> used on Dashboard's Today's Classes rail (Present/Absent only)
  * variant="full" -> used on Subjects page (adds progress bar, status chip, edit/delete)
  */
-export default function SubjectCard({
+function SubjectCard({
   subject,
   variant = 'full',
   onPresent,
@@ -132,3 +132,5 @@ export default function SubjectCard({
     </GlassCard>
   )
 }
+
+export default React.memo(SubjectCard)
