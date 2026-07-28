@@ -8,7 +8,7 @@ import {
   MdCheckCircle, MdCancel, MdListAlt, MdEventAvailable,
   MdArrowForward, MdSchool, MdTrendingUp, MdTrendingDown,
   MdStar, MdWarning, MdDoorBack, MdAdd, MdSchedule, MdLocationOn,
-  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory, MdLock
+  MdTimer, MdClass, MdCalendarToday, MdDelete, MdHistory, MdLock, MdLockOpen
 } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../components/GlassCard'
