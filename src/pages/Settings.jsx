@@ -256,6 +256,37 @@ export default function Settings() {
     }
   ]
 
+  const displayProfiles = React.useMemo(() => {
+    const current = Array.isArray(studentProfiles) ? studentProfiles : []
+    const hasAnshu = current.some(p => p.studentId === '21250770')
+    const hasAnshuman = current.some(p => p.studentId === '21250800')
+
+    const list = [...current]
+    if (!hasAnshu) {
+      list.unshift({
+        studentId: '21250770',
+        name: 'Anshu Jaiswal',
+        branch: 'B.Tech CSE 2nd Year (Sec B)',
+        college: 'UCER',
+        email: 'anshujaiswal3000@gmail.com',
+        role: 'SUPER ADMIN 👑',
+        avatarPic: '/profile.jpg'
+      })
+    }
+    if (!hasAnshuman) {
+      list.push({
+        studentId: '21250800',
+        name: 'Anshuman',
+        branch: 'B.Tech CSE 2nd Year (Sec B)',
+        college: 'UCER',
+        email: 'anshuman@gmail.com',
+        role: 'STUDENT MEMBER 🎓',
+        avatarPic: ''
+      })
+    }
+    return list
+  }, [studentProfiles])
+
   return (
     <Box sx={{ width: '100%', maxWidth: 680, mx: 'auto', pb: 6, overflowX: 'hidden' }}>
 
@@ -373,7 +404,7 @@ export default function Settings() {
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              {(Array.isArray(studentProfiles) ? studentProfiles : []).map((prof) => {
+              {displayProfiles.map((prof) => {
                 const isActive = activeStudentId === prof.studentId
                 return (
                   <Box
