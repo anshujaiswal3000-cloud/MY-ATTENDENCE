@@ -10,8 +10,9 @@ import { useAttendance } from '../context/AttendanceContext'
 import { getPercentage, getStatus } from '../utils/attendanceUtils'
 
 export default function Subjects() {
-  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject, isUnlocked } = useAttendance()
+  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject, isUnlocked, settings } = useAttendance()
   const theme = useTheme()
+  const navigate = useNavigate()
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -65,13 +66,21 @@ export default function Subjects() {
       </Box>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon="📚"
-          title={subjects.length === 0 ? 'No subjects yet' : 'No matches'}
-          subtitle={subjects.length === 0 ? 'Add your first subject to start tracking attendance.' : 'Try a different search or filter.'}
-          actionLabel={subjects.length === 0 && isUnlocked ? 'Add Subject' : undefined}
-          onAction={() => setDialogOpen(true)}
-        />
+        <Box sx={{ p: 4, textAlign: 'center', borderRadius: '24px', bgcolor: 'rgba(15,23,42,0.6)', border: '1px dashed rgba(167,139,250,0.4)', my: 3, backdropFilter: 'blur(12px)' }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: '#fff' }}>
+            📤 Upload Attendance Record for {settings?.semester || 'this Semester'}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3, maxWidth: 480, mx: 'auto', fontSize: '.88rem' }}>
+            You haven't uploaded your college ERP marksheet or attendance record screenshot for <strong>{settings?.semester || 'this Semester'}</strong> yet. Upload it now to auto-parse all subjects!
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => navigate('/settings')}
+            sx={{ background: 'linear-gradient(135deg, #a78bfa 0%, #6366f1 100%)', borderRadius: '14px', fontWeight: 800, px: 3, py: 1.3, textTransform: 'none', boxShadow: '0 8px 24px rgba(167,139,250,0.35)' }}
+          >
+            📸 Upload ERP Marksheet in Onboarding Portal
+          </Button>
+        </Box>
       ) : (
         <Grid container spacing={2.5}>
           {filtered.map((s, i) => (

@@ -7,12 +7,45 @@ import { useAttendance } from '../context/AttendanceContext'
 import { getOverallStats } from '../utils/attendanceUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
+function getPercentageBasedMessage(name, percentage) {
+  if (percentage >= 85) {
+    return {
+      text: `🔥 Outstanding! ${name} is rocking ${percentage.toFixed(1)}% attendance. 100% safe from all penalty lists! 🎉`,
+      color: '#34d399',
+      border: 'rgba(52,211,153,0.3)',
+      bg: 'rgba(16,185,129,0.18)'
+    }
+  } else if (percentage >= 75) {
+    return {
+      text: `✅ Perfect Safe Zone! ${name} is at ${percentage.toFixed(1)}%. Keep maintaining your lectures cleanly! 💪`,
+      color: '#60a5fa',
+      border: 'rgba(96,165,250,0.3)',
+      bg: 'rgba(96,165,250,0.18)'
+    }
+  } else if (percentage >= 65) {
+    return {
+      text: `⚠️ Attendance Warning! ${name} is at ${percentage.toFixed(1)}%. Attend the next few classes immediately to touch 75%! ⚡`,
+      color: '#f59e0b',
+      border: 'rgba(245,158,11,0.3)',
+      bg: 'rgba(245,158,11,0.18)'
+    }
+  } else {
+    return {
+      text: `🚨 Critical Alert! ${name} is at ${percentage.toFixed(1)}%. Immediate attendance required to avoid detainment list! 🛑`,
+      color: '#f43f5e',
+      border: 'rgba(244,63,94,0.3)',
+      bg: 'rgba(244,63,94,0.18)'
+    }
+  }
+}
+
 export default function MascotProfileModal({ open, onClose }) {
   const { subjects = [], bunks = [], settings = {}, activeProfile } = useAttendance()
   const stats = getOverallStats(subjects)
   const activeSemester = settings?.semester || 'Semester 3'
 
   const attendanceSafe = stats.percentage >= 75
+  const aiMsg = getPercentageBasedMessage(activeProfile?.name || 'Student', stats.percentage)
 
   useEffect(() => {
     if (open) {
@@ -104,16 +137,16 @@ export default function MascotProfileModal({ open, onClose }) {
                 </Box>
               </motion.div>
 
-              {/* Short & Crisp Speech Bubble */}
+              {/* Dynamic Percentage-Based AI Speech Bubble */}
               <Box
                 sx={{
-                  mt: 1.5, px: 2, py: 0.85, borderRadius: '16px',
-                  bgcolor: 'rgba(99,102,241,0.18)', border: '1px solid rgba(165,180,252,0.3)',
+                  mt: 1.5, px: 2, py: 1, borderRadius: '16px',
+                  bgcolor: aiMsg.bg, border: `1px solid ${aiMsg.border}`,
                   textAlign: 'center', width: '100%'
                 }}
               >
-                <Typography variant="body2" sx={{ fontWeight: 800, color: '#c7d2fe', fontSize: '.82rem', lineHeight: 1.3 }}>
-                  🎯 Anshu Jaiswal • <strong>{stats.percentage.toFixed(1)}%</strong> in {activeSemester} ({attendanceSafe ? 'Safe Zone 🎯' : 'Warning ⚠️'})
+                <Typography variant="body2" sx={{ fontWeight: 800, color: aiMsg.color, fontSize: '.82rem', lineHeight: 1.35 }}>
+                  {aiMsg.text}
                 </Typography>
               </Box>
             </Box>

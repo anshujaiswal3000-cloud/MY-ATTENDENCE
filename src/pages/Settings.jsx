@@ -1169,6 +1169,24 @@ export default function Settings() {
         }}
         onCancel={() => setResetDialogOpen(false)}
       />
+      {/* 👑 Signature Glassmorphic Ownership Card Footer 👑 */}
+      <Box
+        sx={{
+          mt: 5, p: 2.5, borderRadius: '24px',
+          bgcolor: 'rgba(15,23,42,0.6)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+          textAlign: 'center',
+          backdropFilter: 'blur(16px)'
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 800, color: '#fff', fontSize: '.88rem', letterSpacing: '-.01em', mb: 0.5 }}>
+          Crafted & Engineered with Excellence by <span style={{ background: 'var(--aurora)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 900 }}>Anshu Jaiswal</span> 👑
+        </Typography>
+        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.75rem', display: 'block' }}>
+          Super Admin & Lead Developer • All Rights Reserved © 2026 AttendX
+        </Typography>
+      </Box>
     </Box>
   )
 }
