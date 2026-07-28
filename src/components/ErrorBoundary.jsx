@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography, Button, Alert } from '@mui/material'
 import { MdRefresh, MdWarning } from 'react-icons/md'
 
 export default class ErrorBoundary extends React.Component {
@@ -17,8 +17,12 @@ export default class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
-    localStorage.removeItem('attendx_settings')
-    window.location.reload()
+    try {
+      localStorage.removeItem('attendx_settings')
+      localStorage.removeItem('attendx_subjects')
+      localStorage.removeItem('attendx_history')
+    } catch (e) {}
+    window.location.href = '/'
   }
 
   render() {
@@ -38,9 +42,16 @@ export default class ErrorBoundary extends React.Component {
           <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
             Something went wrong
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.7)', maxWidth: 400, mb: 3 }}>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.7)', maxWidth: 400, mb: 2 }}>
             AttendX encountered a temporary state glitch. Click below to reload cleanly.
           </Typography>
+
+          {this.state.error?.message && (
+            <Alert severity="error" sx={{ mb: 3, maxWidth: 450, borderRadius: '12px', fontSize: '.75rem', textTransform: 'none' }}>
+              Details: {this.state.error.message}
+            </Alert>
+          )}
+
           <Button
             variant="contained"
             startIcon={<MdRefresh />}

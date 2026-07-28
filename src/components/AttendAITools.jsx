@@ -68,11 +68,11 @@ function findMatchingSubject(queryStr, subjectsList) {
 }
 
 function AttendAITools() {
-  const { subjects, history, bunks, settings } = useAttendance()
+  const { subjects = [], history = [], bunks = [], settings = {} } = useAttendance()
   const activeSemester = settings?.semester || 'Semester 3'
   const targetGoal = settings?.targetPercentage || 75
 
-  const stats = useMemo(() => getOverallStats(subjects), [subjects])
+  const stats = useMemo(() => getOverallStats(subjects || []), [subjects])
 
   // Custom Query State
   const [query, setQuery] = useState('')
@@ -84,7 +84,7 @@ function AttendAITools() {
 
   // Live Subject Analytics Breakdown (0 Fake Data)
   const subjectAnalytics = useMemo(() => {
-    return subjects.map((sub) => {
+    return (subjects || []).map((sub) => {
       const pct = getPercentage(sub.present, sub.total)
       const advice = calculateBunkAdvice(sub.present, sub.total, targetGoal)
       
@@ -121,7 +121,7 @@ function AttendAITools() {
 
   // Library Classes Tracker
   const librarySubjects = useMemo(() => {
-    return subjects.filter((s) => s.isIgnored || s.code === 'LIBRARY-2' || s.name.toLowerCase().includes('library'))
+    return (subjects || []).filter((s) => s.isIgnored || s.code === 'LIBRARY-2' || (s.name && s.name.toLowerCase().includes('library')))
   }, [subjects])
 
   const libraryTotalSessions = useMemo(() => {
