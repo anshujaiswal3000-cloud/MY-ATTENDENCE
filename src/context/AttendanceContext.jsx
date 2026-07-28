@@ -135,7 +135,7 @@ export function AttendanceProvider({ children }) {
 
   useEffect(() => {
     pullFromCloud()
-    const timer = setInterval(pullFromCloud, 10000)
+    const timer = setInterval(pullFromCloud, 3000)
     return () => clearInterval(timer)
   }, [pullFromCloud])
 
