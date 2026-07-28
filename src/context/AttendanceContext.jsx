@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react'
+import React, { createContext, useContext, useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage'
 import { STORAGE_KEYS, collectAllData, downloadJSON, applyImportedData } from '../utils/storageUtils'
 import { defaultSubjects, buildSubject, DEFAULT_TIMETABLE_HEADER, generateSeedHistory } from '../data/defaultSubjects'
@@ -27,24 +27,6 @@ function seedSubjects() {
 
 function seedHistory() {
   return generateSeedHistory(seedSubjects())
-}
-
-/** Parses end time from range like "09:00 AM - 09:50 AM" */
-function parseEndTime(timeRangeStr) {
-  try {
-    const parts = timeRangeStr.split('-')
-    if (parts.length < 2) return null
-    const endStr = parts[1].trim()
-    const [timeVal, modifier] = endStr.split(' ')
-    let [hours, minutes] = timeVal.split(':').map(Number)
-
-    if (modifier === 'PM' && hours < 12) hours += 12
-    if (modifier === 'AM' && hours === 12) hours = 0
-
-    return { hours, minutes }
-  } catch (err) {
-    return null
-  }
 }
 
 export function AttendanceProvider({ children }) {
@@ -78,6 +60,9 @@ export function AttendanceProvider({ children }) {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
   const [dbSynced, setDbSynced] = useState(false)
 
+  // Tap debouncer ref to prevent accidental rapid double-taps
+  const lastTapRef = useRef({})
+
   const notify = useCallback((message, severity = 'success') => {
     setSnackbar({ open: true, message, severity })
   }, [])
@@ -109,7 +94,8 @@ export function AttendanceProvider({ children }) {
         bunks: overrides.bunks || bunks,
         notes: overrides.notes || notes,
         settings: overrides.settings || settings,
-        timetableHeader: overrides.timetableHeader || timetableHeader
+        timetableHeader: overrides.timetableHeader || timetableHeader,
+        autoLoggedSlots: overrides.autoLoggedSlots || autoLoggedSlots
       }
       const res = await fetch('/api/sync/anshu', {
         method: 'POST',
@@ -122,7 +108,7 @@ export function AttendanceProvider({ children }) {
     } catch (err) {
       setDbSynced(false)
     }
-  }, [sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader])
+  }, [sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader, autoLoggedSlots])
 
   const pullFromCloud = useCallback(async () => {
     try {
@@ -139,19 +125,20 @@ export function AttendanceProvider({ children }) {
           if (cloud.notes) setNotes(cloud.notes)
           if (cloud.settings) setSettings(cloud.settings)
           if (cloud.timetableHeader) setTimetableHeader(cloud.timetableHeader)
+          if (cloud.autoLoggedSlots) setAutoLoggedSlots(cloud.autoLoggedSlots)
           setDbSynced(true)
         }
       }
     } catch (err) {
       setDbSynced(false)
     }
-  }, [setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader])
+  }, [setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader, setAutoLoggedSlots])
 
   useEffect(() => {
     pullFromCloud()
     const timer = setInterval(pullFromCloud, 10000)
     return () => clearInterval(timer)
-  }, [])
+  }, [pullFromCloud])
 
   // Strict Owner Authentication with MongoDB Cloud
   const unlockApp = useCallback(async (userIdInput, passwordInput) => {
@@ -181,12 +168,20 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED */
+  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + DOUBLE-TAP DEDUPLICATION */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
+
+    // Deduplicate rapid accidental double-taps (within 500ms)
+    const tapKey = `${subjectId}_${status}`
+    const nowMs = Date.now()
+    if (lastTapRef.current[tapKey] && nowMs - lastTapRef.current[tapKey] < 500) {
+      return
+    }
+    lastTapRef.current[tapKey] = nowMs
 
     let subjectName = ''
     
@@ -203,9 +198,23 @@ export function AttendanceProvider({ children }) {
         }
       })
 
-    if (activeSemester === 'Semester 1') setSem1Subjects(updateSubjectList)
-    else if (activeSemester === 'Semester 2') setSem2Subjects(updateSubjectList)
-    else setSem3Subjects(updateSubjectList)
+    let nextSubjects = []
+    if (activeSemester === 'Semester 1') {
+      setSem1Subjects((prev) => {
+        nextSubjects = updateSubjectList(prev)
+        return nextSubjects
+      })
+    } else if (activeSemester === 'Semester 2') {
+      setSem2Subjects((prev) => {
+        nextSubjects = updateSubjectList(prev)
+        return nextSubjects
+      })
+    } else {
+      setSem3Subjects((prev) => {
+        nextSubjects = updateSubjectList(prev)
+        return nextSubjects
+      })
+    }
 
     const now = new Date()
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
@@ -225,7 +234,7 @@ export function AttendanceProvider({ children }) {
     })
 
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
-    pushToCloud()
+    pushToCloud({ history: newHistory })
   }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
@@ -272,59 +281,6 @@ export function AttendanceProvider({ children }) {
     notify('Bunk record removed', 'info')
     pushToCloud({ bunks: newBunks })
   }, [isUnlocked, setBunks, notify, pushToCloud])
-
-  // ── AUTO ATTENDANCE ENGINE (Sem 3) ──
-  useEffect(() => {
-    if (!settings.autoAttendance || activeSemester !== 'Semester 3') return
-
-    const checkAutoAttendance = () => {
-      const now = new Date()
-      const todayName = getTodayName()
-      const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
-      const curHours = now.getHours()
-      const curMins = now.getMinutes()
-
-      sem3Subjects.forEach((subj) => {
-        ;(subj.timetable || []).forEach((slot) => {
-          if (slot.day !== todayName) return
-
-          const endTime = parseEndTime(slot.time)
-          if (!endTime) return
-
-          const classEnded = curHours > endTime.hours || (curHours === endTime.hours && curMins >= endTime.minutes)
-
-          if (classEnded) {
-            const slotKey = `${dateFormatted}_${subj.id}_${slot.time}`
-
-            if (!autoLoggedSlots.includes(slotKey)) {
-              setSem3Subjects((prev) =>
-                prev.map((s) => (s.id === subj.id ? { ...s, present: s.present + 1, total: s.total + 1 } : s))
-              )
-
-              const logEntry = {
-                id: `auto_${Math.random().toString(36).slice(2, 10)}`,
-                subjectId: subj.id,
-                subjectName: subj.name,
-                status: 'present',
-                auto: true,
-                date: dateFormatted,
-                timestamp: now.getTime()
-              }
-
-              setHistory((prev) => [logEntry, ...prev])
-              setAutoLoggedSlots((prev) => [...prev, slotKey])
-              notify(`⏰ Auto-logged Present for ${subj.name}`, 'success')
-              pushToCloud()
-            }
-          }
-        })
-      })
-    }
-
-    checkAutoAttendance()
-    const timer = setInterval(checkAutoAttendance, 30000)
-    return () => clearInterval(timer)
-  }, [sem3Subjects, autoLoggedSlots, settings.autoAttendance, activeSemester, setSem3Subjects, setHistory, setAutoLoggedSlots, notify, pushToCloud])
 
   const addSubject = useCallback((data) => {
     if (!isUnlocked) {
