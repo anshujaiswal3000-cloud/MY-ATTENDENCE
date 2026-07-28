@@ -327,30 +327,58 @@ export default function Settings() {
               Choose a semester to load its official ERP attendance history:
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-              {['Semester 1', 'Semester 2', 'Semester 3'].map((sem) => {
-                const isSelected = activeSemester === sem
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {[
+                { id: 'Semester 1', label: 'Semester 1', subtitle: 'Load Semester 1 Official ERP Attendance Records' },
+                { id: 'Semester 2', label: 'Semester 2', subtitle: 'Load Semester 2 Official ERP Attendance Records' },
+                { id: 'Semester 3', label: 'Semester 3', subtitle: 'Load Semester 3 Active ERP Attendance Records' },
+              ].map((sem) => {
+                const isSelected = activeSemester === sem.id
                 return (
-                  <Button
-                    key={sem}
-                    variant={isSelected ? "contained" : "outlined"}
+                  <Box
+                    key={sem.id}
                     onClick={() => {
                       triggerHaptic(20)
-                      setSettings((s) => ({ ...s, semester: sem }))
-                      notify(`Switched to ${sem} official attendance records!`)
+                      const updated = { ...settings, semester: sem.id }
+                      setSettings(updated)
+                      pushToCloud({ settings: updated })
+                      notify(`Switched to ${sem.label} official attendance records!`, 'success')
                     }}
                     sx={{
-                      borderRadius: '14px',
-                      fontWeight: 800,
-                      px: 2.5, py: 1,
-                      background: isSelected ? 'var(--aurora)' : 'transparent',
-                      borderColor: isSelected ? 'transparent' : 'rgba(148,163,184,.3)',
-                      color: isSelected ? '#fff' : 'text.primary',
-                      boxShadow: isSelected ? '0 4px 16px rgba(99,102,241,.35)' : 'none'
+                      p: 2,
+                      borderRadius: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'space-between',
+                      border: isSelected ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.1)',
+                      bgcolor: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
+                      transition: 'all 200ms ease',
+                      '&:hover': { bgcolor: 'rgba(96,165,250,0.2)' }
                     }}
                   >
-                    {sem} {isSelected ? ' (Active ✨)' : ''}
-                  </Button>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box sx={{
+                        width: 38, height: 38, borderRadius: '12px', display: 'grid', placeItems: 'center',
+                        bgcolor: isSelected ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)',
+                        color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 18
+                      }}>
+                        🎓
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
+                          {sem.label}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.75rem' }}>
+                          {sem.subtitle}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {isSelected && (
+                      <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.7rem' }} />
+                    )}
+                  </Box>
                 )
               })}
             </Box>
