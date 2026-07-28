@@ -198,7 +198,7 @@ export default function Settings() {
       bg: 'rgba(167,139,250,0.18)',
       border: 'rgba(167,139,250,0.3)',
       title: 'Multi-Student Account Switcher & Onboarding Portal',
-      subtitle: `Active: ${studentProfiles.find(p => p.studentId === activeStudentId)?.name || 'Anshu Jaiswal'} • Register ID & Auto-Upload OCR`
+      subtitle: `Active: ${(Array.isArray(studentProfiles) ? studentProfiles : []).find(p => p.studentId === activeStudentId)?.name || 'Anshu Jaiswal'} • Register ID & Auto-Upload OCR`
     },
     {
       id: 'permissions',
@@ -373,7 +373,7 @@ export default function Settings() {
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              {studentProfiles.map((prof) => {
+              {(Array.isArray(studentProfiles) ? studentProfiles : []).map((prof) => {
                 const isActive = activeStudentId === prof.studentId
                 return (
                   <Box

@@ -55,6 +55,18 @@ export function AttendanceProvider({ children }) {
     }
   ])
 
+  const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.settings, DEFAULT_SETTINGS)
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+  const [dbSynced, setDbSynced] = useState(false)
+
+  const notify = useCallback((message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity })
+  }, [])
+
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((s) => ({ ...s, open: false }))
+  }, [])
+
   const DEFAULT_ANSHU_PROFILE = {
     studentId: '21250770',
     name: 'Anshu Jaiswal',
@@ -68,7 +80,8 @@ export function AttendanceProvider({ children }) {
   const [activeStudentId, setActiveStudentId] = useLocalStorage('attendx_active_student_id', '21250770')
 
   const registerStudentProfile = useCallback(async (profileData) => {
-    const updatedProfiles = [...studentProfiles.filter(p => p.studentId !== profileData.studentId), profileData]
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
+    const updatedProfiles = [...currentList.filter(p => p.studentId !== profileData.studentId), profileData]
     setStudentProfiles(updatedProfiles)
     setActiveStudentId(profileData.studentId)
 
@@ -88,7 +101,8 @@ export function AttendanceProvider({ children }) {
   }, [studentProfiles, setStudentProfiles, setActiveStudentId, setSem3Subjects, notify])
 
   const switchStudentAccount = useCallback((studentId) => {
-    const target = studentProfiles.find(p => p.studentId === studentId)
+    const currentList = Array.isArray(studentProfiles) ? studentProfiles : [DEFAULT_ANSHU_PROFILE]
+    const target = currentList.find(p => p.studentId === studentId)
     if (!target) return
     setActiveStudentId(studentId)
     if (target.subjects && target.subjects.length > 0) {
@@ -99,14 +113,6 @@ export function AttendanceProvider({ children }) {
 
   // Tap debouncer ref to prevent accidental rapid double-taps
   const lastTapRef = useRef({})
-
-  const notify = useCallback((message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity })
-  }, [])
-
-  const closeSnackbar = useCallback(() => {
-    setSnackbar((s) => ({ ...s, open: false }))
-  }, [])
 
   const activeSemester = settings?.semester || 'Semester 3'
 
