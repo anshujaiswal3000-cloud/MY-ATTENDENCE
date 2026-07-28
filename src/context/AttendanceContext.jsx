@@ -87,15 +87,15 @@ export function AttendanceProvider({ children }) {
   const pushToCloud = useCallback(async (overrides = {}) => {
     try {
       const payload = {
-        subjects: overrides.subjects || sem3Subjects,
-        sem1Subjects: overrides.sem1Subjects || sem1Subjects,
-        sem2Subjects: overrides.sem2Subjects || sem2Subjects,
-        history: overrides.history || history,
-        bunks: overrides.bunks || bunks,
-        notes: overrides.notes || notes,
-        settings: overrides.settings || settings,
-        timetableHeader: overrides.timetableHeader || timetableHeader,
-        autoLoggedSlots: overrides.autoLoggedSlots || autoLoggedSlots
+        subjects: overrides.subjects !== undefined ? overrides.subjects : sem3Subjects,
+        sem1Subjects: overrides.sem1Subjects !== undefined ? overrides.sem1Subjects : sem1Subjects,
+        sem2Subjects: overrides.sem2Subjects !== undefined ? overrides.sem2Subjects : sem2Subjects,
+        history: overrides.history !== undefined ? overrides.history : history,
+        bunks: overrides.bunks !== undefined ? overrides.bunks : bunks,
+        notes: overrides.notes !== undefined ? overrides.notes : notes,
+        settings: overrides.settings !== undefined ? overrides.settings : settings,
+        timetableHeader: overrides.timetableHeader !== undefined ? overrides.timetableHeader : timetableHeader,
+        autoLoggedSlots: overrides.autoLoggedSlots !== undefined ? overrides.autoLoggedSlots : autoLoggedSlots
       }
       const res = await fetch('/api/sync/anshu', {
         method: 'POST',
@@ -118,8 +118,8 @@ export function AttendanceProvider({ children }) {
         if (json.success && json.data) {
           const cloud = json.data
           if (cloud.subjects && cloud.subjects.length > 0) setSem3Subjects(cloud.subjects)
-          if (cloud.sem1Subjects) setSem1Subjects(cloud.sem1Subjects)
-          if (cloud.sem2Subjects) setSem2Subjects(cloud.sem2Subjects)
+          if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) setSem1Subjects(cloud.sem1Subjects)
+          if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) setSem2Subjects(cloud.sem2Subjects)
           if (cloud.history) setHistory(cloud.history)
           if (cloud.bunks) setBunks(cloud.bunks)
           if (cloud.notes) setNotes(cloud.notes)
@@ -168,7 +168,7 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + DOUBLE-TAP DEDUPLICATION */
+  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + IMMEDIATE CLOUD SYNC */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
       notify('Login to make any change 🔒', 'warning')
@@ -198,21 +198,21 @@ export function AttendanceProvider({ children }) {
         }
       })
 
-    let nextSubjects = []
+    let updatedSubjects = []
     if (activeSemester === 'Semester 1') {
       setSem1Subjects((prev) => {
-        nextSubjects = updateSubjectList(prev)
-        return nextSubjects
+        updatedSubjects = updateSubjectList(prev)
+        return updatedSubjects
       })
     } else if (activeSemester === 'Semester 2') {
       setSem2Subjects((prev) => {
-        nextSubjects = updateSubjectList(prev)
-        return nextSubjects
+        updatedSubjects = updateSubjectList(prev)
+        return updatedSubjects
       })
     } else {
       setSem3Subjects((prev) => {
-        nextSubjects = updateSubjectList(prev)
-        return nextSubjects
+        updatedSubjects = updateSubjectList(prev)
+        return updatedSubjects
       })
     }
 
@@ -234,7 +234,14 @@ export function AttendanceProvider({ children }) {
     })
 
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
-    pushToCloud({ history: newHistory })
+    
+    // EXPLICITLY PASS UPDATED SUBJECTS & HISTORY TO PUSH TO CLOUD SO STALE STATE IS NEVER SAVED
+    const syncPayload = { history: newHistory }
+    if (activeSemester === 'Semester 1') syncPayload.sem1Subjects = updatedSubjects
+    else if (activeSemester === 'Semester 2') syncPayload.sem2Subjects = updatedSubjects
+    else syncPayload.subjects = updatedSubjects
+
+    pushToCloud(syncPayload)
   }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
@@ -288,14 +295,22 @@ export function AttendanceProvider({ children }) {
       return null
     }
     const subject = buildSubject(data)
-    if (activeSemester === 'Semester 1') setSem1Subjects((prev) => [...prev, subject])
-    else if (activeSemester === 'Semester 2') setSem2Subjects((prev) => [...prev, subject])
-    else setSem3Subjects((prev) => [...prev, subject])
+    let nextList = []
+
+    if (activeSemester === 'Semester 1') {
+      setSem1Subjects((prev) => { nextList = [...prev, subject]; return nextList })
+      pushToCloud({ sem1Subjects: nextList })
+    } else if (activeSemester === 'Semester 2') {
+      setSem2Subjects((prev) => { nextList = [...prev, subject]; return nextList })
+      pushToCloud({ sem2Subjects: nextList })
+    } else {
+      setSem3Subjects((prev) => { nextList = [...prev, subject]; return nextList })
+      pushToCloud({ subjects: nextList })
+    }
 
     notify('Subject added')
-    pushToCloud()
     return subject.id
-  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
+  }, [isUnlocked, activeSemester, sem1Subjects, sem2Subjects, sem3Subjects, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
 
   const updateSubject = useCallback((id, updates) => {
     if (!isUnlocked) {
@@ -303,12 +318,20 @@ export function AttendanceProvider({ children }) {
       return
     }
     const updateList = (prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-    if (activeSemester === 'Semester 1') setSem1Subjects(updateList)
-    else if (activeSemester === 'Semester 2') setSem2Subjects(updateList)
-    else setSem3Subjects(updateList)
+    let updatedList = []
+
+    if (activeSemester === 'Semester 1') {
+      setSem1Subjects((prev) => { updatedList = updateList(prev); return updatedList })
+      pushToCloud({ sem1Subjects: updatedList })
+    } else if (activeSemester === 'Semester 2') {
+      setSem2Subjects((prev) => { updatedList = updateList(prev); return updatedList })
+      pushToCloud({ sem2Subjects: updatedList })
+    } else {
+      setSem3Subjects((prev) => { updatedList = updateList(prev); return updatedList })
+      pushToCloud({ subjects: updatedList })
+    }
 
     notify('Subject updated')
-    pushToCloud()
   }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, notify, pushToCloud])
 
   const deleteSubject = useCallback((id) => {
@@ -317,13 +340,25 @@ export function AttendanceProvider({ children }) {
       return
     }
     const filterList = (prev) => prev.filter((s) => s.id !== id)
-    if (activeSemester === 'Semester 1') setSem1Subjects(filterList)
-    else if (activeSemester === 'Semester 2') setSem2Subjects(filterList)
-    else setSem3Subjects(filterList)
+    let filteredList = []
 
-    setHistory((prev) => prev.filter((h) => h.subjectId !== id))
+    if (activeSemester === 'Semester 1') {
+      setSem1Subjects((prev) => { filteredList = filterList(prev); return filteredList })
+      pushToCloud({ sem1Subjects: filteredList })
+    } else if (activeSemester === 'Semester 2') {
+      setSem2Subjects((prev) => { filteredList = filterList(prev); return filteredList })
+      pushToCloud({ sem2Subjects: filteredList })
+    } else {
+      setSem3Subjects((prev) => { filteredList = filterList(prev); return filteredList })
+      pushToCloud({ subjects: filteredList })
+    }
+
+    setHistory((prev) => {
+      const nextHist = prev.filter((h) => h.subjectId !== id)
+      pushToCloud({ history: nextHist })
+      return nextHist
+    })
     notify('Subject deleted', 'info')
-    pushToCloud()
   }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const addNote = useCallback((noteData) => {
@@ -382,7 +417,14 @@ export function AttendanceProvider({ children }) {
     setBunks([])
     setAutoLoggedSlots([])
     notify('Attendance reset', 'info')
-    pushToCloud()
+    pushToCloud({
+      subjects: seedSubjects(),
+      sem1Subjects: SEMESTER_1_SUBJECTS,
+      sem2Subjects: SEMESTER_2_SUBJECTS,
+      history: [],
+      bunks: [],
+      autoLoggedSlots: []
+    })
   }, [isUnlocked, setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setAutoLoggedSlots, notify, pushToCloud])
 
   const updateTimetable = useCallback((subjectId, timetable) => {
@@ -390,10 +432,11 @@ export function AttendanceProvider({ children }) {
       notify('Login to make any change 🔒', 'warning')
       return
     }
+    let updatedList = []
     setSem3Subjects((prev) => {
-      const next = prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
-      pushToCloud({ subjects: next })
-      return next
+      updatedList = prev.map((s) => (s.id === subjectId ? { ...s, timetable } : s))
+      pushToCloud({ subjects: updatedList })
+      return updatedList
     })
     notify('Timetable updated')
   }, [isUnlocked, setSem3Subjects, notify, pushToCloud])

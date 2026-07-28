@@ -73,11 +73,16 @@ const transporter = nodemailer.createTransport({
   }
 })
 
-// ── SERVER-SIDE HELPER UTILITIES ──
+// ── TIMEZONE-AWARE SERVER HELPER UTILITIES (Asia/Kolkata IST) ──
+function getISTDate() {
+  const dateStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+  return new Date(dateStr)
+}
+
 function getTodayNameServer() {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const idx = new Date().getDay()
-  return days[idx]
+  const istDate = getISTDate()
+  return days[istDate.getDay()]
 }
 
 function parseEndTimeServer(timeRangeStr) {
@@ -97,7 +102,7 @@ function parseEndTimeServer(timeRangeStr) {
   }
 }
 
-// ── PRODUCTION-GRADE SERVER AUTO-ATTENDANCE SCHEDULER ──
+// ── PRODUCTION-GRADE TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
 
@@ -114,7 +119,7 @@ async function runServerAutoAttendance() {
     const subjects = userDoc.subjects || []
     if (subjects.length === 0) return
 
-    const now = new Date()
+    const now = getISTDate()
     const todayName = getTodayNameServer()
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
     const curHours = now.getHours()
@@ -160,7 +165,7 @@ async function runServerAutoAttendance() {
             }
 
             updatedHistory.unshift(logEntry)
-            console.log(`[SERVER AUTO-ATTENDANCE] ⏰ Logged Present for ${subj.name} (${slot.time}) on ${dateFormatted}`)
+            console.log(`[SERVER AUTO-ATTENDANCE IST] ⏰ Logged Present for ${subj.name} (${slot.time}) on ${dateFormatted}`)
           }
         }
       })
@@ -183,7 +188,7 @@ async function runServerAutoAttendance() {
           }
         }
       )
-      console.log(`[SERVER AUTO-ATTENDANCE] ✅ MongoDB Cloud Document updated atomically.`)
+      console.log(`[SERVER AUTO-ATTENDANCE IST] ✅ MongoDB Cloud Document updated atomically.`)
     }
   } catch (err) {
     console.error(`[SERVER AUTO-ATTENDANCE ERROR]:`, err.message)
@@ -398,5 +403,5 @@ if (fs.existsSync(distPath)) {
 
 app.listen(PORT, () => {
   console.log(`🚀 AttendX Server running on http://localhost:${PORT}`)
-  console.log(`⏰ Server-Side Auto Attendance Background Scheduler Active.`)
+  console.log(`⏰ Timezone-Aware (IST) Server Auto Attendance Background Scheduler Active.`)
 })
