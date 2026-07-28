@@ -33,7 +33,7 @@ const SettingRow = React.memo(function SettingRow({ icon, title, subtitle, actio
 
 export default function Settings() {
   const { mode, toggleMode } = useThemeMode()
-  const { exportData, importData, resetAttendance, backup, restoreBackup, settings = {}, setSettings, notify, isUnlocked } = useAttendance()
+  const { exportData, importData, resetAttendance, pushToCloud, settings = {}, setSettings, notify, isUnlocked } = useAttendance()
   const fileInputRef = useRef(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
