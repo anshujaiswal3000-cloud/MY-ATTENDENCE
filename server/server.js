@@ -50,6 +50,7 @@ const userDataSchema = new mongoose.Schema({
   settings: { type: Object, default: {} },
   timetableHeader: { type: Object, default: {} },
   autoLoggedSlots: { type: Array, default: [] },
+  studentProfiles: { type: Array, default: [] },
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true })
 
@@ -449,6 +450,52 @@ app.post('/api/alerts/whatsapp/test', async (req, res) => {
   } catch (err) {
     console.error('WhatsApp test error:', err.message)
     res.status(500).json({ success: false, message: 'Failed to send WhatsApp test alert' })
+  }
+})
+
+// POST /api/students/register -> Register a new student profile and sync to cloud
+app.post('/api/students/register', async (req, res) => {
+  try {
+    const { studentId, name, branch, email, password, avatarPic, subjects, sem1Subjects, sem2Subjects } = req.body
+
+    if (!studentId || !name) {
+      return res.status(400).json({ success: false, message: 'Student ID and Name are required.' })
+    }
+
+    let userDoc = await UserData.findOne({})
+    if (!userDoc) {
+      userDoc = new UserData({ userId: '21250770', password: 'anshu123' })
+    }
+
+    const currentProfiles = userDoc.studentProfiles || []
+    const existingIndex = currentProfiles.findIndex(p => p.studentId === studentId)
+
+    const newProfile = {
+      studentId: studentId.trim(),
+      name: name.trim(),
+      branch: (branch || 'B.Tech CSE').trim(),
+      email: (email || '').trim(),
+      avatarPic: avatarPic || '',
+      subjects: subjects || [],
+      sem1Subjects: sem1Subjects || [],
+      sem2Subjects: sem2Subjects || [],
+      updatedAt: new Date()
+    }
+
+    if (existingIndex >= 0) {
+      currentProfiles[existingIndex] = newProfile
+    } else {
+      currentProfiles.push(newProfile)
+    }
+
+    userDoc.studentProfiles = currentProfiles
+    await userDoc.save()
+
+    console.log(`👤 Student Profile Registered: ${name} [ID: ${studentId}]`)
+    res.json({ success: true, message: `Student profile for ${name} registered successfully!`, profile: newProfile })
+  } catch (err) {
+    console.error('API Error /students/register:', err.message)
+    res.status(500).json({ success: false, message: 'Failed to register student profile' })
   }
 })
 

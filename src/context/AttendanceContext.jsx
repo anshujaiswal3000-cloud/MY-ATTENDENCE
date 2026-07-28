@@ -55,9 +55,47 @@ export function AttendanceProvider({ children }) {
     }
   ])
 
-  const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.settings, DEFAULT_SETTINGS)
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
-  const [dbSynced, setDbSynced] = useState(false)
+  const DEFAULT_ANSHU_PROFILE = {
+    studentId: '21250770',
+    name: 'Anshu Jaiswal',
+    branch: 'B.Tech CSE 2nd Year (Sec B)',
+    college: 'UCER',
+    email: 'anshujaiswal3000@gmail.com',
+    avatarPic: '/profile.jpg'
+  }
+
+  const [studentProfiles, setStudentProfiles] = useLocalStorage('attendx_student_profiles', [DEFAULT_ANSHU_PROFILE])
+  const [activeStudentId, setActiveStudentId] = useLocalStorage('attendx_active_student_id', '21250770')
+
+  const registerStudentProfile = useCallback(async (profileData) => {
+    const updatedProfiles = [...studentProfiles.filter(p => p.studentId !== profileData.studentId), profileData]
+    setStudentProfiles(updatedProfiles)
+    setActiveStudentId(profileData.studentId)
+
+    if (profileData.subjects && profileData.subjects.length > 0) {
+      setSem3Subjects(profileData.subjects)
+    }
+
+    notify(`Student account created for ${profileData.name}! 🎉`, 'success')
+
+    try {
+      await fetch('/api/students/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData)
+      })
+    } catch (e) {}
+  }, [studentProfiles, setStudentProfiles, setActiveStudentId, setSem3Subjects, notify])
+
+  const switchStudentAccount = useCallback((studentId) => {
+    const target = studentProfiles.find(p => p.studentId === studentId)
+    if (!target) return
+    setActiveStudentId(studentId)
+    if (target.subjects && target.subjects.length > 0) {
+      setSem3Subjects(target.subjects)
+    }
+    notify(`Switched account to ${target.name} [${studentId}]! 👤`, 'success')
+  }, [studentProfiles, setActiveStudentId, setSem3Subjects, notify])
 
   // Tap debouncer ref to prevent accidental rapid double-taps
   const lastTapRef = useRef({})
@@ -597,12 +635,16 @@ export function AttendanceProvider({ children }) {
     importData,
     pushToCloud,
     pullFromCloud,
+    studentProfiles,
+    activeStudentId,
+    registerStudentProfile,
+    switchStudentAccount
   }), [
     subjects, timetableSubjects, history, bunks, notes, settings, isUnlocked, dbSynced, timetableHeader,
     setTimetableHeader, snackbar, notify, closeSnackbar, unlockApp, lockApp,
     markAttendance, logBunkClass, deleteBunkClass, addSubject, updateSubject, deleteSubject,
     addNote, toggleNoteComplete, deleteNote, resetAttendance, updateTimetable, exportData, importData,
-    pushToCloud, pullFromCloud, setSettings
+    pushToCloud, pullFromCloud, setSettings, studentProfiles, activeStudentId, registerStudentProfile, switchStudentAccount
   ])
 
   return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>
