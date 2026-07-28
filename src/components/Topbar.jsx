@@ -143,51 +143,19 @@ export default function Topbar() {
       {/* Right Actions */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
 
-        {/* Stacked Cloud Status + Lock/Login Chip */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: .3 }}>
-          <Tooltip title={dbSynced ? "Live MongoDB Cloud Synced" : "Local Storage Mode"}>
-            <Chip
-              icon={dbSynced ? <MdCloudDone size={12} color="#10b981" /> : <MdCloudOff size={12} color="#f59e0b" />}
-              label={dbSynced ? "Cloud Live" : "Local"}
-              size="small"
-              sx={{
-                bgcolor: dbSynced ? 'rgba(16,185,129,.16)' : 'rgba(245,158,11,.16)',
-                color: dbSynced ? '#10b981' : '#f59e0b',
-                fontWeight: 700, fontSize: '.62rem', height: 18, px: .2
-              }}
-            />
-          </Tooltip>
-
-          {isUnlocked ? (
-            <Chip
-              icon={<MdLockOpen size={12} color="#34d399" />}
-              label="Editing"
-              onClick={() => {
-                triggerHaptic(20)
-                lockApp()
-              }}
-              size="small"
-              sx={{
-                bgcolor: 'rgba(16,185,129,.16)', color: '#34d399', fontWeight: 700,
-                fontSize: '.62rem', height: 18, cursor: 'pointer', border: '1px solid rgba(16,185,129,.3)'
-              }}
-            />
-          ) : (
-            <Chip
-              icon={<MdLock size={12} color="#60a5fa" />}
-              label="Owner Login"
-              onClick={() => {
-                triggerHaptic(20)
-                setLoginOpen(true)
-              }}
-              size="small"
-              sx={{
-                bgcolor: 'rgba(96,165,250,.16)', color: '#60a5fa', fontWeight: 700,
-                fontSize: '.62rem', height: 18, cursor: 'pointer', border: '1px solid rgba(96,165,250,.3)'
-              }}
-            />
-          )}
-        </Box>
+        {/* Cloud Live Status Badge */}
+        <Tooltip title={dbSynced ? "Live MongoDB Cloud Synced" : "Local Storage Mode"}>
+          <Chip
+            icon={dbSynced ? <MdCloudDone size={12} color="#10b981" /> : <MdCloudOff size={12} color="#f59e0b" />}
+            label={dbSynced ? "Cloud Live" : "Local"}
+            size="small"
+            sx={{
+              bgcolor: dbSynced ? 'rgba(16,185,129,.16)' : 'rgba(245,158,11,.16)',
+              color: dbSynced ? '#10b981' : '#f59e0b',
+              fontWeight: 700, fontSize: '.62rem', height: 20, px: .4
+            }}
+          />
+        </Tooltip>
 
         {/* Dark / Light Toggle */}
         <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>

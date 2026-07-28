@@ -109,13 +109,18 @@ export default function Timetable() {
         </Box>
       </GlassCard>
 
-      {/* ── Day Navigation Bar ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, gap: 1 }}>
-        <IconButton size="small" onClick={() => setTab((t) => Math.max(0, t - 1))} disabled={tab === 0} sx={{ borderRadius: '10px' }}>
-          <MdChevronLeft size={22} />
+      {/* ── Day Navigation Bar (100% Smooth Touch-Scrollable PWA Rail) ── */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 0.5 }}>
+        <IconButton size="small" onClick={() => setTab((t) => Math.max(0, t - 1))} disabled={tab === 0} sx={{ flexShrink: 0, bgcolor: 'rgba(255,255,255,0.06)' }}>
+          <MdChevronLeft size={20} />
         </IconButton>
 
-        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', py: .5, px: .5, flex: 1, justifyContent: 'center' }}>
+        <Box sx={{
+          display: 'flex', gap: 1, overflowX: 'auto', py: 0.75, px: 0.5, flex: 1,
+          scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+          '&::-webkit-scrollbar': { height: 4 },
+          '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(99,102,241,0.3)', borderRadius: 2 }
+        }}>
           {WEEKDAYS.map((day, idx) => {
             const active = idx === tab
             const dayIsToday = day === today
@@ -126,21 +131,23 @@ export default function Timetable() {
                 onClick={() => setTab(idx)}
                 sx={{
                   fontWeight: active ? 800 : 600,
-                  fontSize: '.75rem',
-                  px: 1, py: 1.75,
+                  fontSize: '.78rem',
+                  px: 1.25, py: 1.85,
+                  flexShrink: 0,
+                  scrollSnapAlign: 'start',
                   cursor: 'pointer',
-                  bgcolor: active ? 'var(--aurora)' : dayIsToday ? 'rgba(99,102,241,.18)' : 'rgba(148,163,184,.1)',
-                  color: active ? '#fff' : dayIsToday ? '#818cf8' : 'text.primary',
-                  border: dayIsToday ? '1px solid rgba(99,102,241,.3)' : 'none',
-                  boxShadow: active ? '0 4px 14px rgba(99,102,241,.35)' : 'none'
+                  bgcolor: active ? 'var(--aurora)' : dayIsToday ? 'rgba(99,102,241,.22)' : 'rgba(148,163,184,.12)',
+                  color: active ? '#fff' : dayIsToday ? '#a5b4fc' : 'text.primary',
+                  border: dayIsToday ? '1.5px solid rgba(99,102,241,.4)' : '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: active ? '0 6px 18px rgba(99,102,241,.4)' : 'none'
                 }}
               />
             )
           })}
         </Box>
 
-        <IconButton size="small" onClick={() => setTab((t) => Math.min(WEEKDAYS.length - 1, t + 1))} disabled={tab === WEEKDAYS.length - 1} sx={{ borderRadius: '10px' }}>
-          <MdChevronRight size={22} />
+        <IconButton size="small" onClick={() => setTab((t) => Math.min(WEEKDAYS.length - 1, t + 1))} disabled={tab === WEEKDAYS.length - 1} sx={{ flexShrink: 0, bgcolor: 'rgba(255,255,255,0.06)' }}>
+          <MdChevronRight size={20} />
         </IconButton>
       </Box>
 

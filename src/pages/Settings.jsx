@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react'
 import {
   Box, Typography, Button, Switch, TextField, Grid, Chip,
-  Divider, Alert, InputAdornment, IconButton, Collapse
+  Divider, Alert, InputAdornment, IconButton
 } from '@mui/material'
 import {
-  MdBackup, MdSettingsBackupRestore, MdLock, MdExpandMore, MdExpandLess,
-  MdSchool, MdSecurity, MdAutoAwesome, MdPhonelinkRing, MdStorage
+  MdArrowBack, MdChevronRight, MdBackup, MdSettingsBackupRestore,
+  MdLock, MdSchool, MdSecurity, MdAutoAwesome, MdPhonelinkRing,
+  MdStorage, MdInsertDriveFile, MdLockOpen
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
@@ -22,9 +23,8 @@ export default function Settings() {
     isUnlocked
   } = useAttendance()
 
-  // Accordion Single Expansion State ('reports' | 'semester' | 'engine' | 'security' | 'data' | null)
-  const [openSection, setOpenSection] = useState('reports')
-  const [changePassExpanded, setChangePassExpanded] = useState(false)
+  // Active Sub-Page View State (null = Main Menu, 'reports' | 'semester' | 'engine' | 'security' | 'data')
+  const [activeSubPage, setActiveSubPage] = useState(null)
 
   // Security Form State
   const [oldUserId, setOldUserId] = useState('')
@@ -87,77 +87,178 @@ export default function Settings() {
     }
   }
 
+  // ── MENU LIST CONFIGURATION ──
+  const menuItems = [
+    {
+      id: 'reports',
+      icon: '📲',
+      color: '#34d399',
+      bg: 'rgba(16,185,129,0.18)',
+      border: 'rgba(16,185,129,0.3)',
+      title: '1-Click PDF Report & ATTIX WhatsApp Alerts',
+      subtitle: 'Download PDF report & test WhatsApp alert (+91 9125469499)'
+    },
+    {
+      id: 'semester',
+      icon: '🎓',
+      color: '#60a5fa',
+      bg: 'rgba(96,165,250,0.18)',
+      border: 'rgba(96,165,250,0.3)',
+      title: 'Academic Semester Management',
+      subtitle: `Active: ${activeSemester} • Switch Semester 1, 2, or 3 ERP data`
+    },
+    {
+      id: 'engine',
+      icon: '⚡',
+      color: '#34d399',
+      bg: 'rgba(16,185,129,0.18)',
+      border: 'rgba(16,185,129,0.3)',
+      title: '24/7 Autonomous Server Engine & Protection',
+      subtitle: 'Auto-Attendance, Mass Bunk & Holiday Protection Guards'
+    },
+    {
+      id: 'security',
+      icon: '🔒',
+      color: '#818cf8',
+      bg: 'rgba(99,102,241,0.18)',
+      border: 'rgba(99,102,241,0.3)',
+      title: 'Owner Security Credentials & Password',
+      subtitle: 'Update MongoDB Atlas Owner User ID & Private Password'
+    },
+    {
+      id: 'data',
+      icon: '💾',
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.18)',
+      border: 'rgba(245,158,11,0.3)',
+      title: 'Data Maintenance & JSON Backups',
+      subtitle: 'Export JSON backup, restore files, or reset app state'
+    }
+  ]
+
   return (
     <Box sx={{ width: '100%', maxWidth: 680, mx: 'auto', pb: 6, overflowX: 'hidden' }}>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 1: WHATSAPP PDF REPORTS & ATTIX ALERTS
+          MAIN SETTINGS MENU PAGE (Native Mobile Settings Menu)
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setOpenSection(openSection === 'reports' ? null : 'reports')
-          }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 22 }}>
-              📲
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-                1-Click PDF Report & ATTIX Alerts
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600 }}>
-                Target Number: +91 9125469499 (Active & Verified)
-              </Typography>
-            </Box>
+      {!activeSubPage && (
+        <Box>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800 }}>
+              Settings & Preferences
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Select any section below to open its dedicated management page
+            </Typography>
           </Box>
-          <IconButton size="small" sx={{ color: '#34d399' }}>
-            {openSection === 'reports' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
 
-        <Collapse in={openSection === 'reports'} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <WhatsAppPDFSection />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {menuItems.map((item) => (
+              <GlassCard
+                key={item.id}
+                onClick={() => {
+                  triggerHaptic(20)
+                  setActiveSubPage(item.id)
+                }}
+                sx={{
+                  p: 2.25,
+                  borderRadius: '22px',
+                  cursor: 'pointer',
+                  border: `1px solid ${item.border}`,
+                  transition: 'all 200ms ease',
+                  '&:hover': { transform: 'translateY(-2px)', bgcolor: item.bg }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+                    <Box
+                      sx={{
+                        width: 46, height: 46, borderRadius: '16px',
+                        bgcolor: item.bg, color: item.color,
+                        display: 'grid', placeItems: 'center', fontSize: 24, flexShrink: 0
+                      }}
+                    >
+                      {item.icon}
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', fontSize: '.96rem', lineHeight: 1.2 }}>
+                        {item.title}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.76rem', display: 'block', mt: 0.25 }}>
+                        {item.subtitle}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <IconButton size="small" sx={{ color: item.color, ml: 1, flexShrink: 0 }}>
+                    <MdChevronRight size={26} />
+                  </IconButton>
+                </Box>
+              </GlassCard>
+            ))}
           </Box>
-        </Collapse>
-      </GlassCard>
+        </Box>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 2: ACADEMIC SEMESTER SELECTOR
+          DEDICATED SUB-PAGE: 1-CLICK PDF REPORT & ATTIX ALERTS
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setOpenSection(openSection === 'semester' ? null : 'semester')
-          }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(96,165,250,0.2)', color: '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 22 }}>
-              🎓
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-                Select Semester ({activeSemester})
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#93c5fd', fontWeight: 600 }}>
-                Tap to expand and load Semester 1, 2, or 3 ERP records
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton size="small" sx={{ color: '#60a5fa' }}>
-            {openSection === 'semester' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
+      {activeSubPage === 'reports' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => {
+              triggerHaptic(15)
+              setActiveSubPage(null)
+            }}
+            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
 
-        <Collapse in={openSection === 'semester'} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.4)' }}>
+            <WhatsAppPDFSection />
+          </GlassCard>
+        </Box>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          DEDICATED SUB-PAGE: ACADEMIC SEMESTER SELECTOR
+      ───────────────────────────────────────────────────────────── */}
+      {activeSubPage === 'semester' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => {
+              triggerHaptic(15)
+              setActiveSubPage(null)
+            }}
+            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
+
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.4)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(96,165,250,0.2)', color: '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+                🎓
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                  Academic Semester Management
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#93c5fd', fontWeight: 600, fontSize: '.78rem' }}>
+                  Currently Active: <strong>{activeSemester}</strong>
+                </Typography>
+              </Box>
+            </Box>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '.84rem' }}>
+              Select a semester to instantly load its official ERP attendance history across Dashboard, Subjects, and PDF Reports:
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
               {[
                 { id: 'Semester 1', label: 'Semester 1', subtitle: 'Load Semester 1 Official ERP Attendance Records' },
                 { id: 'Semester 2', label: 'Semester 2', subtitle: 'Load Semester 2 Official ERP Attendance Records' },
@@ -175,7 +276,7 @@ export default function Settings() {
                       notify(`Switched to ${sem.label} official attendance records!`, 'success')
                     }}
                     sx={{
-                      p: 2, borderRadius: '16px', cursor: 'pointer',
+                      p: 2.25, borderRadius: '18px', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       border: isSelected ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.1)',
                       bgcolor: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
@@ -185,65 +286,65 @@ export default function Settings() {
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box sx={{
-                        width: 36, height: 36, borderRadius: '12px', display: 'grid', placeItems: 'center',
+                        width: 40, height: 40, borderRadius: '12px', display: 'grid', placeItems: 'center',
                         bgcolor: isSelected ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)',
-                        color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 16
+                        color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 18
                       }}>
                         🎓
                       </Box>
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
                           {sem.label}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.75rem' }}>
+                        <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.78rem' }}>
                           {sem.subtitle}
                         </Typography>
                       </Box>
                     </Box>
                     {isSelected && (
-                      <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.7rem' }} />
+                      <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.72rem' }} />
                     )}
                   </Box>
                 )
               })}
             </Box>
-          </Box>
-        </Collapse>
-      </GlassCard>
+          </GlassCard>
+        </Box>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 3: AUTONOMOUS ENGINE & HOLIDAY PROTECTION
+          DEDICATED SUB-PAGE: 24/7 AUTONOMOUS SERVER ENGINE
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setOpenSection(openSection === 'engine' ? null : 'engine')
-          }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 22 }}>
-              ⚡
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-                24/7 Server Autonomous Engine
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600 }}>
-                Runs 24/7 in IST timezone • Render Keep-Alive Active
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton size="small" sx={{ color: '#34d399' }}>
-            {openSection === 'engine' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
+      {activeSubPage === 'engine' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => {
+              triggerHaptic(15)
+              setActiveSubPage(null)
+            }}
+            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
 
-        <Collapse in={openSection === 'engine'} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.4)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+                ⚡
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                  24/7 Server Autonomous Engine
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600, fontSize: '.78rem' }}>
+                  Runs 24/7 in IST timezone • Render Self-Pinger Keep-Alive Active
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+              <Box sx={{ p: 2, borderRadius: '18px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
                     24/7 Server Auto-Attendance Engine
@@ -264,7 +365,7 @@ export default function Settings() {
                 />
               </Box>
 
-              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ p: 2, borderRadius: '18px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
                     Mass Bunk Protection Guard
@@ -285,7 +386,7 @@ export default function Settings() {
                 />
               </Box>
 
-              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ p: 2, borderRadius: '18px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
                     Official College Holiday Guard
@@ -306,171 +407,145 @@ export default function Settings() {
                 />
               </Box>
             </Box>
-          </Box>
-        </Collapse>
-      </GlassCard>
+          </GlassCard>
+        </Box>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 4: OWNER SECURITY & STEP-BY-STEP PASSWORD CHANGE
+          DEDICATED SUB-PAGE: OWNER SECURITY CREDENTIALS
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setOpenSection(openSection === 'security' ? null : 'security')
-          }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(99,102,241,0.2)', color: '#818cf8', display: 'grid', placeItems: 'center', fontSize: 22 }}>
-              🔒
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-                Security Credentials & Authentication
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600 }}>
-                Step 1: Expand Credentials ➔ Step 2: Change Password
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton size="small" sx={{ color: '#818cf8' }}>
-            {openSection === 'security' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
+      {activeSubPage === 'security' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => {
+              triggerHaptic(15)
+              setActiveSubPage(null)
+            }}
+            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
 
-        <Collapse in={openSection === 'security'} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            
-            {/* Step 1 Nested Accordion Option */}
-            <Box
-              onClick={() => {
-                triggerHaptic(15)
-                setChangePassExpanded(!changePassExpanded)
-              }}
-              sx={{
-                p: 1.75, borderRadius: '16px', cursor: 'pointer',
-                bgcolor: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-              }}
-            >
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
-                🔑 Step 1: Change Owner Password & User ID
-              </Typography>
-              <IconButton size="small" sx={{ color: '#818cf8' }}>
-                {changePassExpanded ? <MdExpandLess size={20} /> : <MdExpandMore size={20} />}
-              </IconButton>
-            </Box>
-
-            {/* Step 2 Form Inputs Expansion */}
-            <Collapse in={changePassExpanded} timeout="auto" unmountOnExit>
-              <Box sx={{ pt: 2, px: 1 }}>
-                {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
-                {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
-
-                <form onSubmit={handleCredentialsSubmit}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-                    <TextField
-                      fullWidth
-                      label="Enter Current User ID"
-                      size="small"
-                      value={oldUserId}
-                      onChange={(e) => setOldUserId(e.target.value)}
-                      placeholder="anshujaiswal3000@gmail.com"
-                    />
-
-                    <TextField
-                      fullWidth
-                      label="Enter Current Password"
-                      size="small"
-                      type={showOldPass ? 'text' : 'password'}
-                      value={oldPassword}
-                      onChange={(e) => setOldPassword(e.target.value)}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => setShowOldPass(!showOldPass)}>
-                              {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                            </IconButton>
-                          </InputAdornment>
-                        )
-                      }}
-                    />
-
-                    <TextField
-                      fullWidth
-                      label="Enter New User ID (Optional)"
-                      size="small"
-                      value={newUserId}
-                      onChange={(e) => setNewUserId(e.target.value)}
-                    />
-
-                    <TextField
-                      fullWidth
-                      label="Enter New Password"
-                      size="small"
-                      type={showNewPass ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => setShowNewPass(!showNewPass)}>
-                              {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                            </IconButton>
-                          </InputAdornment>
-                        )
-                      }}
-                    />
-
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      disabled={!isUnlocked}
-                      sx={{ background: 'var(--aurora)', borderRadius: '12px', py: 1.2, fontWeight: 800, textTransform: 'none', mt: 0.5 }}
-                    >
-                      Save to Cloud 🔒
-                    </Button>
-                  </Box>
-                </form>
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.4)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(99,102,241,0.2)', color: '#818cf8', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+                🔒
               </Box>
-            </Collapse>
-          </Box>
-        </Collapse>
-      </GlassCard>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                  Security Credentials & Password Change
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, fontSize: '.78rem' }}>
+                  Update Owner User ID & Private Password in MongoDB Atlas Cloud
+                </Typography>
+              </Box>
+            </Box>
+
+            {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
+            {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
+
+            <form onSubmit={handleCredentialsSubmit}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                <TextField
+                  fullWidth
+                  label="Enter Current User ID"
+                  size="small"
+                  value={oldUserId}
+                  onChange={(e) => setOldUserId(e.target.value)}
+                  placeholder="anshujaiswal3000@gmail.com"
+                />
+
+                <TextField
+                  fullWidth
+                  label="Enter Current Password"
+                  size="small"
+                  type={showOldPass ? 'text' : 'password'}
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowOldPass(!showOldPass)}>
+                          {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Enter New User ID (Optional)"
+                  size="small"
+                  value={newUserId}
+                  onChange={(e) => setNewUserId(e.target.value)}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Enter New Password"
+                  size="small"
+                  type={showNewPass ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowNewPass(!showNewPass)}>
+                          {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={!isUnlocked}
+                  sx={{ background: 'var(--aurora)', borderRadius: '12px', py: 1.2, fontWeight: 800, textTransform: 'none', mt: 1 }}
+                >
+                  Save Credentials to Cloud 🔒
+                </Button>
+              </Box>
+            </form>
+          </GlassCard>
+        </Box>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 5: DATA MAINTENANCE & BACKUPS
+          DEDICATED SUB-PAGE: DATA MAINTENANCE & BACKUPS
       ───────────────────────────────────────────────────────────── */}
-      <GlassCard sx={{ p: 2.5, mb: 3, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.35)' }}>
-        <Box
-          onClick={() => {
-            triggerHaptic(15)
-            setOpenSection(openSection === 'data' ? null : 'data')
-          }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(245,158,11,0.2)', color: '#f59e0b', display: 'grid', placeItems: 'center', fontSize: 22 }}>
-              💾
-            </Box>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-                Data Maintenance & JSON Backups
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600 }}>
-                Export JSON backups, restore files, or reset state
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton size="small" sx={{ color: '#f59e0b' }}>
-            {openSection === 'data' ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
-          </IconButton>
-        </Box>
+      {activeSubPage === 'data' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => {
+              triggerHaptic(15)
+              setActiveSubPage(null)
+            }}
+            sx={{ mb: 2.5, color: '#60a5fa', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
 
-        <Collapse in={openSection === 'data'} timeout="auto" unmountOnExit>
-          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.4)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(245,158,11,0.2)', color: '#f59e0b', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+                💾
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                  Data Maintenance & JSON Backups
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600, fontSize: '.78rem' }}>
+                  Export JSON backups, restore files, or reset app state
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                 <Button
                   variant="outlined"
@@ -498,9 +573,9 @@ export default function Settings() {
                 />
               </Box>
 
-              <Divider sx={{ my: 0.5, borderColor: 'rgba(255,255,255,0.08)' }} />
+              <Divider sx={{ my: 1, borderColor: 'rgba(255,255,255,0.08)' }} />
 
-              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ p: 2, borderRadius: '18px', bgcolor: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#f43f5e' }}>
                     Danger Zone: Reset App State
@@ -522,9 +597,9 @@ export default function Settings() {
                 </Button>
               </Box>
             </Box>
-          </Box>
-        </Collapse>
-      </GlassCard>
+          </GlassCard>
+        </Box>
+      )}
 
       {/* Confirm Reset Dialog */}
       <ConfirmDialog
