@@ -264,7 +264,28 @@ app.post('/api/auth/send-otp', async (req, res) => {
   }
 })
 
-// POST /api/auth/verify-otp-reset -> Verify OTP and reset password
+// POST /api/auth/verify-otp -> Verify 6-digit OTP code only
+app.post('/api/auth/verify-otp', (req, res) => {
+  try {
+    const { email, otp } = req.body
+    const targetEmail = (email || 'anshujaiswal3000@gmail.com').trim().toLowerCase()
+    const stored = otpStore.get(targetEmail)
+
+    if (!stored || stored.expires < Date.now()) {
+      return res.status(400).json({ success: false, message: 'OTP expired or invalid. Please request a new OTP.' })
+    }
+
+    if (stored.otp !== otp.trim()) {
+      return res.status(400).json({ success: false, message: 'Incorrect 6-digit OTP code! Please check your Gmail inbox.' })
+    }
+
+    res.json({ success: true, message: 'OTP verified successfully! You can now set your new password.' })
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server processing error' })
+  }
+})
+
+// POST /api/auth/verify-otp-reset -> Verify OTP and reset password to Cloud with userId 21250770
 app.post('/api/auth/verify-otp-reset', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body
@@ -285,18 +306,18 @@ app.post('/api/auth/verify-otp-reset', async (req, res) => {
 
     let userDoc = await UserData.findOne({})
     if (!userDoc) {
-      userDoc = new UserData({ userId: 'anshu', password: newPassword.trim(), email: targetEmail })
+      userDoc = new UserData({ userId: '21250770', password: newPassword.trim(), email: targetEmail })
       await userDoc.save()
     } else {
       await UserData.updateOne(
         { _id: userDoc._id },
-        { $set: { password: newPassword.trim(), updatedAt: new Date() } }
+        { $set: { userId: '21250770', password: newPassword.trim(), updatedAt: new Date() } }
       )
     }
 
     otpStore.delete(targetEmail)
-    console.log(`✅ Password successfully reset via OTP for ${targetEmail}`)
-    res.json({ success: true, message: 'Password reset successfully! You can now log in with your new password.' })
+    console.log(`✅ Password successfully reset via OTP for ${targetEmail} (User ID: 21250770)`)
+    res.json({ success: true, userId: '21250770', message: 'Password encrypted & saved to cloud! User ID: 21250770' })
   } catch (err) {
     console.error('API Error /verify-otp-reset:', err.message)
     res.status(500).json({ success: false, message: 'Server processing error' })

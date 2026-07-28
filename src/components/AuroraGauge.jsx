@@ -7,7 +7,7 @@ import { Box, Typography } from '@mui/material'
  * stroked with the emerald→azure→violet aurora gradient, animating its
  * fill on mount/update to reflect overall attendance percentage.
  */
-export default function AuroraGauge({ percentage = 0, size = 164, strokeWidth = 13, label = 'Overall' }) {
+export default function AuroraGauge({ percentage = 0, size = 196, strokeWidth = 13, label = 'Overall' }) {
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
   const clamped = Math.min(100, Math.max(0, percentage))
@@ -48,10 +48,10 @@ export default function AuroraGauge({ percentage = 0, size = 164, strokeWidth = 
         />
       </svg>
       <Box sx={{ position: 'absolute', textAlign: 'center' }}>
-        <Typography className="mono-num" sx={{ fontSize: size * 0.19, fontWeight: 700, lineHeight: 1 }}>
+        <Typography className="mono-num" sx={{ fontSize: size * 0.17, fontWeight: 800, lineHeight: 1, letterSpacing: '-.02em' }}>
           {clamped.toFixed(2)}%
         </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.65, mt: 0.5 }}>{label}</Typography>
+        <Typography variant="caption" sx={{ opacity: 0.7, mt: 0.5, fontWeight: 700, display: 'block', fontSize: '.75rem' }}>{label}</Typography>
       </Box>
     </Box>
   )
