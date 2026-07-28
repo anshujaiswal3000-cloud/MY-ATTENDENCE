@@ -15,6 +15,7 @@ export default function Notes() {
   const { subjects, notes, addNote, toggleNoteComplete, deleteNote } = useAttendance()
   const [search, setSearch] = useState('')
   const [selectedSubject, setSelectedSubject] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('All')
   const [dialogOpen, setDialogOpen] = useState(false)
 
   // New Note Form State
@@ -43,7 +44,8 @@ export default function Notes() {
   const filteredNotes = notes.filter(n => {
     const matchesSearch = n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase())
     const matchesSubject = selectedSubject === 'all' || n.subjectId === selectedSubject
-    return matchesSearch && matchesSubject
+    const matchesCategory = categoryFilter === 'All' || n.category === categoryFilter
+    return matchesSearch && matchesSubject && matchesCategory
   })
 
   return (
@@ -65,11 +67,11 @@ export default function Notes() {
       </Box>
 
       {/* Filters row */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={8}>
           <TextField
             fullWidth
-            placeholder="Search notes or tasks..."
+            placeholder="Search notes, assignments, or tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
@@ -100,6 +102,29 @@ export default function Notes() {
           </FormControl>
         </Grid>
       </Grid>
+
+      {/* Category Pills Bar */}
+      <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1, mb: 3 }}>
+        {['All', ...CATEGORIES].map((cat) => {
+          const isSelected = (cat === 'All' && categoryFilter === 'All') || categoryFilter === cat
+          return (
+            <Chip
+              key={cat}
+              label={cat}
+              onClick={() => setCategoryFilter(cat)}
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '.75rem',
+                cursor: 'pointer',
+                bgcolor: isSelected ? 'var(--aurora)' : 'rgba(255,255,255,0.06)',
+                color: isSelected ? '#fff' : 'text.primary',
+                border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.1)'
+              }}
+            />
+          )
+        })}
+      </Box>
 
       {/* Notes Grid */}
       {filteredNotes.length === 0 ? (

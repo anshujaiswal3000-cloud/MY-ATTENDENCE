@@ -1,33 +1,34 @@
 import React, { useRef, useState } from 'react'
 import {
-  Box, Typography, Button, Switch, TextField, MenuItem, Grid, Chip,
-  Divider, Alert, Slider, InputAdornment, IconButton, Tabs, Tab
+  Box, Typography, Button, Switch, TextField, Grid, Chip,
+  Divider, Alert, InputAdornment, IconButton, Collapse
 } from '@mui/material'
 import {
-  MdLightMode, MdDarkMode, MdFileDownload, MdFileUpload,
-  MdRestartAlt, MdBackup, MdSettingsBackupRestore, MdLock,
-  MdVpnKey, MdVibration, MdAutoAwesome, MdSecurity, MdSchool, MdSmartToy,
-  MdPhoneAndroid, MdOutlineFolderZip, MdCheckCircle
+  MdBackup, MdSettingsBackupRestore, MdLock, MdExpandMore, MdExpandLess,
+  MdSchool, MdSecurity, MdAutoAwesome, MdPhonelinkRing, MdStorage
 } from 'react-icons/md'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import GlassCard from '../components/GlassCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import WhatsAppPDFSection from '../components/WhatsAppPDFSection'
-import { useThemeMode } from '../context/ThemeContext'
 import { useAttendance } from '../context/AttendanceContext'
 import { readJSONFile } from '../utils/storageUtils'
 import { triggerHaptic } from '../utils/hapticUtils'
 
 export default function Settings() {
-  const { mode, toggleMode } = useThemeMode()
   const {
     subjects, history, bunks, notes, settings, setSettings,
     resetData, exportBackup, importBackup, pushToCloud, notify,
-    isUnlocked, lockApp
+    isUnlocked
   } = useAttendance()
 
-  // Pro Tabbed Sub-Navigation State (0: Reports, 1: Semester, 2: Engine, 3: Security, 4: Data)
-  const [activeTab, setActiveTab] = useState(0)
+  // Accordion Expand States
+  const [reportsExpanded, setReportsExpanded] = useState(true)
+  const [semesterExpanded, setSemesterExpanded] = useState(false)
+  const [engineExpanded, setEngineExpanded] = useState(false)
+  const [securityExpanded, setSecurityExpanded] = useState(false)
+  const [changePassExpanded, setChangePassExpanded] = useState(false)
+  const [dataExpanded, setDataExpanded] = useState(false)
 
   // Security Form State
   const [oldUserId, setOldUserId] = useState('')
@@ -93,387 +94,441 @@ export default function Settings() {
   return (
     <Box sx={{ width: '100%', maxWidth: 680, mx: 'auto', pb: 6, overflowX: 'hidden' }}>
 
-      {/* 🎛️ PRO SUB-NAVIGATION TABS BAR (Tab > Option > Data) 🎛️ */}
-      <GlassCard sx={{ p: 1, mb: 3, borderRadius: '20px' }}>
-        <Tabs
-          value={activeTab}
-          onChange={(e, val) => {
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 1: WHATSAPP PDF REPORTS & ATTIX ALERTS
+      ───────────────────────────────────────────────────────────── */}
+      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
+        <Box
+          onClick={() => {
             triggerHaptic(15)
-            setActiveTab(val)
+            setReportsExpanded(!reportsExpanded)
           }}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            minHeight: 44,
-            '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: 2,
-              bgcolor: '#60a5fa'
-            },
-            '& .MuiTab-root': {
-              minHeight: 44,
-              textTransform: 'none',
-              fontWeight: 800,
-              fontSize: '.82rem',
-              color: '#94a3b8',
-              px: 2,
-              '&.Mui-selected': { color: '#fff' }
-            }
-          }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
         >
-          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>📲</Typography>} label="Reports" />
-          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>🎓</Typography>} label="Semester" />
-          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>⚡</Typography>} label="Auto-Engine" />
-          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>🔒</Typography>} label="Security" />
-          <Tab icon={<Typography variant="body2" sx={{ mr: 0.5, inline: true }}>💾</Typography>} label="Data & Backup" />
-        </Tabs>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 22 }}>
+              📲
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                1-Click PDF Report & ATTIX Alerts
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600 }}>
+                Target Number: +91 9125469499 (Active & Verified)
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton size="small" sx={{ color: '#34d399' }}>
+            {reportsExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
+        </Box>
+
+        <Collapse in={reportsExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <WhatsAppPDFSection />
+          </Box>
+        </Collapse>
       </GlassCard>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 0: REPORTS & WHATSAPP
+          SECTION 2: ACADEMIC SEMESTER SELECTOR
       ───────────────────────────────────────────────────────────── */}
-      {activeTab === 0 && (
-        <WhatsAppPDFSection />
-      )}
-
-      {/* ─────────────────────────────────────────────────────────────
-          TAB 1: SEMESTER SELECTOR
-      ───────────────────────────────────────────────────────────── */}
-      {activeTab === 1 && (
-        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.35)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(96,165,250,0.2)', color: '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(96,165,250,0.35)' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setSemesterExpanded(!semesterExpanded)
+          }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(96,165,250,0.2)', color: '#60a5fa', display: 'grid', placeItems: 'center', fontSize: 22 }}>
               🎓
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
-                Academic Semester Management
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                Select Semester ({activeSemester})
               </Typography>
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.78rem' }}>
-                Currently Active: <strong>{activeSemester}</strong>
+              <Typography variant="caption" sx={{ color: '#93c5fd', fontWeight: 600 }}>
+                Tap to expand and load Semester 1, 2, or 3 ERP records
               </Typography>
             </Box>
           </Box>
+          <IconButton size="small" sx={{ color: '#60a5fa' }}>
+            {semesterExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
+        </Box>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '.84rem' }}>
-            Choose a semester to load its official ERP attendance history across Dashboard, Subjects, and Reports:
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {[
-              { id: 'Semester 1', label: 'Semester 1', subtitle: 'Load Semester 1 Official ERP Attendance Records' },
-              { id: 'Semester 2', label: 'Semester 2', subtitle: 'Load Semester 2 Official ERP Attendance Records' },
-              { id: 'Semester 3', label: 'Semester 3', subtitle: 'Load Semester 3 Active ERP Attendance Records' },
-            ].map((sem) => {
-              const isSelected = activeSemester === sem.id
-              return (
-                <Box
-                  key={sem.id}
-                  onClick={() => {
-                    triggerHaptic(20)
-                    const updated = { ...settings, semester: sem.id }
-                    setSettings(updated)
-                    pushToCloud({ settings: updated })
-                    notify(`Switched to ${sem.label} official attendance records!`, 'success')
-                  }}
-                  sx={{
-                    p: 2,
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justify: 'space-between',
-                    border: isSelected ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.1)',
-                    bgcolor: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
-                    transition: 'all 200ms ease',
-                    '&:hover': { bgcolor: 'rgba(96,165,250,0.2)' }
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                      width: 38, height: 38, borderRadius: '12px', display: 'grid', placeItems: 'center',
-                      bgcolor: isSelected ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)',
-                      color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 18
-                    }}>
-                      🎓
+        <Collapse in={semesterExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {[
+                { id: 'Semester 1', label: 'Semester 1', subtitle: 'Load Semester 1 Official ERP Attendance Records' },
+                { id: 'Semester 2', label: 'Semester 2', subtitle: 'Load Semester 2 Official ERP Attendance Records' },
+                { id: 'Semester 3', label: 'Semester 3', subtitle: 'Load Semester 3 Active ERP Attendance Records' },
+              ].map((sem) => {
+                const isSelected = activeSemester === sem.id
+                return (
+                  <Box
+                    key={sem.id}
+                    onClick={() => {
+                      triggerHaptic(20)
+                      const updated = { ...settings, semester: sem.id }
+                      setSettings(updated)
+                      pushToCloud({ settings: updated })
+                      notify(`Switched to ${sem.label} official attendance records!`, 'success')
+                    }}
+                    sx={{
+                      p: 2, borderRadius: '16px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      border: isSelected ? '2px solid #60a5fa' : '1px solid rgba(255,255,255,0.1)',
+                      bgcolor: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
+                      transition: 'all 200ms ease',
+                      '&:hover': { bgcolor: 'rgba(96,165,250,0.2)' }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box sx={{
+                        width: 36, height: 36, borderRadius: '12px', display: 'grid', placeItems: 'center',
+                        bgcolor: isSelected ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.08)',
+                        color: isSelected ? '#60a5fa' : '#94a3b8', fontWeight: 800, fontSize: 16
+                      }}>
+                        🎓
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
+                          {sem.label}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.75rem' }}>
+                          {sem.subtitle}
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#fff' : 'text.primary' }}>
-                        {sem.label}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: isSelected ? '#93c5fd' : '#94a3b8', fontSize: '.75rem' }}>
-                        {sem.subtitle}
-                      </Typography>
-                    </Box>
+                    {isSelected && (
+                      <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.7rem' }} />
+                    )}
                   </Box>
-
-                  {isSelected && (
-                    <Chip label="Active ✨" size="small" sx={{ bgcolor: 'var(--aurora)', color: '#fff', fontWeight: 800, fontSize: '.7rem' }} />
-                  )}
-                </Box>
-              )
-            })}
+                )
+              })}
+            </Box>
           </Box>
-        </GlassCard>
-      )}
+        </Collapse>
+      </GlassCard>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 2: AUTONOMOUS ENGINE & HOLIDAY GUARDS
+          SECTION 3: AUTONOMOUS ENGINE & HOLIDAY PROTECTION
       ───────────────────────────────────────────────────────────── */}
-      {activeTab === 2 && (
-        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(16,185,129,0.35)' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setEngineExpanded(!engineExpanded)
+          }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'grid', placeItems: 'center', fontSize: 22 }}>
               ⚡
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
-                24/7 Autonomous Server Engine
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                24/7 Server Autonomous Engine
               </Typography>
-              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600, fontSize: '.78rem' }}>
-                Runs every 30s in IST timezone on Render server
+              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600 }}>
+                Runs 24/7 in IST timezone • Render Keep-Alive Active
               </Typography>
             </Box>
           </Box>
+          <IconButton size="small" sx={{ color: '#34d399' }}>
+            {engineExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
+        </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
-                  24/7 Autonomous Server Auto-Attendance
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
-                  Automatically logs Present (+1) when class end minute is reached
-                </Typography>
+        <Collapse in={engineExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                    24/7 Server Auto-Attendance Engine
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                    Automatically logs Present (+1) when class end minute is reached
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={settings.serverAutoAttendanceEnabled !== false}
+                  disabled={!isUnlocked}
+                  onChange={(e) => {
+                    triggerHaptic(20)
+                    const updated = { ...settings, serverAutoAttendanceEnabled: e.target.checked }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                  }}
+                />
               </Box>
-              <Switch
-                checked={settings.serverAutoAttendanceEnabled !== false}
-                disabled={!isUnlocked}
-                onChange={(e) => {
-                  triggerHaptic(20)
-                  const updated = { ...settings, serverAutoAttendanceEnabled: e.target.checked }
-                  setSettings(updated)
-                  pushToCloud({ settings: updated })
-                }}
-              />
-            </Box>
 
-            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
-                  Mass Bunk Protection Guard
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
-                  Prevents auto-logging when class has a mass bunk
-                </Typography>
+              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                    Mass Bunk Protection Guard
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                    Pauses auto-logging when class has a declared mass bunk
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={Boolean(settings.massBunkActive)}
+                  disabled={!isUnlocked}
+                  onChange={(e) => {
+                    triggerHaptic(20)
+                    const updated = { ...settings, massBunkActive: e.target.checked }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                  }}
+                />
               </Box>
-              <Switch
-                checked={Boolean(settings.massBunkActive)}
-                disabled={!isUnlocked}
-                onChange={(e) => {
-                  triggerHaptic(20)
-                  const updated = { ...settings, massBunkActive: e.target.checked }
-                  setSettings(updated)
-                  pushToCloud({ settings: updated })
-                }}
-              />
-            </Box>
 
-            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
-                  Official College Holiday Guard
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
-                  Pauses auto-attendance on declared college holidays
-                </Typography>
+              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                    Official College Holiday Guard
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                    Pauses auto-attendance on declared college holidays
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={Boolean(settings.officialHolidayActive)}
+                  disabled={!isUnlocked}
+                  onChange={(e) => {
+                    triggerHaptic(20)
+                    const updated = { ...settings, officialHolidayActive: e.target.checked }
+                    setSettings(updated)
+                    pushToCloud({ settings: updated })
+                  }}
+                />
               </Box>
-              <Switch
-                checked={Boolean(settings.officialHolidayActive)}
-                disabled={!isUnlocked}
-                onChange={(e) => {
-                  triggerHaptic(20)
-                  const updated = { ...settings, officialHolidayActive: e.target.checked }
-                  setSettings(updated)
-                  pushToCloud({ settings: updated })
-                }}
-              />
             </Box>
           </Box>
-        </GlassCard>
-      )}
+        </Collapse>
+      </GlassCard>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 3: SECURITY & CREDENTIALS
+          SECTION 4: OWNER SECURITY & STEP-BY-STEP PASSWORD CHANGE
       ───────────────────────────────────────────────────────────── */}
-      {activeTab === 3 && (
-        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.35)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(99,102,241,0.2)', color: '#818cf8', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(99,102,241,0.35)' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setSecurityExpanded(!securityExpanded)
+          }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(99,102,241,0.2)', color: '#818cf8', display: 'grid', placeItems: 'center', fontSize: 22 }}>
               🔒
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
-                Owner Credentials & Cloud Security
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                Security Credentials & Authentication
               </Typography>
-              <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600, fontSize: '.78rem' }}>
-                Change Private User ID & Access Password in MongoDB Atlas
+              <Typography variant="caption" sx={{ color: '#818cf8', fontWeight: 600 }}>
+                Step 1: Expand Credentials ➔ Step 2: Change Password
               </Typography>
             </Box>
           </Box>
+          <IconButton size="small" sx={{ color: '#818cf8' }}>
+            {securityExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
+        </Box>
 
-          {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
-          {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
-
-          <form onSubmit={handleCredentialsSubmit}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Current User ID"
-                    size="small"
-                    value={oldUserId}
-                    onChange={(e) => setOldUserId(e.target.value)}
-                    placeholder="anshujaiswal3000@gmail.com"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Current Password"
-                    size="small"
-                    type={showOldPass ? 'text' : 'password'}
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton size="small" onClick={() => setShowOldPass(!showOldPass)}>
-                            {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="New User ID (Optional)"
-                    size="small"
-                    value={newUserId}
-                    onChange={(e) => setNewUserId(e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="New Password"
-                    size="small"
-                    type={showNewPass ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton size="small" onClick={() => setShowNewPass(!showNewPass)}>
-                            {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                </Grid>
-              </Grid>
-
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!isUnlocked}
-                sx={{ background: 'var(--aurora)', borderRadius: '12px', py: 1.2, fontWeight: 800, textTransform: 'none', mt: 1 }}
-              >
-                Update Cloud Credentials 🔒
-              </Button>
+        <Collapse in={securityExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            
+            {/* Step 1 Nested Accordion Option */}
+            <Box
+              onClick={() => {
+                triggerHaptic(15)
+                setChangePassExpanded(!changePassExpanded)
+              }}
+              sx={{
+                p: 1.75, borderRadius: '16px', cursor: 'pointer',
+                bgcolor: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>
+                🔑 Step 1: Change Owner Password & User ID
+              </Typography>
+              <IconButton size="small" sx={{ color: '#818cf8' }}>
+                {changePassExpanded ? <MdExpandLess size={20} /> : <MdExpandMore size={20} />}
+              </IconButton>
             </Box>
-          </form>
-        </GlassCard>
-      )}
+
+            {/* Step 2 Form Inputs Expansion */}
+            <Collapse in={changePassExpanded} timeout="auto" unmountOnExit>
+              <Box sx={{ pt: 2, px: 1 }}>
+                {secMsg && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{secMsg}</Alert>}
+                {secErr && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{secErr}</Alert>}
+
+                <form onSubmit={handleCredentialsSubmit}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+                    <TextField
+                      fullWidth
+                      label="Enter Current User ID"
+                      size="small"
+                      value={oldUserId}
+                      onChange={(e) => setOldUserId(e.target.value)}
+                      placeholder="anshujaiswal3000@gmail.com"
+                    />
+
+                    <TextField
+                      fullWidth
+                      label="Enter Current Password"
+                      size="small"
+                      type={showOldPass ? 'text' : 'password'}
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton size="small" onClick={() => setShowOldPass(!showOldPass)}>
+                              {showOldPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                            </IconButton>
+                          </InputAdornment>
+                        )
+                      }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label="Enter New User ID (Optional)"
+                      size="small"
+                      value={newUserId}
+                      onChange={(e) => setNewUserId(e.target.value)}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label="Enter New Password"
+                      size="small"
+                      type={showNewPass ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton size="small" onClick={() => setShowNewPass(!showNewPass)}>
+                              {showNewPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                            </IconButton>
+                          </InputAdornment>
+                        )
+                      }}
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={!isUnlocked}
+                      sx={{ background: 'var(--aurora)', borderRadius: '12px', py: 1.2, fontWeight: 800, textTransform: 'none', mt: 0.5 }}
+                    >
+                      Save to Cloud 🔒
+                    </Button>
+                  </Box>
+                </form>
+              </Box>
+            </Collapse>
+          </Box>
+        </Collapse>
+      </GlassCard>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 4: DATA BACKUP & RESET
+          SECTION 5: DATA MAINTENANCE & BACKUPS
       ───────────────────────────────────────────────────────────── */}
-      {activeTab === 4 && (
-        <GlassCard sx={{ p: 2.75, mb: 3, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.35)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-            <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(245,158,11,0.2)', color: '#f59e0b', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+      <GlassCard sx={{ p: 2.5, mb: 2.5, borderRadius: '24px', border: '1px solid rgba(245,158,11,0.35)' }}>
+        <Box
+          onClick={() => {
+            triggerHaptic(15)
+            setDataExpanded(!dataExpanded)
+          }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: 'rgba(245,158,11,0.2)', color: '#f59e0b', display: 'grid', placeItems: 'center', fontSize: 22 }}>
               💾
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
-                Data Maintenance & Backups
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+                Data Maintenance & JSON Backups
               </Typography>
-              <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600, fontSize: '.78rem' }}>
-                Export JSON backups, restore files, or reset app state
+              <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600 }}>
+                Export JSON backups, restore files, or reset state
               </Typography>
             </Box>
           </Box>
+          <IconButton size="small" sx={{ color: '#f59e0b' }}>
+            {dataExpanded ? <MdExpandLess size={24} /> : <MdExpandMore size={24} />}
+          </IconButton>
+        </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                startIcon={<MdBackup />}
-                onClick={handleBackup}
-                sx={{ borderRadius: '12px', borderColor: 'rgba(245,158,11,0.4)', color: '#f59e0b', fontWeight: 800, textTransform: 'none' }}
-              >
-                Export JSON Backup
-              </Button>
+        <Collapse in={dataExpanded} timeout="auto" unmountOnExit>
+          <Box sx={{ pt: 2, mt: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<MdBackup />}
+                  onClick={handleBackup}
+                  sx={{ borderRadius: '12px', borderColor: 'rgba(245,158,11,0.4)', color: '#f59e0b', fontWeight: 800, textTransform: 'none' }}
+                >
+                  Export JSON Backup
+                </Button>
 
-              <Button
-                variant="outlined"
-                startIcon={<MdSettingsBackupRestore />}
-                onClick={() => fileInputRef.current?.click()}
-                sx={{ borderRadius: '12px', borderColor: 'rgba(96,165,250,0.4)', color: '#60a5fa', fontWeight: 800, textTransform: 'none' }}
-              >
-                Import JSON Backup
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                style={{ display: 'none' }}
-                onChange={handleRestoreBackup}
-              />
-            </Box>
-
-            <Divider sx={{ my: 1, borderColor: 'rgba(255,255,255,0.08)' }} />
-
-            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#f43f5e' }}>
-                  Danger Zone: Reset App State
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
-                  Resets local state back to default semester configuration
-                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<MdSettingsBackupRestore />}
+                  onClick={() => fileInputRef.current?.click()}
+                  sx={{ borderRadius: '12px', borderColor: 'rgba(96,165,250,0.4)', color: '#60a5fa', fontWeight: 800, textTransform: 'none' }}
+                >
+                  Import JSON Backup
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  onChange={handleRestoreBackup}
+                />
               </Box>
 
-              <Button
-                variant="contained"
-                color="error"
-                size="small"
-                disabled={!isUnlocked}
-                onClick={() => setResetDialogOpen(true)}
-                sx={{ borderRadius: '10px', fontWeight: 800, textTransform: 'none' }}
-              >
-                Reset App
-              </Button>
+              <Divider sx={{ my: 0.5, borderColor: 'rgba(255,255,255,0.08)' }} />
+
+              <Box sx={{ p: 1.75, borderRadius: '16px', bgcolor: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#f43f5e' }}>
+                    Danger Zone: Reset App State
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '.75rem' }}>
+                    Resets local state back to default semester configuration
+                  </Typography>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  disabled={!isUnlocked}
+                  onClick={() => setResetDialogOpen(true)}
+                  sx={{ borderRadius: '10px', fontWeight: 800, textTransform: 'none' }}
+                >
+                  Reset App
+                </Button>
+              </Box>
             </Box>
           </Box>
-        </GlassCard>
-      )}
+        </Collapse>
+      </GlassCard>
 
       {/* Confirm Reset Dialog */}
       <ConfirmDialog

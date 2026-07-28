@@ -230,10 +230,10 @@ export default function Dashboard() {
         </Box>
       </GlassCard>
 
-      {/* 🤖 Autonomous Server Auto-Attendance Widget (Ultra Minimal & Sleek) */}
+      {/* 🤖 Autonomous Server Auto-Attendance Widget with Editing Mode & Mass Bunk Shifted Right */}
       <GlassCard sx={{ p: 2, mb: 3, border: '1px solid rgba(16,185,129,0.3)', background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(11,17,32,0.95) 100%)' }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
             <Box sx={{ width: 36, height: 36, borderRadius: '12px', bgcolor: 'rgba(16,185,129,0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
               🤖
             </Box>
@@ -241,16 +241,28 @@ export default function Dashboard() {
               Server Auto-Attendance Engine
             </Typography>
             <Chip label="● 24/7 AWAKE" size="small" sx={{ bgcolor: 'rgba(16,185,129,0.18)', color: '#34d399', fontWeight: 800, fontSize: '.65rem', height: 22 }} />
+            
+            {/* Editing Mode Indicator Launcher */}
+            <Chip
+              icon={isUnlocked ? <MdLockOpen size={12} color="#34d399" /> : <MdLock size={12} color="#60a5fa" />}
+              label={isUnlocked ? "Editing Mode (Unlocked 🔓)" : "View Only Mode (Tap to Unlock 🔒)"}
+              onClick={() => {
+                triggerHaptic(20)
+                if (isUnlocked) lockApp()
+                else notify('Tap top right lock icon to login 🔒', 'info')
+              }}
+              size="small"
+              sx={{
+                bgcolor: isUnlocked ? 'rgba(16,185,129,.18)' : 'rgba(96,165,250,.18)',
+                color: isUnlocked ? '#34d399' : '#60a5fa',
+                fontWeight: 800, fontSize: '.7rem', height: 24, cursor: 'pointer',
+                border: isUnlocked ? '1px solid rgba(16,185,129,.35)' : '1px solid rgba(96,165,250,.35)'
+              }}
+            />
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Chip
-              label={settings?.massBunkToday ? '⚠️ Mass Bunk Mode' : '✅ Auto-Log Active'}
-              color={settings?.massBunkToday ? 'warning' : 'success'}
-              variant="outlined"
-              size="small"
-              sx={{ fontWeight: 700, fontSize: '.7rem', height: 24 }}
-            />
+          {/* Mass Bunk Shifted Right */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, ml: 'auto' }}>
             <Button
               size="small"
               variant={settings?.massBunkToday ? 'contained' : 'outlined'}
@@ -262,9 +274,9 @@ export default function Dashboard() {
                 pushToCloud({ settings: updated })
                 notify(updated.massBunkToday ? 'Mass Bunk Mode Enabled ⚠️' : 'Auto-logging resumed ✅')
               }}
-              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700, fontSize: '.72rem', py: 0.25 }}
+              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 800, fontSize: '.72rem', px: 2, py: 0.35 }}
             >
-              {settings?.massBunkToday ? 'Resume' : 'Mass Bunk Today'}
+              {settings?.massBunkToday ? '⚠️ Resume Auto-Log' : '⚠️ Mass Bunk Today'}
             </Button>
           </Box>
         </Box>
@@ -274,16 +286,18 @@ export default function Dashboard() {
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
 
         <Grid item xs={12} md={5} lg={4}>
-          <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <GlassCard sx={{ p: 2.75, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
             <AuroraGauge percentage={stats.percentage} label="Overall Attendance" />
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, fontWeight: 600 }}>
               {stats.present} present out of {stats.total} total lectures
             </Typography>
-            <Chip
-              size="small"
-              label={attendanceSafe ? '✅ On Track (≥ 75%)' : '⚠️ Below Target (< 75%)'}
-              sx={{ mt: 1.25, fontWeight: 700, fontSize: '.72rem', bgcolor: attendanceSafe ? 'rgba(16,185,129,.14)' : 'rgba(244,63,94,.14)', color: attendanceSafe ? '#34d399' : '#fb7185' }}
-            />
+            
+            {/* Dynamic Personalized Message Card */}
+            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(99,102,241,0.16) 0%, rgba(16,185,129,0.16) 100%)', border: '1px solid rgba(99,102,241,0.3)', width: '100%' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#a5b4fc', fontSize: '.78rem', lineHeight: 1.3, display: 'block' }}>
+                🎉 Incredible Anshu! Holding <strong>{stats.percentage.toFixed(1)}%</strong> attendance in {activeSemester}!
+              </Typography>
+            </Box>
           </GlassCard>
         </Grid>
 

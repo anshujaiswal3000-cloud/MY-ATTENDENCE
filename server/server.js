@@ -437,6 +437,21 @@ app.get('*', (req, res) => {
   }
 })
 
+// GET /api/ping -> 24/7 Keep-Alive Health Check Endpoint
+app.get('/api/ping', (req, res) => {
+  res.json({ status: 'live', time: new Date().toISOString(), message: 'AttendX 24/7 Engine Active ⚡' })
+})
+
+// 24/7 Render Keep-Alive Self-Pinger (Runs every 4 minutes)
+setInterval(() => {
+  try {
+    fetch('https://my-attendence.onrender.com/api/ping')
+      .then(r => r.json())
+      .then(data => console.log(`⚡ [RENDER KEEP-ALIVE PINGER]: ${data.message}`))
+      .catch(err => console.warn(`⚡ [RENDER PINGER WAIT]: Server warming up`))
+  } catch (e) {}
+}, 240000)
+
 app.listen(PORT, () => {
   console.log(`🚀 AttendX Server running on http://localhost:${PORT}`)
   console.log(`⏰ Timezone-Aware (IST) Server Auto Attendance Background Scheduler Active.`)
