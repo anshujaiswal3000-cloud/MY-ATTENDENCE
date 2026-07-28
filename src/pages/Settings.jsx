@@ -51,18 +51,16 @@ export default function Settings() {
 
   const activeSemester = settings?.semester || 'Semester 3'
 
-  const handleOwnerUnlockSubmit = (e) => {
+  const handleOwnerUnlockSubmit = async (e) => {
     e.preventDefault()
     if (!unlockPasswordInput.trim()) return
     triggerHaptic(20)
-    const success = unlockApp(unlockPasswordInput)
+    const success = await unlockApp('21250770', unlockPasswordInput)
     if (success) {
       triggerHaptic(40)
       setUnlockPasswordInput('')
-      notify('Editing Mode Unlocked 🔓 (Default password: anshu123)', 'success')
     } else {
       triggerHaptic([40, 60, 40])
-      notify('Incorrect Password! (Default password is: anshu123)', 'error')
     }
   }
 

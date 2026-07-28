@@ -160,8 +160,11 @@ export function AttendanceProvider({ children }) {
     return () => clearInterval(timer)
   }, [pullFromCloud])
 
-  // Strict Owner Authentication with MongoDB Cloud
-  const unlockApp = useCallback(async (userIdInput, passwordInput) => {
+  // Strict Owner Authentication with MongoDB Cloud (Supports single password arg or userId+password)
+  const unlockApp = useCallback(async (arg1, arg2) => {
+    const userIdInput = (arg2 ? arg1 : '21250770').trim()
+    const passwordInput = (arg2 ? arg2 : arg1 || '').trim()
+
     try {
       const res = await fetch('/api/auth/verify', {
         method: 'POST',
@@ -171,14 +174,14 @@ export function AttendanceProvider({ children }) {
       const json = await res.json()
       if (json.success) {
         setIsUnlocked(true)
-        notify('Welcome Anshu! Editing mode unlocked 🔓')
+        notify('Welcome Anshu! Editing mode unlocked 🔓', 'success')
         return true
       } else {
-        notify('Invalid User ID or Password!', 'error')
+        notify('Invalid Owner Password! (Default is: anshu123)', 'error')
         return false
       }
     } catch (err) {
-      notify('Network error during verification', 'error')
+      notify('Authentication error — check backend server', 'error')
       return false
     }
   }, [setIsUnlocked, notify])
