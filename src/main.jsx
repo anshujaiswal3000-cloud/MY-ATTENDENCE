@@ -6,13 +6,13 @@ import './index.css'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { AttendanceProvider } from './context/AttendanceContext.jsx'
 
-// Register PWA Service Worker for instant startup and static asset caching
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.warn('PWA ServiceWorker registration failed:', err.message)
-    })
-  })
+// Unregister any stale Service Worker to guarantee 100% fresh assets & 0 white screens
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      registration.unregister()
+    }
+  }).catch(() => {})
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
