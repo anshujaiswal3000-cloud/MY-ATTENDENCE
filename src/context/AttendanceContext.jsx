@@ -191,40 +191,85 @@ export function AttendanceProvider({ children }) {
         isCloudLoadedRef.current = true
 
         if (cloud.subjects && cloud.subjects.length > 0) {
-          setSem3Subjects(cloud.subjects)
-          try { localStorage.setItem(STORAGE_KEYS.subjects, JSON.stringify(cloud.subjects)) } catch (e) {}
+          setSem3Subjects((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.subjects)) {
+              try { localStorage.setItem(STORAGE_KEYS.subjects, JSON.stringify(cloud.subjects)) } catch (e) {}
+              return cloud.subjects
+            }
+            return prev
+          })
         }
         if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) {
-          setSem1Subjects(cloud.sem1Subjects)
-          try { localStorage.setItem('attendx_sem1_subjects', JSON.stringify(cloud.sem1Subjects)) } catch (e) {}
+          setSem1Subjects((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.sem1Subjects)) {
+              try { localStorage.setItem('attendx_sem1_subjects', JSON.stringify(cloud.sem1Subjects)) } catch (e) {}
+              return cloud.sem1Subjects
+            }
+            return prev
+          })
         }
         if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) {
-          setSem2Subjects(cloud.sem2Subjects)
-          try { localStorage.setItem('attendx_sem2_subjects', JSON.stringify(cloud.sem2Subjects)) } catch (e) {}
+          setSem2Subjects((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.sem2Subjects)) {
+              try { localStorage.setItem('attendx_sem2_subjects', JSON.stringify(cloud.sem2Subjects)) } catch (e) {}
+              return cloud.sem2Subjects
+            }
+            return prev
+          })
         }
         if (Array.isArray(cloud.history)) {
-          setHistory(cloud.history)
-          try { localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(cloud.history)) } catch (e) {}
+          setHistory((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.history)) {
+              try { localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(cloud.history)) } catch (e) {}
+              return cloud.history
+            }
+            return prev
+          })
         }
         if (Array.isArray(cloud.bunks)) {
-          setBunks(cloud.bunks)
-          try { localStorage.setItem('attendx_bunks', JSON.stringify(cloud.bunks)) } catch (e) {}
+          setBunks((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.bunks)) {
+              try { localStorage.setItem('attendx_bunks', JSON.stringify(cloud.bunks)) } catch (e) {}
+              return cloud.bunks
+            }
+            return prev
+          })
         }
         if (Array.isArray(cloud.notes)) {
-          setNotes(cloud.notes)
-          try { localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(cloud.notes)) } catch (e) {}
+          setNotes((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.notes)) {
+              try { localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(cloud.notes)) } catch (e) {}
+              return cloud.notes
+            }
+            return prev
+          })
         }
         if (cloud.settings && typeof cloud.settings === 'object') {
-          setSettings(cloud.settings)
-          try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloud.settings)) } catch (e) {}
+          setSettings((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.settings)) {
+              try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloud.settings)) } catch (e) {}
+              return cloud.settings
+            }
+            return prev
+          })
         }
         if (cloud.timetableHeader && typeof cloud.timetableHeader === 'object') {
-          setTimetableHeader(cloud.timetableHeader)
-          try { localStorage.setItem('attendx_timetable_header', JSON.stringify(cloud.timetableHeader)) } catch (e) {}
+          setTimetableHeader((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.timetableHeader)) {
+              try { localStorage.setItem('attendx_timetable_header', JSON.stringify(cloud.timetableHeader)) } catch (e) {}
+              return cloud.timetableHeader
+            }
+            return prev
+          })
         }
         if (Array.isArray(cloud.autoLoggedSlots)) {
-          setAutoLoggedSlots(cloud.autoLoggedSlots)
-          try { localStorage.setItem('attendx_auto_logged_slots', JSON.stringify(cloud.autoLoggedSlots)) } catch (e) {}
+          setAutoLoggedSlots((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(cloud.autoLoggedSlots)) {
+              try { localStorage.setItem('attendx_auto_logged_slots', JSON.stringify(cloud.autoLoggedSlots)) } catch (e) {}
+              return cloud.autoLoggedSlots
+            }
+            return prev
+          })
         }
       }
     } catch (err) {
