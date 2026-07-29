@@ -372,8 +372,12 @@ export function AttendanceProvider({ children }) {
     }
   }, [isUnlocked, settings?.autoLockTimeout, setIsUnlocked, notify])
 
-  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + LAB (+2) SUPPORT */
-  const markAttendance = useCallback((subjectId, status) => {
+  /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + LAB (+2) SUPPORT
+   *  @param {string} subjectId - Subject ID
+   *  @param {'present'|'absent'} status - Attendance status
+   *  @param {string} [customDate] - Optional DD/MM/YYYY date for manual past-date entry
+   */
+  const markAttendance = useCallback((subjectId, status, customDate = null) => {
     if (!isUnlocked) {
       setUnlockDialogOpen(true)
       notify('Login required to make changes 🔒', 'warning')
@@ -417,22 +421,30 @@ export function AttendanceProvider({ children }) {
     else if (activeSemester === 'Semester 2') setSem2Subjects(updatedSubjects)
     else setSem3Subjects(updatedSubjects)
 
+    // Support optional customDate parameter (DD/MM/YYYY format)
     const now = new Date()
-    const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
+    let dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
+    let entryTimestamp = now.getTime()
+    if (customDate) {
+      const parts = customDate.split('/')
+      if (parts.length === 3) {
+        dateFormatted = customDate
+        const parsed = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 10, 0, 0)
+        if (!isNaN(parsed.getTime())) entryTimestamp = parsed.getTime()
+      }
+    }
     const entry = {
       id: `log_${Math.random().toString(36).slice(2, 10)}`,
       subjectId,
       subjectName,
       status,
       date: dateFormatted,
-      timestamp: now.getTime(),
+      timestamp: entryTimestamp,
+      isManual: !!customDate,
     }
 
-    let newHistory = []
-    setHistory((prev) => {
-      newHistory = [entry, ...(prev || [])]
-      return newHistory
-    })
+    const newHistory = [entry, ...(history || [])]
+    setHistory(newHistory)
 
     notify(status === 'present' ? 'Marked Present ✅' : 'Marked Absent ❌', status === 'present' ? 'success' : 'warning')
     
@@ -443,7 +455,7 @@ export function AttendanceProvider({ children }) {
     else syncPayload.subjects = updatedSubjects
 
     pushToCloud(syncPayload)
-  }, [isUnlocked, activeSemester, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
+  }, [isUnlocked, activeSemester, history, sem1Subjects, sem2Subjects, sem3Subjects, setSem1Subjects, setSem2Subjects, setSem3Subjects, setHistory, notify, pushToCloud])
 
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     if (!isUnlocked) {
@@ -608,22 +620,17 @@ export function AttendanceProvider({ children }) {
         return s
       })
 
+    // Compute synchronously to avoid async setState race condition
     let updatedSubjects = []
     if (activeSemester === 'Semester 1') {
-      setSem1Subjects((prev) => {
-        updatedSubjects = updateSubjectList(prev)
-        return updatedSubjects
-      })
+      updatedSubjects = updateSubjectList(sem1Subjects)
+      setSem1Subjects(updatedSubjects)
     } else if (activeSemester === 'Semester 2') {
-      setSem2Subjects((prev) => {
-        updatedSubjects = updateSubjectList(prev)
-        return updatedSubjects
-      })
+      updatedSubjects = updateSubjectList(sem2Subjects)
+      setSem2Subjects(updatedSubjects)
     } else {
-      setSem3Subjects((prev) => {
-        updatedSubjects = updateSubjectList(prev)
-        return updatedSubjects
-      })
+      updatedSubjects = updateSubjectList(sem3Subjects)
+      setSem3Subjects(updatedSubjects)
     }
 
     const nextHistory = history.filter((h) => h.id !== logId)
