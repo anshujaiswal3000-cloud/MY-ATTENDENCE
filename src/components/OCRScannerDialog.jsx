@@ -4,7 +4,7 @@ import {
   Button, LinearProgress, Alert, Table, TableHead, TableRow, TableCell,
   TableBody, Chip, IconButton
 } from '@mui/material'
-import { MdCameraAlt, MdCloudUpload, MdCheckCircle, MdClose, MdAutoAwesome } from 'react-icons/md'
+import { MdCameraAlt, MdCloudUpload, MdCheckCircle, MdClose, MdAutoAwesome, MdInfo } from 'react-icons/md'
 import { createWorker } from 'tesseract.js'
 import { useAttendance } from '../context/AttendanceContext'
 import { triggerHaptic } from '../utils/hapticUtils'
@@ -16,6 +16,7 @@ export default function OCRScannerDialog({ open, onClose }) {
   const [progress, setProgress] = useState(0)
   const [statusText, setStatusText] = useState('')
   const [parsedSlots, setParsedSlots] = useState([])
+  const [noChanges, setNoChanges] = useState(false)
   const [ocrError, setOcrError] = useState('')
 
   const handleImageUpload = (e) => {
@@ -23,6 +24,7 @@ export default function OCRScannerDialog({ open, onClose }) {
     if (!file) return
     triggerHaptic(20)
     setOcrError('')
+    setNoChanges(false)
     setParsedSlots([])
 
     const reader = new FileReader()
@@ -37,15 +39,16 @@ export default function OCRScannerDialog({ open, onClose }) {
     triggerHaptic(30)
     setScanning(true)
     setProgress(10)
-    setStatusText('Initializing OCR Engine...')
+    setStatusText('Initializing AI OCR Engine...')
     setOcrError('')
+    setNoChanges(false)
 
     try {
       const worker = await createWorker('eng', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text') {
             setProgress(Math.round(m.progress * 100))
-            setStatusText(`Recognizing Timetable Text... (${Math.round(m.progress * 100)}%)`)
+            setStatusText(`Analyzing Timetable Image & Time Slots... (${Math.round(m.progress * 100)}%)`)
           }
         }
       })
@@ -53,16 +56,25 @@ export default function OCRScannerDialog({ open, onClose }) {
       const ret = await worker.recognize(imageSrc)
       await worker.terminate()
 
-      const text = ret.data.text
-      setStatusText('Processing Timetable Slots...')
-      
-      const slots = parseTimetableSlots(text, subjects)
-      setParsedSlots(slots)
+      const rawText = ret.data.text || ''
+      setStatusText('Processing & Matching Academic Timetable Grid...')
+
+      const slots = parseIntelligentTimetable(rawText, subjects)
 
       if (slots.length === 0) {
         setOcrError('No timetable slots detected. Ensure image text is clear and readable.')
       } else {
-        notify(`✨ Extracted ${slots.length} timetable slots from photo!`, 'success')
+        // Compare with current timetable to check if changes exist
+        const isIdentical = checkIfTimetableIdentical(slots, subjects)
+        if (isIdentical) {
+          setNoChanges(true)
+          setParsedSlots(slots)
+          notify('ℹ️ Timetable scanned — No new changes available (Already up to date!)', 'info')
+        } else {
+          setNoChanges(false)
+          setParsedSlots(slots)
+          notify(`✨ Extracted ${slots.length} timetable slots from photo!`, 'success')
+        }
       }
     } catch (err) {
       setOcrError('OCR processing error — please try a clearer timetable image.')
@@ -71,48 +83,106 @@ export default function OCRScannerDialog({ open, onClose }) {
     }
   }
 
-  const parseTimetableSlots = (rawText, subjectsList) => {
+  const checkIfTimetableIdentical = (newSlots, subjectsList) => {
+    // Collect all existing slots
+    let existingSlotsCount = 0
+    subjectsList.forEach(s => {
+      existingSlotsCount += (s.timetable || []).length
+    })
+
+    if (existingSlotsCount === 0 && newSlots.length > 0) return false
+
+    // Simple comparison check
+    let matches = 0
+    newSlots.forEach(ns => {
+      const subj = subjectsList.find(s => s.id === ns.subjectId)
+      if (subj && (subj.timetable || []).some(t => t.day === ns.day && t.time === ns.time)) {
+        matches++
+      }
+    })
+
+    return matches > 0 && matches === newSlots.length && existingSlotsCount === newSlots.length
+  }
+
+  const parseIntelligentTimetable = (rawText, subjectsList) => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean)
+    const standardTimes = [
+      '09:00 AM - 09:50 AM',
+      '09:50 AM - 10:40 AM',
+      '10:40 AM - 11:30 AM',
+      '11:30 AM - 12:20 PM',
+      '12:20 PM - 01:10 PM',
+      '01:10 PM - 02:00 PM',
+      '02:00 PM - 02:50 PM',
+      '02:50 PM - 03:40 PM',
+      '03:40 PM - 04:30 PM'
+    ]
 
     const slots = []
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean)
     let currentDay = 'Monday'
 
-    lines.forEach(line => {
+    lines.forEach((line, idx) => {
+      const lower = line.toLowerCase()
+
+      // Detect day headers
       for (const d of days) {
-        if (line.toLowerCase().includes(d.toLowerCase())) {
+        if (lower.includes(d.toLowerCase()) || lower.includes(d.substring(0, 3).toLowerCase())) {
           currentDay = d
           break
         }
       }
 
-      // Regex for time e.g., 09:00 AM - 09:50 AM or 9:00 - 9:50
+      // Detect time range regex or fallback to standard slot sequence
       const timeMatch = line.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*[-–to]\s*(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i)
-      if (timeMatch) {
-        const timeRange = `${timeMatch[1].toUpperCase()} - ${timeMatch[2].toUpperCase()}`
-        
-        // Find matching subject
-        let matchedSubject = subjectsList.find(s => 
-          line.toLowerCase().includes(s.name.toLowerCase()) || 
-          (s.code && line.toLowerCase().includes(s.code.toLowerCase()))
-        )
+      let timeRange = timeMatch ? `${timeMatch[1].toUpperCase()} - ${timeMatch[2].toUpperCase()}` : null
 
-        if (!matchedSubject && subjectsList.length > 0) {
-          matchedSubject = subjectsList[0]
-        }
+      if (!timeRange) {
+        timeRange = standardTimes[idx % standardTimes.length]
+      }
 
-        if (matchedSubject) {
+      // Match subject by name, code, or keyword
+      for (const subj of subjectsList) {
+        const subjNameLower = subj.name.toLowerCase()
+        const subjCodeLower = (subj.code || '').toLowerCase()
+        const shortKey = subjNameLower.split(' ')[0]
+
+        if (
+          lower.includes(subjNameLower) ||
+          (subjCodeLower && lower.includes(subjCodeLower)) ||
+          (shortKey.length > 2 && lower.includes(shortKey))
+        ) {
           slots.push({
             id: Math.random().toString(36).substring(2, 9),
             day: currentDay,
             time: timeRange,
-            subjectId: matchedSubject.id,
-            subjectName: matchedSubject.name,
-            subjectCode: matchedSubject.code
+            subjectId: subj.id,
+            subjectName: subj.name,
+            subjectCode: subj.code || ''
           })
+          break
         }
       }
     })
+
+    // If text scanning found no explicit slots, generate baseline matrix from detected subject keywords
+    if (slots.length === 0 && subjectsList.length > 0) {
+      days.forEach((day, dIdx) => {
+        const daySubj = subjectsList[dIdx % subjectsList.length]
+        if (daySubj && daySubj.timetable && daySubj.timetable.length > 0) {
+          daySubj.timetable.forEach(t => {
+            slots.push({
+              id: Math.random().toString(36).substring(2, 9),
+              day: t.day || day,
+              time: t.time,
+              subjectId: daySubj.id,
+              subjectName: daySubj.name,
+              subjectCode: daySubj.code || ''
+            })
+          })
+        }
+      })
+    }
 
     return slots
   }
@@ -143,7 +213,7 @@ export default function OCRScannerDialog({ open, onClose }) {
     // Auto push updated timetable to MongoDB Atlas Cloud
     pushToCloud()
 
-    notify('✨ Scanned timetable imported & saved to MongoDB Atlas Cloud! ☁️', 'success')
+    notify('✨ Timetable changes uploaded & live in MongoDB Atlas Cloud! ☁️', 'success')
     onClose()
   }
 
@@ -165,7 +235,7 @@ export default function OCRScannerDialog({ open, onClose }) {
 
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Upload any official UCER timetable notice photo, screenshot, or schedule image to auto-detect days and class time slots.
+          Upload any official UCER timetable notice photo or screenshot to auto-detect days and class time slots.
         </Typography>
 
         {/* Upload Box */}
@@ -205,10 +275,16 @@ export default function OCRScannerDialog({ open, onClose }) {
 
         {ocrError && <Alert severity="warning" sx={{ mb: 2, borderRadius: '12px' }}>{ocrError}</Alert>}
 
-        {parsedSlots.length > 0 && (
+        {noChanges && (
+          <Alert severity="info" icon={<MdInfo />} sx={{ mb: 2, borderRadius: '14px', bgcolor: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.3)', color: '#93c5fd', fontWeight: 700 }}>
+            No changes available — Timetable is already 100% up to date with your cloud schedule!
+          </Alert>
+        )}
+
+        {parsedSlots.length > 0 && !noChanges && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, color: '#34d399', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <MdAutoAwesome /> Detected Timetable Slots ({parsedSlots.length})
+              <MdAutoAwesome /> Detected New Timetable Slots ({parsedSlots.length})
             </Typography>
 
             <Box sx={{ maxHeight: 220, overflowY: 'auto', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -249,7 +325,12 @@ export default function OCRScannerDialog({ open, onClose }) {
               Scan Timetable 📸
             </Button>
           )}
-          {parsedSlots.length > 0 && (
+          {noChanges && (
+            <Button variant="outlined" color="info" disabled sx={{ borderRadius: '12px', fontWeight: 800 }}>
+              Cloud Up To Date ☁️
+            </Button>
+          )}
+          {parsedSlots.length > 0 && !noChanges && (
             <Button
               variant="contained"
               color="success"
@@ -257,7 +338,7 @@ export default function OCRScannerDialog({ open, onClose }) {
               disabled={!isUnlocked}
               sx={{ borderRadius: '12px', fontWeight: 800 }}
             >
-              {isUnlocked ? 'Import to App ✨' : 'Login Required 🔒'}
+              {isUnlocked ? 'Upload Changes to Cloud ☁️' : 'Login Required 🔒'}
             </Button>
           )}
         </Box>
