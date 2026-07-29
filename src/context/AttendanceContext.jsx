@@ -340,6 +340,34 @@ export function AttendanceProvider({ children }) {
     notify('Locked to View-Only mode 🔒', 'info')
   }, [setIsUnlocked, notify])
 
+  // ── 5-MINUTE INACTIVITY AUTO-LOCK ENGINE ──
+  useEffect(() => {
+    if (!isUnlocked) return
+
+    const timeoutMinutes = parseInt(settings?.autoLockTimeout || '5', 10)
+    if (isNaN(timeoutMinutes) || timeoutMinutes <= 0) return
+
+    const timeoutMs = timeoutMinutes * 60 * 1000
+    let timerId = null
+
+    const resetTimer = () => {
+      if (timerId) clearTimeout(timerId)
+      timerId = setTimeout(() => {
+        setIsUnlocked(false)
+        notify(`Auto-locked after ${timeoutMinutes} mins inactivity 🔒`, 'info')
+      }, timeoutMs)
+    }
+
+    const events = ['mousemove', 'keydown', 'touchstart', 'click', 'scroll']
+    events.forEach(event => window.addEventListener(event, resetTimer))
+    resetTimer()
+
+    return () => {
+      if (timerId) clearTimeout(timerId)
+      events.forEach(event => window.removeEventListener(event, resetTimer))
+    }
+  }, [isUnlocked, settings?.autoLockTimeout, setIsUnlocked, notify])
+
   /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + LAB (+2) SUPPORT */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
