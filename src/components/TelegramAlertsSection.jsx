@@ -10,7 +10,7 @@ import { triggerHaptic } from '../utils/hapticUtils'
 export default function TelegramAlertsSection() {
   const { settings = {}, setSettings, pushToCloud, notify, isUnlocked } = useAttendance()
   
-  const [chatId, setChatId] = useState(settings?.telegramChatId || '')
+  const [chatId, setChatId] = useState(settings?.telegramChatId || '6091275709')
   const [alertTime, setAlertTime] = useState(settings?.dailyAlertTime || '16:00')
   const [testing, setTesting] = useState(false)
   const [testMsg, setTestMsg] = useState('')
