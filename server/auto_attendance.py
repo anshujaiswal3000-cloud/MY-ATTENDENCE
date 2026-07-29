@@ -291,7 +291,14 @@ def ping_render_if_needed():
 # MAIN LOOP
 # ─────────────────────────────────────────────────────────────
 
+import sys
+
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
     print("=" * 60)
     print("  AttendX Python Auto-Attendance Engine v1.0")
     print("  Speed: 5s interval | Direct MongoDB | IST-aware")
