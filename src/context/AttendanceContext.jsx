@@ -135,6 +135,15 @@ export function AttendanceProvider({ children }) {
     return sem3Subjects
   }, [activeSemester, sem1Subjects, sem2Subjects, sem3Subjects])
 
+  /** Instant 0ms Semester Switcher */
+  const switchSemester = useCallback((semId) => {
+    const updated = { ...settings, semester: semId }
+    try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updated)) } catch (e) {}
+    setSettings(updated)
+    pushToCloud({ settings: updated })
+    notify(`Switched to ${semId} attendance records! 🎓`, 'success')
+  }, [settings, setSettings, pushToCloud, notify])
+
   // Timetable & Upcoming Lecture ALWAYS uses Sem 3 active schedule
   const timetableSubjects = sem3Subjects
   const isCloudLoadedRef = useRef(false)
@@ -667,6 +676,7 @@ export function AttendanceProvider({ children }) {
     timetableHeader,
     setTimetableHeader,
     setSettings,
+    switchSemester,
     snackbar,
     notify,
     closeSnackbar,

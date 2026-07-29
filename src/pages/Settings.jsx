@@ -20,7 +20,7 @@ export default function Settings() {
   const {
     subjects, history, bunks, notes, settings, setSettings,
     resetData, exportBackup, importBackup, pushToCloud, notify,
-    isUnlocked, lockApp, unlockApp
+    isUnlocked, lockApp, unlockApp, switchSemester
   } = useAttendance()
 
   // Active Sub-Page View State (null = Main Menu, 'accounts' | 'permissions' | 'reports' | 'semester' | 'engine' | 'security' | 'data')
@@ -515,10 +515,7 @@ export default function Settings() {
                     key={sem.id}
                     onClick={() => {
                       triggerHaptic(20)
-                      const updated = { ...settings, semester: sem.id }
-                      setSettings(updated)
-                      pushToCloud({ settings: updated })
-                      notify(`Switched to ${sem.label} official attendance records!`, 'success')
+                      switchSemester(sem.id)
                     }}
                     sx={{
                       p: 2.25, borderRadius: '18px', cursor: 'pointer',
