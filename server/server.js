@@ -116,6 +116,22 @@ function startKeepAlivePinger() {
 
 startKeepAlivePinger()
 
+// ── REAL-TIME WHATSAPP DISPATCH HELPER (CallmeBot API) ──
+async function sendWhatsAppMessage(phone = '919305284307', apiKey = '9827414', text = '') {
+  try {
+    const encodedText = encodeURIComponent(text)
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodedText}&apikey=${apiKey}`
+    const res = await fetch(url)
+    if (res.ok) {
+      console.log(`[WHATSAPP DISPATCH SUCCESS 📲] Message delivered to +${phone}`)
+    } else {
+      console.warn(`[WHATSAPP DISPATCH NOTICE]: CallmeBot returned HTTP status ${res.status}`)
+    }
+  } catch (err) {
+    console.error(`[WHATSAPP DISPATCH ERROR]:`, err.message)
+  }
+}
+
 // ── ADVANCED TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH HOLIDAY & MASS BUNK GUARDS) ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
@@ -191,9 +207,13 @@ async function runServerAutoAttendance() {
 
             updatedHistory.unshift(logEntry)
             const markedTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })
-            const softMsg = `your ${subj.name} attendance of today lecture ${slot.time} has been marked by automarker at ${markedTimeStr}`
+            const softMsg = `✅ ATTENDX AUTO-ATTENDANCE ALERT:\nYour ${subj.name} attendance for lecture (${slot.time}) has been marked as PRESENT by AutoMarker at ${markedTimeStr} on ${dateFormatted}. 🚀`
             console.log(`[ADVANCED AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted} at ${markedTimeStr}`)
-            console.log(`⚡ [ATTIX REAL-TIME WHATSAPP ALERT] Sent to +91 9125469499: "${softMsg}"`)
+            
+            // Dispatch WhatsApp notification live
+            const phone = settings.whatsappPhone || '919305284307'
+            const apiKey = settings.whatsappApiKey || '9827414'
+            sendWhatsAppMessage(phone, apiKey, softMsg)
           }
         }
       })

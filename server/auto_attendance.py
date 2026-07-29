@@ -36,8 +36,8 @@ from pymongo import MongoClient, UpdateOne
 # ─────────────────────────────────────────────────────────────
 MONGODB_URI = "mongodb+srv://anshujaiswal3000_db_user:WwRv7a5ovLjITBCU@cluster0.msyxzky.mongodb.net/attendx?retryWrites=true&w=majority"
 
-WHATSAPP_PHONE   = "919125469499"           # CallmeBot target number
-CALLMEBOT_APIKEY = "your_callmebot_api_key" # Get free key from CallmeBot WhatsApp bot
+WHATSAPP_PHONE   = "919305284307"           # CallmeBot target number
+CALLMEBOT_APIKEY = "9827414"               # CallmeBot API Key
 
 CHECK_INTERVAL_SECONDS = 5   # Check every 5 seconds (was 30s in Node.js → 6x faster)
 IST = timezone(timedelta(hours=5, minutes=30))
