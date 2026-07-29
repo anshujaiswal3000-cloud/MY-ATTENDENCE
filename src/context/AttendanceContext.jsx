@@ -406,23 +406,16 @@ export function AttendanceProvider({ children }) {
         }
       })
 
-    let updatedSubjects = []
-    if (activeSemester === 'Semester 1') {
-      setSem1Subjects((prev) => {
-        updatedSubjects = updateSubjectList(prev)
-        return updatedSubjects
-      })
-    } else if (activeSemester === 'Semester 2') {
-      setSem2Subjects((prev) => {
-        updatedSubjects = updateSubjectList(prev)
-        return updatedSubjects
-      })
-    } else {
-      setSem3Subjects((prev) => {
-        updatedSubjects = updateSubjectList(prev)
-        return updatedSubjects
-      })
-    }
+    let currentList = []
+    if (activeSemester === 'Semester 1') currentList = sem1Subjects
+    else if (activeSemester === 'Semester 2') currentList = sem2Subjects
+    else currentList = sem3Subjects
+
+    const updatedSubjects = updateSubjectList(currentList)
+
+    if (activeSemester === 'Semester 1') setSem1Subjects(updatedSubjects)
+    else if (activeSemester === 'Semester 2') setSem2Subjects(updatedSubjects)
+    else setSem3Subjects(updatedSubjects)
 
     const now = new Date()
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
@@ -437,7 +430,7 @@ export function AttendanceProvider({ children }) {
 
     let newHistory = []
     setHistory((prev) => {
-      newHistory = [entry, ...prev]
+      newHistory = [entry, ...(prev || [])]
       return newHistory
     })
 
