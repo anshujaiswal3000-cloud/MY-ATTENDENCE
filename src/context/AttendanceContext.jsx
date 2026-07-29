@@ -128,11 +128,16 @@ export function AttendanceProvider({ children }) {
 
   const activeSemester = settings?.semester || 'Semester 3'
 
-  // Dynamic Subjects depending on active semester selection
+  // Dynamic Subjects depending on active semester selection with strict safety fallback
   const subjects = useMemo(() => {
-    if (activeSemester === 'Semester 1') return sem1Subjects
-    if (activeSemester === 'Semester 2') return sem2Subjects
-    return sem3Subjects
+    let list = sem3Subjects
+    if (activeSemester === 'Semester 1') list = sem1Subjects
+    else if (activeSemester === 'Semester 2') list = sem2Subjects
+    
+    if (!Array.isArray(list) || list.length === 0) {
+      return seedSubjects()
+    }
+    return list
   }, [activeSemester, sem1Subjects, sem2Subjects, sem3Subjects])
 
   /** Instant 0ms Semester Switcher */
@@ -144,8 +149,14 @@ export function AttendanceProvider({ children }) {
     notify(`Switched to ${semId} attendance records! 🎓`, 'success')
   }, [settings, setSettings, pushToCloud, notify])
 
-  // Timetable & Upcoming Lecture ALWAYS uses Sem 3 active schedule
-  const timetableSubjects = sem3Subjects
+  // Timetable & Upcoming Lecture ALWAYS uses Sem 3 active schedule with safety guard
+  const timetableSubjects = useMemo(() => {
+    if (!Array.isArray(sem3Subjects) || sem3Subjects.length === 0) {
+      return seedSubjects()
+    }
+    return sem3Subjects
+  }, [sem3Subjects])
+
   const isCloudLoadedRef = useRef(false)
 
   // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──

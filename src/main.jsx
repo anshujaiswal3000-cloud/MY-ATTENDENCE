@@ -5,6 +5,7 @@ import App from './App.jsx'
 import './index.css'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { AttendanceProvider } from './context/AttendanceContext.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // Unregister any stale Service Worker to guarantee 100% fresh assets & 0 white screens
 if ('serviceWorker' in navigator) {
@@ -17,12 +18,14 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AttendanceProvider>
-          <App />
-        </AttendanceProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AttendanceProvider>
+            <App />
+          </AttendanceProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 )
