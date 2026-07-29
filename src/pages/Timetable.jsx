@@ -7,7 +7,7 @@ import OCRScannerDialog from '../components/OCRScannerDialog'
 import ProxyClassDialog from '../components/ProxyClassDialog'
 import { getSubjectIcon } from '../utils/iconRegistry'
 import { useAttendance } from '../context/AttendanceContext'
-import { WEEKDAYS, getTodayName, getPercentage } from '../utils/attendanceUtils'
+import { WEEKDAYS, getTodayName, getPercentage, getHolidayInfo } from '../utils/attendanceUtils'
 
 /** Parses start minutes from range like "09:00 AM - 09:50 AM" -> 540 */
 function getStartMinutes(timeRangeStr) {
@@ -35,6 +35,19 @@ export default function Timetable() {
   const [proxyOpen, setProxyOpen] = useState(false)
   const activeDay = WEEKDAYS[tab]
   const isToday = activeDay === today
+
+  // Holiday detection for today and for the currently viewed tab
+  const todayHoliday = getHolidayInfo(new Date())
+  // For selected tab: build a representative date for that day name
+  const getTabDate = (dayName) => {
+    const now = new Date()
+    const dayIdx = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(dayName)
+    const diff = dayIdx - now.getDay()
+    const d = new Date(now)
+    d.setDate(now.getDate() + diff)
+    return d
+  }
+  const activeDayHoliday = getHolidayInfo(getTabDate(activeDay))
 
   // Guaranteed chronological time sorting (09:00 AM -> 09:50 AM -> 10:40 AM -> 11:30 AM ...)
   const daySlots = useMemo(() => {
@@ -153,8 +166,39 @@ export default function Timetable() {
         </IconButton>
       </Box>
 
+      {/* ── Holiday Banner (1st/3rd Sat or Sunday) ── */}
+      {isToday && todayHoliday.isHoliday && (
+        <Box sx={{
+          mb: 3, p: 2.5, borderRadius: '18px', textAlign: 'center',
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.1))',
+          border: '1px solid rgba(245,158,11,0.35)',
+          backdropFilter: 'blur(12px)'
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#fbbf24', mb: 0.5 }}>
+            {todayHoliday.reason}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+            Enjoy your holiday! No auto-attendance will be logged today. 🎉
+          </Typography>
+        </Box>
+      )}
+
       {/* ── Timetable Slots Grid ── */}
-      {daySlots.length === 0 ? (
+      {activeDayHoliday.isHoliday ? (
+        <Box sx={{
+          p: 3.5, borderRadius: '20px', textAlign: 'center',
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.07))',
+          border: '1px dashed rgba(245,158,11,0.35)'
+        }}>
+          <Typography variant="h4" sx={{ mb: 1 }}>🏖️</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#fbbf24', mb: 0.5 }}>
+            {activeDayHoliday.reason}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+            No classes scheduled — college holiday!
+          </Typography>
+        </Box>
+      ) : daySlots.length === 0 ? (
         <EmptyState icon="🎉" title={`No classes on ${activeDay}`} subtitle="Enjoy your holiday or self-study time!" />
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

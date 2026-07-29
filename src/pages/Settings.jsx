@@ -227,6 +227,15 @@ export default function Settings() {
       border: 'rgba(245,158,11,0.3)',
       title: 'Data Maintenance & JSON Backups',
       subtitle: 'Export JSON backup, restore files, or reset app state'
+    },
+    {
+      id: 'telegram',
+      icon: '✈️',
+      color: '#38bdf8',
+      bg: 'rgba(56,189,248,0.18)',
+      border: 'rgba(56,189,248,0.3)',
+      title: 'Telegram Alerts & Notifications',
+      subtitle: settings?.telegramEnabled ? `Active → @${settings?.telegramBotToken?.slice(0,8) || '...'}... ChatID: ${settings?.telegramChatId || '...'}` : 'Disabled — tap to setup Bot Token & Chat ID'
     }
   ]
 
@@ -840,6 +849,144 @@ export default function Settings() {
                 </Button>
               </Box>
             </Box>
+          </GlassCard>
+        </Box>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          DEDICATED SUB-PAGE: TELEGRAM ALERTS & NOTIFICATIONS
+      ───────────────────────────────────────────────────────────── */}
+      {activeSubPage === 'telegram' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => { triggerHaptic(15); setActiveSubPage(null) }}
+            sx={{ mb: 2.5, color: '#38bdf8', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
+
+          <GlassCard sx={{ p: 2.75, borderRadius: '24px', border: '1px solid rgba(56,189,248,0.35)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '14px', bgcolor: 'rgba(56,189,248,0.18)', color: '#38bdf8', display: 'grid', placeItems: 'center', fontSize: 24 }}>
+                ✈️
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', lineHeight: 1.2 }}>
+                  Telegram Alerts & Notifications
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, fontSize: '.78rem' }}>
+                  Get auto-attendance & attendance alerts on Telegram
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* How to setup */}
+            <Box sx={{ p: 2, mb: 2, borderRadius: '14px', bgcolor: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.2)' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#38bdf8', mb: 1 }}>📋 Setup Guide</Typography>
+              <Typography variant="caption" sx={{ color: '#cbd5e1', display: 'block', lineHeight: 1.8 }}>
+                1️⃣ Open Telegram → Search <strong>@BotFather</strong><br/>
+                2️⃣ Send <strong>/newbot</strong> → Follow steps → Copy Bot Token<br/>
+                3️⃣ Search <strong>@userinfobot</strong> → Send any message → Copy your Chat ID<br/>
+                4️⃣ Paste both below and enable alerts ✅
+              </Typography>
+            </Box>
+
+            {/* Enable Toggle */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, mb: 2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff' }}>Enable Telegram Alerts</Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                  {settings?.telegramEnabled ? '✅ Alerts Active — attendance events will notify you' : '❌ Disabled — no notifications will be sent'}
+                </Typography>
+              </Box>
+              <Switch
+                checked={Boolean(settings?.telegramEnabled)}
+                onChange={(e) => {
+                  const updated = { ...settings, telegramEnabled: e.target.checked }
+                  setSettings(updated)
+                  pushToCloud({ settings: updated })
+                  triggerHaptic(20)
+                  notify(e.target.checked ? '✅ Telegram alerts enabled!' : '❌ Telegram alerts disabled', e.target.checked ? 'success' : 'info')
+                }}
+                sx={{ '& .MuiSwitch-thumb': { bgcolor: '#38bdf8' }, '& .Mui-checked .MuiSwitch-thumb': { bgcolor: '#38bdf8' } }}
+              />
+            </Box>
+
+            {/* Bot Token Input */}
+            <TextField
+              fullWidth
+              size="small"
+              label="Bot Token (from @BotFather)"
+              placeholder="1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ..."
+              value={settings?.telegramBotToken || ''}
+              onChange={(e) => {
+                const updated = { ...settings, telegramBotToken: e.target.value }
+                setSettings(updated)
+              }}
+              onBlur={() => pushToCloud({ settings })}
+              disabled={!isUnlocked}
+              sx={{ mb: 2, '& .MuiInputBase-input': { color: '#f1f5f9', fontFamily: 'monospace', fontSize: '.82rem' }, '& label': { color: '#94a3b8' } }}
+            />
+
+            {/* Chat ID Input */}
+            <TextField
+              fullWidth
+              size="small"
+              label="Your Telegram Chat ID"
+              placeholder="6091275709"
+              value={settings?.telegramChatId || ''}
+              onChange={(e) => {
+                const updated = { ...settings, telegramChatId: e.target.value }
+                setSettings(updated)
+              }}
+              onBlur={() => pushToCloud({ settings })}
+              disabled={!isUnlocked}
+              sx={{ mb: 2.5, '& .MuiInputBase-input': { color: '#f1f5f9', fontFamily: 'monospace' }, '& label': { color: '#94a3b8' } }}
+            />
+
+            {/* Test Button */}
+            <Button
+              fullWidth
+              variant="contained"
+              disabled={!isUnlocked || !settings?.telegramBotToken || !settings?.telegramChatId}
+              onClick={async () => {
+                triggerHaptic(30)
+                try {
+                  const res = await fetch('/api/send-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      chatId: settings.telegramChatId,
+                      message: `🎓 *AttendX Test Alert*\n\nHello Anshu! Your Telegram alerts are working perfectly! ✅\n\nYou will receive attendance notifications here automatically.`
+                    })
+                  })
+                  const json = await res.json()
+                  if (json.success) {
+                    triggerHaptic(40)
+                    notify('✅ Test message sent to Telegram!', 'success')
+                  } else {
+                    notify('❌ Failed: ' + (json.error || 'Check Bot Token & Chat ID'), 'error')
+                  }
+                } catch (err) {
+                  notify('❌ Server error — ensure backend is running', 'error')
+                }
+              }}
+              sx={{
+                background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
+                borderRadius: '14px', fontWeight: 800, textTransform: 'none', py: 1.3,
+                boxShadow: '0 8px 24px rgba(14,165,233,0.35)',
+                '&:hover': { boxShadow: '0 12px 32px rgba(14,165,233,0.45)' }
+              }}
+            >
+              📤 Send Test Telegram Message
+            </Button>
+
+            {!isUnlocked && (
+              <Typography variant="caption" sx={{ color: '#f59e0b', display: 'block', mt: 1.5, textAlign: 'center', fontWeight: 600 }}>
+                🔒 Login to edit Telegram settings
+              </Typography>
+            )}
           </GlassCard>
         </Box>
       )}

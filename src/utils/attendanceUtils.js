@@ -102,6 +102,35 @@ export function getTodayName() {
   return map[idx]
 }
 
+/**
+ * Returns true if the given date (default = today) is a 1st or 3rd Saturday (college holiday).
+ * 1st Saturday = date 1-7 and is Saturday
+ * 3rd Saturday = date 15-21 and is Saturday
+ */
+export function isHolidaySaturday(date = new Date()) {
+  if (date.getDay() !== 6) return false // not Saturday
+  const day = date.getDate()
+  return (day >= 1 && day <= 7) || (day >= 15 && day <= 21)
+}
+
+/** Returns true if today is Sunday */
+export function isSunday(date = new Date()) {
+  return date.getDay() === 0
+}
+
+/** Returns holiday info for a given Date object */
+export function getHolidayInfo(date = new Date()) {
+  if (date.getDay() === 0) return { isHoliday: true, reason: '🌙 Sunday — No Classes Today' }
+  if (isHolidaySaturday(date)) {
+    const day = date.getDate()
+    const which = day <= 7 ? '1st' : '3rd'
+    return { isHoliday: true, reason: `🏖️ ${which} Saturday — College Holiday! No Classes Today` }
+  }
+  return { isHoliday: false, reason: null }
+}
+
+
+
 export function computeStreak(history) {
   if (!history || history.length === 0) return 0
   const byDate = {}
