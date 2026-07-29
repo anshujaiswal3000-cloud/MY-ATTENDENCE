@@ -131,9 +131,15 @@ export function AttendanceProvider({ children }) {
 
   // Timetable & Upcoming Lecture ALWAYS uses Sem 3 active schedule
   const timetableSubjects = sem3Subjects
+  const isCloudLoadedRef = useRef(false)
 
   // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──
   const pushToCloud = useCallback(async (overrides = {}) => {
+    // Prevent pushing empty/uninitialized local state to MongoDB Atlas on startup
+    if (!isCloudLoadedRef.current && Object.keys(overrides).length === 0) {
+      return
+    }
+
     try {
       const payload = {
         subjects: overrides.subjects !== undefined ? overrides.subjects : sem3Subjects,
@@ -167,46 +173,56 @@ export function AttendanceProvider({ children }) {
       if (json.success && json.data) {
         const cloud = json.data
         setDbSynced(true)
+        isCloudLoadedRef.current = true
 
         if (cloud.subjects && cloud.subjects.length > 0) {
-          setSem3Subjects((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.subjects) ? cloud.subjects : prev))
+          setSem3Subjects(cloud.subjects)
+          try { localStorage.setItem(STORAGE_KEYS.subjects, JSON.stringify(cloud.subjects)) } catch (e) {}
         }
         if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) {
-          setSem1Subjects((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.sem1Subjects) ? cloud.sem1Subjects : prev))
+          setSem1Subjects(cloud.sem1Subjects)
+          try { localStorage.setItem('attendx_sem1_subjects', JSON.stringify(cloud.sem1Subjects)) } catch (e) {}
         }
         if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) {
-          setSem2Subjects((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.sem2Subjects) ? cloud.sem2Subjects : prev))
+          setSem2Subjects(cloud.sem2Subjects)
+          try { localStorage.setItem('attendx_sem2_subjects', JSON.stringify(cloud.sem2Subjects)) } catch (e) {}
         }
         if (Array.isArray(cloud.history)) {
-          setHistory((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.history) ? cloud.history : prev))
+          setHistory(cloud.history)
+          try { localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(cloud.history)) } catch (e) {}
         }
         if (Array.isArray(cloud.bunks)) {
-          setBunks((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.bunks) ? cloud.bunks : prev))
+          setBunks(cloud.bunks)
+          try { localStorage.setItem('attendx_bunks', JSON.stringify(cloud.bunks)) } catch (e) {}
         }
         if (Array.isArray(cloud.notes)) {
-          setNotes((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.notes) ? cloud.notes : prev))
+          setNotes(cloud.notes)
+          try { localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(cloud.notes)) } catch (e) {}
         }
         if (cloud.settings && typeof cloud.settings === 'object') {
-          setSettings((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.settings) ? cloud.settings : prev))
+          setSettings(cloud.settings)
+          try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloud.settings)) } catch (e) {}
         }
         if (cloud.timetableHeader && typeof cloud.timetableHeader === 'object') {
-          setTimetableHeader((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.timetableHeader) ? cloud.timetableHeader : prev))
+          setTimetableHeader(cloud.timetableHeader)
+          try { localStorage.setItem('attendx_timetable_header', JSON.stringify(cloud.timetableHeader)) } catch (e) {}
         }
         if (Array.isArray(cloud.autoLoggedSlots)) {
-          setAutoLoggedSlots((prev) => (JSON.stringify(prev) !== JSON.stringify(cloud.autoLoggedSlots) ? cloud.autoLoggedSlots : prev))
+          setAutoLoggedSlots(cloud.autoLoggedSlots)
+          try { localStorage.setItem('attendx_auto_logged_slots', JSON.stringify(cloud.autoLoggedSlots)) } catch (e) {}
         }
       }
     } catch (err) {
       setDbSynced(false)
     }
   }, [
-    setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory,
+    activeStudentId, setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory,
     setBunks, setNotes, setSettings, setTimetableHeader, setAutoLoggedSlots
   ])
 
   useEffect(() => {
     pullFromCloud()
-    const timer = setInterval(pullFromCloud, 3000)
+    const timer = setInterval(pullFromCloud, 2000)
     return () => clearInterval(timer)
   }, [pullFromCloud])
 
