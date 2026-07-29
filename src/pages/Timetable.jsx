@@ -4,6 +4,7 @@ import { MdCheckCircle, MdCancel, MdSchedule, MdChevronLeft, MdChevronRight, MdT
 import GlassCard from '../components/GlassCard'
 import EmptyState from '../components/EmptyState'
 import OCRScannerDialog from '../components/OCRScannerDialog'
+import ProxyClassDialog from '../components/ProxyClassDialog'
 import { getSubjectIcon } from '../utils/iconRegistry'
 import { useAttendance } from '../context/AttendanceContext'
 import { WEEKDAYS, getTodayName, getPercentage } from '../utils/attendanceUtils'
@@ -31,6 +32,7 @@ export default function Timetable() {
   const defaultTab = WEEKDAYS.includes(today) ? WEEKDAYS.indexOf(today) : 0
   const [tab, setTab] = useState(defaultTab)
   const [ocrOpen, setOcrOpen] = useState(false)
+  const [proxyOpen, setProxyOpen] = useState(false)
   const activeDay = WEEKDAYS[tab]
   const isToday = activeDay === today
 
@@ -87,6 +89,15 @@ export default function Timetable() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: { xs: 'flex-start', md: 'center' }, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setProxyOpen(true)}
+              sx={{ borderColor: 'rgba(96,165,250,0.4)', color: '#60a5fa', borderRadius: '10px', textTransform: 'none', fontWeight: 800, fontSize: '.75rem' }}
+            >
+              🔄 Substitute / Proxy Swap
+            </Button>
+
             <Button
               variant="contained"
               size="small"
@@ -253,6 +264,9 @@ export default function Timetable() {
 
       {/* 📸 Timetable Photo OCR Scanner Dialog 📸 */}
       <OCRScannerDialog open={ocrOpen} onClose={() => setOcrOpen(false)} />
+
+      {/* 🔄 Substitute / Proxy Class Swap Dialog 🔄 */}
+      <ProxyClassDialog open={proxyOpen} onClose={() => setProxyOpen(false)} />
     </Box>
   )
 }

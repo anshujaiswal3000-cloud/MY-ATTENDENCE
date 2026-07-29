@@ -64,17 +64,26 @@ export function calculateBunkAdvice(present, total, targetPercent) {
   }
 }
 
-/** Overall stats across all subjects (Excluding LIBRARY / isIgnored) */
+/** Check if subject is Library or excluded from total stats */
+export function isLibrarySubject(s) {
+  if (!s) return false
+  const sid = (s.id || '').toLowerCase()
+  const sname = (s.name || '').toLowerCase()
+  const scode = (s.code || '').toLowerCase()
+  return s.isIgnored || s.excludeFromTotal || sname.includes('library') || sid.includes('lib') || scode.includes('lib')
+}
+
+/** Overall stats across all subjects (Excluding LIBRARY) */
 export function getOverallStats(subjects) {
-  const activeSubjects = subjects.filter(s => !s.isIgnored && s.code !== 'LIBRARY-2')
-  const present = activeSubjects.reduce((sum, s) => sum + s.present, 0)
-  const total = activeSubjects.reduce((sum, s) => sum + s.total, 0)
+  const activeSubjects = (subjects || []).filter(s => !isLibrarySubject(s))
+  const present = activeSubjects.reduce((sum, s) => sum + (s.present || 0), 0)
+  const total = activeSubjects.reduce((sum, s) => sum + (s.total || 0), 0)
   const absent = total - present
   return { present, absent, total, percentage: getPercentage(present, total) }
 }
 
 export function getHighestLowestAverage(subjects) {
-  const withClasses = subjects.filter((s) => !s.isIgnored && s.code !== 'LIBRARY-2' && s.total > 0)
+  const withClasses = (subjects || []).filter((s) => !isLibrarySubject(s) && (s.total || 0) > 0)
   if (withClasses.length === 0) {
     return { highest: null, lowest: null, average: 0 }
   }

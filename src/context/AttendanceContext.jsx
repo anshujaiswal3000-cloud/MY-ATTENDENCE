@@ -149,6 +149,7 @@ export function AttendanceProvider({ children }) {
   }, [sem3Subjects])
 
   const isCloudLoadedRef = useRef(false)
+  const lastEditTimestampRef = useRef(0)
 
   // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──
   const pushToCloud = useCallback(async (overrides = {}) => {
@@ -191,6 +192,8 @@ export function AttendanceProvider({ children }) {
         const cloud = json.data
         setDbSynced(true)
         isCloudLoadedRef.current = true
+
+        const isRecentlyEditedLocally = Date.now() - lastEditTimestampRef.current < 5000
 
         if (cloud.subjects && cloud.subjects.length > 0) {
           setSem3Subjects((prev) => {
@@ -246,7 +249,7 @@ export function AttendanceProvider({ children }) {
             return prev
           })
         }
-        if (cloud.settings && typeof cloud.settings === 'object') {
+        if (cloud.settings && typeof cloud.settings === 'object' && !isRecentlyEditedLocally) {
           setSettings((prev) => {
             if (JSON.stringify(prev) !== JSON.stringify(cloud.settings)) {
               try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloud.settings)) } catch (e) {}
@@ -290,6 +293,7 @@ export function AttendanceProvider({ children }) {
 
   /** Instant 0ms Semester Switcher */
   const switchSemester = useCallback((semId) => {
+    lastEditTimestampRef.current = Date.now()
     const updated = { ...settings, semester: semId }
     try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updated)) } catch (e) {}
     setSettings(updated)
