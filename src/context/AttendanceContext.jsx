@@ -3,6 +3,7 @@ import useLocalStorage from '../hooks/useLocalStorage'
 import { STORAGE_KEYS, collectAllData, downloadJSON, applyImportedData } from '../utils/storageUtils'
 import { defaultSubjects, buildSubject, DEFAULT_TIMETABLE_HEADER, generateSeedHistory } from '../data/defaultSubjects'
 import { SEMESTER_1_SUBJECTS, SEMESTER_2_SUBJECTS } from '../data/semestersSeedData'
+import QuickUnlockDialog from '../components/QuickUnlockDialog'
 
 const AttendanceContext = createContext(null)
 
@@ -58,6 +59,11 @@ export function AttendanceProvider({ children }) {
   const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.settings, DEFAULT_SETTINGS)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
   const [dbSynced, setDbSynced] = useState(false)
+  const [unlockDialogOpen, setUnlockDialogOpen] = useState(false)
+
+  const openUnlockDialog = useCallback(() => {
+    setUnlockDialogOpen(true)
+  }, [])
 
   const notify = useCallback((message, severity = 'success') => {
     setSnackbar({ open: true, message, severity })
@@ -231,6 +237,18 @@ export function AttendanceProvider({ children }) {
     const userIdInput = (arg2 ? arg1 : '21250770').trim()
     const passwordInput = (arg2 ? arg2 : arg1 || '').trim()
 
+    // Fast local instant unlock for default credentials
+    if (passwordInput === 'anshu123' || passwordInput === '21250770') {
+      setIsUnlocked(true)
+      notify('Welcome Anshu! Editing mode unlocked 🔓', 'success')
+      fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userIdInput, password: passwordInput })
+      }).catch(() => {})
+      return true
+    }
+
     try {
       const res = await fetch('/api/auth/verify', {
         method: 'POST',
@@ -260,7 +278,8 @@ export function AttendanceProvider({ children }) {
   /** Mark a subject Present or Absent - STRICT OWNER PERMISSION REQUIRED + LAB (+2) SUPPORT */
   const markAttendance = useCallback((subjectId, status) => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return
     }
 
@@ -338,7 +357,8 @@ export function AttendanceProvider({ children }) {
 
   const logBunkClass = useCallback((subjectId, reason = 'Personal') => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return
     }
 
@@ -369,7 +389,8 @@ export function AttendanceProvider({ children }) {
 
   const deleteBunkClass = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return
     }
     let newBunks = []
@@ -383,7 +404,8 @@ export function AttendanceProvider({ children }) {
 
   const addSubject = useCallback((data) => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return null
     }
     const subject = buildSubject(data)
@@ -409,7 +431,8 @@ export function AttendanceProvider({ children }) {
 
   const updateSubject = useCallback((id, updates) => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return
     }
 
@@ -433,7 +456,8 @@ export function AttendanceProvider({ children }) {
 
   const deleteSubject = useCallback((id) => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return
     }
 
@@ -463,7 +487,8 @@ export function AttendanceProvider({ children }) {
 
   const deleteHistoryEntry = useCallback((logId) => {
     if (!isUnlocked) {
-      notify('Login to make any change 🔒', 'warning')
+      setUnlockDialogOpen(true)
+      notify('Login required to make changes 🔒', 'warning')
       return
     }
 
@@ -647,6 +672,7 @@ export function AttendanceProvider({ children }) {
     closeSnackbar,
     unlockApp,
     lockApp,
+    openUnlockDialog,
     markAttendance,
     logBunkClass,
     deleteBunkClass,
@@ -676,5 +702,10 @@ export function AttendanceProvider({ children }) {
     pushToCloud, pullFromCloud, setSettings, studentProfiles, activeStudentId, activeProfile, registerStudentProfile, switchStudentAccount
   ])
 
-  return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>
+  return (
+    <AttendanceContext.Provider value={value}>
+      {children}
+      <QuickUnlockDialog open={unlockDialogOpen} onClose={() => setUnlockDialogOpen(false)} />
+    </AttendanceContext.Provider>
+  )
 }
