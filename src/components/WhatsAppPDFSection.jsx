@@ -177,7 +177,7 @@ export default function WhatsAppPDFSection() {
       const json = await res.json()
       if (json.success) {
         setStatusMsg('⚡ Soft ATTIX alert text dispatched: "your DSTL attendance of today lecture 09:00 AM - 09:50 AM has been marked by automarker"')
-        notify('⚡ ATTIX Soft WhatsApp text alert sent to +91 9305284307!', 'success')
+        notify('⚡ ATTIX Soft WhatsApp text alert sent to +91 9125469499!', 'success')
       } else {
         setStatusErr(json.message || 'Failed to dispatch ATTIX alert')
       }

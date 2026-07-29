@@ -117,7 +117,7 @@ function startKeepAlivePinger() {
 startKeepAlivePinger()
 
 // ── REAL-TIME WHATSAPP DISPATCH HELPER (CallmeBot API) ──
-async function sendWhatsAppMessage(phone = '919305284307', apiKey = '9827414', text = '') {
+async function sendWhatsAppMessage(phone = '919125469499', apiKey = '9827414', text = '') {
   try {
     const encodedText = encodeURIComponent(text)
     const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodedText}&apikey=${apiKey}`
@@ -211,7 +211,7 @@ async function runServerAutoAttendance() {
             console.log(`[ADVANCED AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted} at ${markedTimeStr}`)
             
             // Dispatch WhatsApp notification live
-            const phone = settings.whatsappPhone || '919305284307'
+            const phone = settings.whatsappPhone || '919125469499'
             const apiKey = settings.whatsappApiKey || '9827414'
             sendWhatsAppMessage(phone, apiKey, softMsg)
           }
