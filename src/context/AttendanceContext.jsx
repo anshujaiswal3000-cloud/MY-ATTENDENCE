@@ -140,15 +140,6 @@ export function AttendanceProvider({ children }) {
     return list
   }, [activeSemester, sem1Subjects, sem2Subjects, sem3Subjects])
 
-  /** Instant 0ms Semester Switcher */
-  const switchSemester = useCallback((semId) => {
-    const updated = { ...settings, semester: semId }
-    try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updated)) } catch (e) {}
-    setSettings(updated)
-    pushToCloud({ settings: updated })
-    notify(`Switched to ${semId} attendance records! 🎓`, 'success')
-  }, [settings, setSettings, pushToCloud, notify])
-
   // Timetable & Upcoming Lecture ALWAYS uses Sem 3 active schedule with safety guard
   const timetableSubjects = useMemo(() => {
     if (!Array.isArray(sem3Subjects) || sem3Subjects.length === 0) {
@@ -296,6 +287,15 @@ export function AttendanceProvider({ children }) {
     const timer = setInterval(pullFromCloud, 2000)
     return () => clearInterval(timer)
   }, [pullFromCloud])
+
+  /** Instant 0ms Semester Switcher */
+  const switchSemester = useCallback((semId) => {
+    const updated = { ...settings, semester: semId }
+    try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updated)) } catch (e) {}
+    setSettings(updated)
+    pushToCloud({ settings: updated })
+    notify(`Switched to ${semId} attendance records! 🎓`, 'success')
+  }, [settings, setSettings, pushToCloud, notify])
 
   // Strict Owner Authentication with MongoDB Cloud (Supports single password arg or userId+password)
   const unlockApp = useCallback(async (arg1, arg2) => {
