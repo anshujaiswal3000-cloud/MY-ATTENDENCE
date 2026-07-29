@@ -132,6 +132,24 @@ async function sendWhatsAppMessage(phone = '919125469499', apiKey = '9827414', t
   }
 }
 
+// ── REAL-TIME TELEGRAM DISPATCH HELPER (Telegram Bot API) ──
+async function sendTelegramMessage(chatId = '6091275709', text = '') {
+  try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || '7891245612:AAH9_test'
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text })
+    })
+    if (res.ok) {
+      console.log(`[TELEGRAM DISPATCH SUCCESS ✈️] Message delivered to Chat ID: ${chatId}`)
+    }
+  } catch (err) {
+    console.error(`[TELEGRAM DISPATCH ERROR]:`, err.message)
+  }
+}
+
 // ── ADVANCED TIMEZONE-AWARE SERVER AUTO-ATTENDANCE SCHEDULER (WITH HOLIDAY & MASS BUNK GUARDS) ──
 async function runServerAutoAttendance() {
   if (!isDbConnected) return
@@ -210,10 +228,13 @@ async function runServerAutoAttendance() {
             const softMsg = `✅ ATTENDX AUTO-ATTENDANCE ALERT:\nYour ${subj.name} attendance for lecture (${slot.time}) has been marked as PRESENT by AutoMarker at ${markedTimeStr} on ${dateFormatted}. 🚀`
             console.log(`[ADVANCED AUTO-ATTENDANCE IST] ⏰ Logged Present (+${increment}) for ${subj.name} (${slot.time}) on ${dateFormatted} at ${markedTimeStr}`)
             
-            // Dispatch WhatsApp notification live
+            // Dispatch WhatsApp & Telegram notifications live
             const phone = settings.whatsappPhone || '919125469499'
             const apiKey = settings.whatsappApiKey || '9827414'
             sendWhatsAppMessage(phone, apiKey, softMsg)
+
+            const telegramChatId = settings.telegramChatId || '6091275709'
+            sendTelegramMessage(telegramChatId, softMsg)
           }
         }
       })
