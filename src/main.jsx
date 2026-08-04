@@ -7,13 +7,23 @@ import { ThemeProvider } from './context/ThemeContext.jsx'
 import { AttendanceProvider } from './context/AttendanceContext.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
-// Unregister any stale Service Worker to guarantee 100% fresh assets & 0 white screens
+// Register Service Worker for instant load & smart asset caching
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (let registration of registrations) {
-      registration.unregister()
-    }
-  }).catch(() => {})
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((reg) => {
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing
+          newSW?.addEventListener('statechange', () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              newSW.postMessage('SKIP_WAITING')
+            }
+          })
+        })
+      })
+      .catch(() => {})
+  })
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -292,9 +292,34 @@ export function AttendanceProvider({ children }) {
   ])
 
   useEffect(() => {
+    // Initial fetch
     pullFromCloud()
-    const timer = setInterval(pullFromCloud, 2000)
-    return () => clearInterval(timer)
+
+    // Poll for server auto-attendance updates every 5s
+    const timer = setInterval(pullFromCloud, 5000)
+
+    // Client-side keep-alive: ping server every 90s so Render NEVER sleeps
+    const pingTimer = setInterval(() => {
+      fetch('/api/ping').catch(() => {})
+    }, 90000)
+
+    // When user switches back to app tab, instantly sync latest cloud data
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reset edit lock so stale-guard doesn't block fresh pull on tab-focus
+        const timeSinceEdit = Date.now() - lastEditTimestampRef.current
+        if (timeSinceEdit > 3000) {
+          pullFromCloud()
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(timer)
+      clearInterval(pingTimer)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [pullFromCloud])
 
   /** Instant 0ms Semester Switcher */
@@ -411,9 +436,8 @@ export function AttendanceProvider({ children }) {
         if (status === 'present') {
           return { ...s, present: s.present + count, total: s.total + count }
         } else {
-          const newPresent = Math.max(0, s.present - (s.present >= count ? count : s.present))
-          const newTotal = s.total > s.present ? s.total : s.total + count
-          return { ...s, present: newPresent, total: newTotal }
+          // ABSENT: total increases (class happened), present stays same (you weren't there)
+          return { ...s, total: s.total + count }
         }
       })
 

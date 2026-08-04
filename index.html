@@ -9,29 +9,49 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AttendX" />
     <title>AttendX — Mobile Attendance Tracker</title>
-    
+
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
 
+    <!-- DNS prefetch + Preconnect for faster API & font loading -->
+    <link rel="dns-prefetch" href="https://my-attendence.onrender.com" />
+    <link rel="preconnect" href="https://my-attendence.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cluster0.msyxzky.mongodb.net" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script>
-      // Service Worker Registration for PWA & PWABuilder 100% Green Score
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').then(function(reg) {
-            console.log('PWA ServiceWorker registered: ', reg.scope);
-          }).catch(function(err) {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-        });
-      }
 
+    <!-- Critical inline CSS: instant dark background + logo splash so there's ZERO white flash -->
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body, #root { height: 100%; background: #0B1120; }
+      #splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #0B1120 0%, #0f172a 100%);
+        transition: opacity 0.35s ease;
+      }
+      #splash.hide { opacity: 0; pointer-events: none; }
+      #splash-logo {
+        width: 72px; height: 72px; border-radius: 22px;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 36px; margin-bottom: 16px;
+        box-shadow: 0 8px 32px rgba(99,102,241,0.45);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      #splash p { color: #94a3b8; font-family: system-ui, sans-serif; font-size: 14px; letter-spacing: 0.08em; }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(99,102,241,0.45); }
+        50% { transform: scale(1.07); box-shadow: 0 12px 40px rgba(99,102,241,0.65); }
+      }
+    </style>
+
+    <script>
       // Global Chunk Loading Error Handler — Auto-reloads on new version deployment
       window.addEventListener('error', function(e) {
         if (e && e.message && (e.message.indexOf('Importing a module script failed') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
@@ -47,7 +67,28 @@
     </script>
   </head>
   <body>
+    <!-- Instant splash screen shown before JS loads -->
+    <div id="splash">
+      <div id="splash-logo">🎓</div>
+      <p>AttendX</p>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Hide splash as soon as React renders -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const splash = document.getElementById('splash')
+        if (splash) {
+          // Hide after React hydrates (brief 400ms grace period)
+          setTimeout(function() {
+            splash.classList.add('hide')
+            setTimeout(function() { splash.remove() }, 400)
+          }, 400)
+        }
+      })
+    </script>
   </body>
 </html>
+

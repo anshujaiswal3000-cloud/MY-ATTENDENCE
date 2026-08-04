@@ -97,21 +97,26 @@ function parseEndTimeServer(timeRangeStr) {
   }
 }
 
-// ── RENDER 24/7 KEEP-ALIVE SELF-PINGER (Prevents Render Server Sleep Permanently) ──
+// ── RENDER 24/7 KEEP-ALIVE ENGINE (Pings every 60s — Render free tier sleeps after 15min) ──
 function startKeepAlivePinger() {
-  const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://my-attendence.onrender.com/api/sync/anshu'
-  
-  // Self-ping every 5 minutes (300,000 ms) so Render NEVER sleeps
+  const urls = [
+    'https://my-attendence.onrender.com/api/ping',
+    `http://localhost:${process.env.PORT || 3000}/api/ping`
+  ]
+
   setInterval(async () => {
-    try {
-      const res = await fetch(targetUrl)
-      if (res.ok) {
-        console.log(`[KEEP-ALIVE ⚡] Self-ping successful — Server 100% Awake 24/7!`)
+    for (const url of urls) {
+      try {
+        const res = await fetch(url)
+        if (res.ok) {
+          console.log(`[KEEP-ALIVE ⚡] ${url} — Server awake 24/7!`)
+          break  // One successful ping is enough
+        }
+      } catch (err) {
+        // Silently retry next URL
       }
-    } catch (err) {
-      console.warn(`[KEEP-ALIVE NOTICE]:`, err.message)
     }
-  }, 5 * 60 * 1000)
+  }, 60 * 1000) // Every 60 seconds
 }
 
 startKeepAlivePinger()
@@ -591,15 +596,6 @@ app.get('/api/ping', (req, res) => {
   res.json({ status: 'live', time: new Date().toISOString(), message: 'AttendX 24/7 Engine Active ⚡' })
 })
 
-// 24/7 Render Keep-Alive Self-Pinger (Runs every 4 minutes)
-setInterval(() => {
-  try {
-    fetch('https://my-attendence.onrender.com/api/ping')
-      .then(r => r.json())
-      .then(data => console.log(`⚡ [RENDER KEEP-ALIVE PINGER]: ${data.message}`))
-      .catch(err => console.warn(`⚡ [RENDER PINGER WAIT]: Server warming up`))
-  } catch (e) {}
-}, 240000)
 
 app.listen(PORT, () => {
   console.log(`🚀 AttendX Server running on http://localhost:${PORT}`)
