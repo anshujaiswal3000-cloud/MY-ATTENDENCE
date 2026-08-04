@@ -22,8 +22,7 @@ export const defaultSubjects = [
     present: 4, total: 4,
     timetable: [
       { day: 'Monday', period: 'P3', periodOrder: 3, time: '10:40 AM - 11:30 AM' },
-      { day: 'Tuesday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' },
-      { day: 'Saturday', period: 'P7', periodOrder: 7, time: '03:00 PM - 04:00 PM' }
+      { day: 'Tuesday', period: 'P9', periodOrder: 9, time: '03:40 PM - 04:30 PM' }
     ]
   },
   {
@@ -177,7 +176,7 @@ export const defaultSubjects = [
     color: ['#64748b', '#94a3b8'],
     present: 2, total: 2,
     timetable: [
-      { day: 'Saturday', period: 'P7', periodOrder: 7, time: '03:00 PM - 04:00 PM' }
+      { day: 'Saturday', period: 'P6', periodOrder: 6, time: '03:00 PM - 04:00 PM' }
     ]
   },
   {

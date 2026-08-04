@@ -153,6 +153,7 @@ export function AttendanceProvider({ children }) {
 
   // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──
   const pushToCloud = useCallback(async (overrides = {}) => {
+    lastEditTimestampRef.current = Date.now()
     // Prevent pushing empty/uninitialized local state to MongoDB Atlas on startup
     if (!isCloudLoadedRef.current && Object.keys(overrides).length === 0) {
       return
@@ -184,6 +185,11 @@ export function AttendanceProvider({ children }) {
   }, [activeStudentId, sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader, autoLoggedSlots])
 
   const pullFromCloud = useCallback(async () => {
+    // If user edited locally in the last 8 seconds, don't overwrite local state with stale polling
+    if (Date.now() - lastEditTimestampRef.current < 8000) {
+      return
+    }
+
     try {
       const res = await fetch(`/api/sync/${activeStudentId}`)
       if (!res.ok) return
@@ -378,6 +384,7 @@ export function AttendanceProvider({ children }) {
    *  @param {string} [customDate] - Optional DD/MM/YYYY date for manual past-date entry
    */
   const markAttendance = useCallback((subjectId, status, customDate = null) => {
+    lastEditTimestampRef.current = Date.now()
     if (!isUnlocked) {
       setUnlockDialogOpen(true)
       notify('Login required to make changes 🔒', 'warning')

@@ -474,6 +474,40 @@ app.post('/api/sync/:userId', async (req, res) => {
   }
 })
 
+// POST /api/send-telegram -> Send test or alert message via Telegram Bot API
+app.post('/api/send-telegram', async (req, res) => {
+  try {
+    const { chatId, message, botToken: inputToken } = req.body
+    const targetChatId = (chatId || '6091275709').toString().trim()
+
+    let userDoc = await UserData.findOne({})
+    const botToken = inputToken || userDoc?.settings?.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN
+
+    if (!botToken) {
+      return res.status(400).json({ success: false, error: 'Telegram Bot Token is missing. Configure it in Settings.' })
+    }
+
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`
+    const tgRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: targetChatId, text: message, parse_mode: 'Markdown' })
+    })
+
+    const json = await tgRes.json()
+    if (json.ok) {
+      console.log(`[TELEGRAM DISPATCH SUCCESS ✈️] Message sent to ${targetChatId}`)
+      res.json({ success: true, message: 'Telegram message sent successfully!' })
+    } else {
+      console.warn(`[TELEGRAM DISPATCH NOTICE]: ${json.description}`)
+      res.status(400).json({ success: false, error: json.description || 'Failed to send message via Telegram' })
+    }
+  } catch (err) {
+    console.error('API Error /send-telegram:', err.message)
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
 // POST /api/alerts/whatsapp/test -> Send instant test ATTIX notification to WhatsApp number
 app.post('/api/alerts/whatsapp/test', async (req, res) => {
   try {
