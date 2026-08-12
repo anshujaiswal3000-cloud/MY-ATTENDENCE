@@ -434,6 +434,11 @@ app.post('/api/auth/change-credentials', async (req, res) => {
 // GET /api/sync/:userId -> Pull cloud state (STRICT SINGLE DOCUMENT RESOLUTION)
 app.get('/api/sync/:userId', async (req, res) => {
   try {
+    // No-cache headers: always return live MongoDB data, never a stale cached response
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
+
     let data = await UserData.findOne({})
     if (!data) return res.status(404).json({ success: false, message: 'No cloud data found' })
 

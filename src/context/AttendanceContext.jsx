@@ -150,6 +150,96 @@ export function AttendanceProvider({ children }) {
 
   const isCloudLoadedRef = useRef(false)
   const lastEditTimestampRef = useRef(0)
+  const isFetchingRef = useRef(false)  // prevents concurrent fetches
+
+  // ── CORE CLOUD FETCH ENGINE (shared by forceSync and pullFromCloud) ──
+  const applyCloudData = useCallback((cloud) => {
+    if (!cloud) return
+    isCloudLoadedRef.current = true
+    setDbSynced(true)
+
+    if (cloud.subjects && cloud.subjects.length > 0) {
+      setSem3Subjects((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.subjects)) {
+          try { localStorage.setItem(STORAGE_KEYS.subjects, JSON.stringify(cloud.subjects)) } catch (e) {}
+          return cloud.subjects
+        }
+        return prev
+      })
+    }
+    if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) {
+      setSem1Subjects((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.sem1Subjects)) {
+          try { localStorage.setItem('attendx_sem1_subjects', JSON.stringify(cloud.sem1Subjects)) } catch (e) {}
+          return cloud.sem1Subjects
+        }
+        return prev
+      })
+    }
+    if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) {
+      setSem2Subjects((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.sem2Subjects)) {
+          try { localStorage.setItem('attendx_sem2_subjects', JSON.stringify(cloud.sem2Subjects)) } catch (e) {}
+          return cloud.sem2Subjects
+        }
+        return prev
+      })
+    }
+    if (Array.isArray(cloud.history)) {
+      setHistory((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.history)) {
+          try { localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(cloud.history)) } catch (e) {}
+          return cloud.history
+        }
+        return prev
+      })
+    }
+    if (Array.isArray(cloud.bunks)) {
+      setBunks((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.bunks)) {
+          try { localStorage.setItem('attendx_bunks', JSON.stringify(cloud.bunks)) } catch (e) {}
+          return cloud.bunks
+        }
+        return prev
+      })
+    }
+    if (Array.isArray(cloud.notes)) {
+      setNotes((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.notes)) {
+          try { localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(cloud.notes)) } catch (e) {}
+          return cloud.notes
+        }
+        return prev
+      })
+    }
+    if (cloud.settings && typeof cloud.settings === 'object') {
+      setSettings((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.settings)) {
+          try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloud.settings)) } catch (e) {}
+          return cloud.settings
+        }
+        return prev
+      })
+    }
+    if (cloud.timetableHeader && typeof cloud.timetableHeader === 'object') {
+      setTimetableHeader((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.timetableHeader)) {
+          try { localStorage.setItem('attendx_timetable_header', JSON.stringify(cloud.timetableHeader)) } catch (e) {}
+          return cloud.timetableHeader
+        }
+        return prev
+      })
+    }
+    if (Array.isArray(cloud.autoLoggedSlots)) {
+      setAutoLoggedSlots((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(cloud.autoLoggedSlots)) {
+          try { localStorage.setItem('attendx_auto_logged_slots', JSON.stringify(cloud.autoLoggedSlots)) } catch (e) {}
+          return cloud.autoLoggedSlots
+        }
+        return prev
+      })
+    }
+  }, [setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory, setBunks, setNotes, setSettings, setTimetableHeader, setAutoLoggedSlots])
 
   // ── MONGODB REAL-TIME CLOUD SYNC ENGINE ──
   const pushToCloud = useCallback(async (overrides = {}) => {
@@ -176,141 +266,64 @@ export function AttendanceProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      if (res.ok) {
-        setDbSynced(true)
-      }
+      if (res.ok) setDbSynced(true)
     } catch (err) {
       setDbSynced(false)
     }
   }, [activeStudentId, sem3Subjects, sem1Subjects, sem2Subjects, history, bunks, notes, settings, timetableHeader, autoLoggedSlots])
 
-  const pullFromCloud = useCallback(async () => {
-    // If user edited locally in the last 8 seconds, don't overwrite local state with stale polling
-    if (Date.now() - lastEditTimestampRef.current < 8000) {
-      return
-    }
-
+  // ── FORCE SYNC: Always fetches immediately — used on mount & tab-focus ──
+  // Bypasses the edit-lock guard so fresh data always loads instantly on open
+  const forceSync = useCallback(async () => {
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
     try {
-      const res = await fetch(`/api/sync/${activeStudentId}`)
-      if (!res.ok) return
+      const res = await fetch(`/api/sync/${activeStudentId}`, { cache: 'no-store' })
+      if (!res.ok) { isFetchingRef.current = false; return }
       const json = await res.json()
-      if (json.success && json.data) {
-        const cloud = json.data
-        setDbSynced(true)
-        isCloudLoadedRef.current = true
-
-        const isRecentlyEditedLocally = Date.now() - lastEditTimestampRef.current < 5000
-
-        if (cloud.subjects && cloud.subjects.length > 0) {
-          setSem3Subjects((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.subjects)) {
-              try { localStorage.setItem(STORAGE_KEYS.subjects, JSON.stringify(cloud.subjects)) } catch (e) {}
-              return cloud.subjects
-            }
-            return prev
-          })
-        }
-        if (cloud.sem1Subjects && cloud.sem1Subjects.length > 0) {
-          setSem1Subjects((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.sem1Subjects)) {
-              try { localStorage.setItem('attendx_sem1_subjects', JSON.stringify(cloud.sem1Subjects)) } catch (e) {}
-              return cloud.sem1Subjects
-            }
-            return prev
-          })
-        }
-        if (cloud.sem2Subjects && cloud.sem2Subjects.length > 0) {
-          setSem2Subjects((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.sem2Subjects)) {
-              try { localStorage.setItem('attendx_sem2_subjects', JSON.stringify(cloud.sem2Subjects)) } catch (e) {}
-              return cloud.sem2Subjects
-            }
-            return prev
-          })
-        }
-        if (Array.isArray(cloud.history)) {
-          setHistory((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.history)) {
-              try { localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(cloud.history)) } catch (e) {}
-              return cloud.history
-            }
-            return prev
-          })
-        }
-        if (Array.isArray(cloud.bunks)) {
-          setBunks((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.bunks)) {
-              try { localStorage.setItem('attendx_bunks', JSON.stringify(cloud.bunks)) } catch (e) {}
-              return cloud.bunks
-            }
-            return prev
-          })
-        }
-        if (Array.isArray(cloud.notes)) {
-          setNotes((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.notes)) {
-              try { localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(cloud.notes)) } catch (e) {}
-              return cloud.notes
-            }
-            return prev
-          })
-        }
-        if (cloud.settings && typeof cloud.settings === 'object' && !isRecentlyEditedLocally) {
-          setSettings((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.settings)) {
-              try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(cloud.settings)) } catch (e) {}
-              return cloud.settings
-            }
-            return prev
-          })
-        }
-        if (cloud.timetableHeader && typeof cloud.timetableHeader === 'object') {
-          setTimetableHeader((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.timetableHeader)) {
-              try { localStorage.setItem('attendx_timetable_header', JSON.stringify(cloud.timetableHeader)) } catch (e) {}
-              return cloud.timetableHeader
-            }
-            return prev
-          })
-        }
-        if (Array.isArray(cloud.autoLoggedSlots)) {
-          setAutoLoggedSlots((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(cloud.autoLoggedSlots)) {
-              try { localStorage.setItem('attendx_auto_logged_slots', JSON.stringify(cloud.autoLoggedSlots)) } catch (e) {}
-              return cloud.autoLoggedSlots
-            }
-            return prev
-          })
-        }
-      }
+      if (json.success && json.data) applyCloudData(json.data)
     } catch (err) {
       setDbSynced(false)
+    } finally {
+      isFetchingRef.current = false
     }
-  }, [
-    activeStudentId, setSem3Subjects, setSem1Subjects, setSem2Subjects, setHistory,
-    setBunks, setNotes, setSettings, setTimetableHeader, setAutoLoggedSlots
-  ])
+  }, [activeStudentId, applyCloudData])
+
+  // ── POLLING PULL: Only fires when no recent local edit (prevents overwriting fresh user actions) ──
+  const pullFromCloud = useCallback(async () => {
+    // Skip if user edited in the last 8 seconds (protect local changes)
+    if (Date.now() - lastEditTimestampRef.current < 8000) return
+    // Skip if already fetching
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
+    try {
+      const res = await fetch(`/api/sync/${activeStudentId}`, { cache: 'no-store' })
+      if (!res.ok) { isFetchingRef.current = false; return }
+      const json = await res.json()
+      if (json.success && json.data) applyCloudData(json.data)
+    } catch (err) {
+      setDbSynced(false)
+    } finally {
+      isFetchingRef.current = false
+    }
+  }, [activeStudentId, applyCloudData])
 
   useEffect(() => {
-    // Initial fetch
-    pullFromCloud()
+    // INSTANT fetch on mount — no edit-lock guard, always runs immediately
+    forceSync()
 
-    // Poll for server auto-attendance updates every 5s
+    // Poll every 5s for server auto-attendance updates
     const timer = setInterval(pullFromCloud, 5000)
 
-    // Client-side keep-alive: ping server every 90s so Render NEVER sleeps
+    // Client-side keep-alive ping every 90s so Render NEVER sleeps
     const pingTimer = setInterval(() => {
       fetch('/api/ping').catch(() => {})
     }, 90000)
 
-    // When user switches back to app tab, instantly sync latest cloud data
+    // When tab becomes visible again → instant fresh fetch
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Reset edit lock so stale-guard doesn't block fresh pull on tab-focus
-        const timeSinceEdit = Date.now() - lastEditTimestampRef.current
-        if (timeSinceEdit > 3000) {
-          pullFromCloud()
-        }
+        forceSync()
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -320,7 +333,8 @@ export function AttendanceProvider({ children }) {
       clearInterval(pingTimer)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [pullFromCloud])
+  }, [forceSync, pullFromCloud])
+
 
   /** Instant 0ms Semester Switcher */
   const switchSemester = useCallback((semId) => {
