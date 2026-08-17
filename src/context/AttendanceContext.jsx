@@ -315,10 +315,10 @@ export function AttendanceProvider({ children }) {
     // Poll every 5s for server auto-attendance updates
     const timer = setInterval(pullFromCloud, 5000)
 
-    // Client-side keep-alive ping every 90s so Render NEVER sleeps
+    // Client-side 24/7 keep-alive ping every 30s so Render server NEVER sleeps
     const pingTimer = setInterval(() => {
-      fetch('/api/ping').catch(() => {})
-    }, 90000)
+      fetch('/api/ping', { keepalive: true }).catch(() => {})
+    }, 30000)
 
     // When tab becomes visible again → instant fresh fetch
     const handleVisibilityChange = () => {

@@ -236,6 +236,15 @@ export default function Settings() {
       border: 'rgba(56,189,248,0.3)',
       title: 'Telegram Alerts & Notifications',
       subtitle: settings?.telegramEnabled ? `Active → @${settings?.telegramBotToken?.slice(0,8) || '...'}... ChatID: ${settings?.telegramChatId || '...'}` : 'Disabled — tap to setup Bot Token & Chat ID'
+    },
+    {
+      id: 'contact',
+      icon: '👑',
+      color: '#ec4899',
+      bg: 'rgba(236,72,153,0.18)',
+      border: 'rgba(236,72,153,0.3)',
+      title: 'Official Developer Contact & Support',
+      subtitle: 'Email: anshujaiswall3000@gmail.com • LinkedIn Profile & Portfolio'
     }
   ]
 
@@ -991,6 +1000,120 @@ export default function Settings() {
         </Box>
       )}
 
+      {/* ─────────────────────────────────────────────────────────────
+          DEDICATED SUB-PAGE: OFFICIAL DEVELOPER CONTACT & SUPPORT
+      ───────────────────────────────────────────────────────────── */}
+      {activeSubPage === 'contact' && (
+        <Box>
+          <Button
+            startIcon={<MdArrowBack />}
+            onClick={() => { triggerHaptic(15); setActiveSubPage(null) }}
+            sx={{ mb: 2.5, color: '#ec4899', fontWeight: 800, textTransform: 'none', fontSize: '.88rem' }}
+          >
+            Back to Settings
+          </Button>
+
+          <GlassCard sx={{ p: 3, borderRadius: '24px', border: '1px solid rgba(236,72,153,0.35)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, mb: 3 }}>
+              <Box sx={{ width: 50, height: 50, borderRadius: '16px', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 26, boxShadow: '0 8px 24px rgba(236,72,153,0.35)' }}>
+                👑
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem', lineHeight: 1.2 }}>
+                  Anshu Jaiswal
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#ec4899', fontWeight: 700, fontSize: '.8rem' }}>
+                  Super Admin & Lead Full-Stack Architect
+                </Typography>
+              </Box>
+            </Box>
+
+            <Typography variant="body2" sx={{ color: '#cbd5e1', mb: 3, lineHeight: 1.6, fontSize: '.88rem' }}>
+              Have questions, feedback, feature requests, or custom deployment requirements for AttendX? Connect directly with the lead developer below.
+            </Typography>
+
+            {/* Email Card */}
+            <Box
+              sx={{
+                p: 2.25, mb: 2, borderRadius: '18px',
+                bgcolor: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(236,72,153,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" sx={{ color: '#ec4899', fontWeight: 700, display: 'block', mb: 0.25 }}>
+                  📧 Official Email Address
+                </Typography>
+                <Typography variant="subtitle2" className="mono-num" sx={{ fontWeight: 800, color: '#fff', wordBreak: 'break-all' }}>
+                  anshujaiswall3000@gmail.com
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    navigator.clipboard.writeText('anshujaiswall3000@gmail.com')
+                    triggerHaptic(20)
+                    notify('Email copied to clipboard! 📋', 'success')
+                  }}
+                  sx={{ borderColor: 'rgba(236,72,153,0.4)', color: '#ec4899', borderRadius: '10px', textTransform: 'none', fontWeight: 700, fontSize: '.75rem' }}
+                >
+                  📋 Copy
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  component="a"
+                  href="mailto:anshujaiswall3000@gmail.com"
+                  target="_blank"
+                  sx={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: '#fff', borderRadius: '10px', textTransform: 'none', fontWeight: 700, fontSize: '.75rem' }}
+                >
+                  ✉️ Send Email
+                </Button>
+              </Box>
+            </Box>
+
+            {/* LinkedIn Profile Card */}
+            <Box
+              sx={{
+                p: 2.25, mb: 3, borderRadius: '18px',
+                bgcolor: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(56,189,248,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, display: 'block', mb: 0.25 }}>
+                  💼 LinkedIn Professional Network
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#fff', wordBreak: 'break-all' }}>
+                  Anshu Jaiswal (LinkedIn Profile)
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                variant="contained"
+                component="a"
+                href="https://www.linkedin.com/in/anshu-jaiswal-0252973ab"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#fff', borderRadius: '10px', textTransform: 'none', fontWeight: 700, fontSize: '.75rem' }}
+              >
+                🔗 Open Profile
+              </Button>
+            </Box>
+
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', textAlign: 'center' }}>
+              <Typography variant="caption" sx={{ color: '#a5b4fc', fontWeight: 600, display: 'block' }}>
+                🚀 Built for Hackathons & Production Scale Enterprise Attendance Management
+              </Typography>
+            </Box>
+          </GlassCard>
+        </Box>
+      )}
+
       {/* Confirm Reset Dialog */}
       <ConfirmDialog
         open={resetDialogOpen}
@@ -1013,10 +1136,31 @@ export default function Settings() {
           backdropFilter: 'blur(16px)'
         }}
       >
-        <Typography variant="body2" sx={{ fontWeight: 800, color: '#fff', fontSize: '.88rem', letterSpacing: '-.01em', mb: 0.5 }}>
+        <Typography variant="body2" sx={{ fontWeight: 800, color: '#fff', fontSize: '.88rem', letterSpacing: '-.01em', mb: 0.75 }}>
           Crafted & Engineered with Excellence by <span style={{ background: 'var(--aurora)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 900 }}>Anshu Jaiswal</span> 👑
         </Typography>
-        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.75rem', display: 'block' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 1, flexWrap: 'wrap' }}>
+          <Button
+            size="small"
+            component="a"
+            href="mailto:anshujaiswall3000@gmail.com"
+            sx={{ color: '#ec4899', fontSize: '.74rem', textTransform: 'none', fontWeight: 700 }}
+          >
+            ✉️ anshujaiswall3000@gmail.com
+          </Button>
+          <span style={{ color: '#475569' }}>•</span>
+          <Button
+            size="small"
+            component="a"
+            href="https://www.linkedin.com/in/anshu-jaiswal-0252973ab"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ color: '#38bdf8', fontSize: '.74rem', textTransform: 'none', fontWeight: 700 }}
+          >
+            🔗 LinkedIn Profile
+          </Button>
+        </Box>
+        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, fontSize: '.72rem', display: 'block', mt: 1 }}>
           Super Admin & Lead Developer • All Rights Reserved © 2026 AttendX
         </Typography>
       </Box>

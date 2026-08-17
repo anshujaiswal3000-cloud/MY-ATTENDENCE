@@ -97,7 +97,7 @@ function parseEndTimeServer(timeRangeStr) {
   }
 }
 
-// ── RENDER 24/7 KEEP-ALIVE ENGINE (Pings every 60s — Render free tier sleeps after 15min) ──
+// ── RENDER 24/7 KEEP-ALIVE ENGINE (Pings every 30s — Keeps Render free tier awake 24/7/365) ──
 function startKeepAlivePinger() {
   const urls = [
     'https://my-attendence.onrender.com/api/ping',
@@ -109,14 +109,14 @@ function startKeepAlivePinger() {
       try {
         const res = await fetch(url)
         if (res.ok) {
-          console.log(`[KEEP-ALIVE ⚡] ${url} — Server awake 24/7!`)
-          break  // One successful ping is enough
+          console.log(`[KEEP-ALIVE ⚡] ${url} — Server 100% Awake 24/7!`)
+          break
         }
       } catch (err) {
-        // Silently retry next URL
+        // Silently continue
       }
     }
-  }, 60 * 1000) // Every 60 seconds
+  }, 30 * 1000) // Every 30 seconds
 }
 
 startKeepAlivePinger()

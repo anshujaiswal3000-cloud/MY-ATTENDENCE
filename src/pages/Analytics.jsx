@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import GlassCard from '../components/GlassCard'
 import EmptyState from '../components/EmptyState'
+import HackathonPremiumSuite from '../components/HackathonPremiumSuite'
 import { useAttendance } from '../context/AttendanceContext'
 import {
   getOverallStats, getPercentage, getHighestLowestAverage, calculateBunkAdvice,
@@ -176,6 +177,9 @@ export default function Analytics() {
           )}
         </GlassCard>
       </Box>
+
+      {/* 👑 HACKATHON PREMIUM SUITE (Heatmap, Predictive Radar & Trip Planner) 👑 */}
+      <HackathonPremiumSuite />
     </Box>
   )
 }
