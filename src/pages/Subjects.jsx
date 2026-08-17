@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Box, Typography, Grid, TextField, InputAdornment, MenuItem, Fab, Button } from '@mui/material'
+import { Box, Typography, Grid, TextField, InputAdornment, MenuItem, Fab, Button, Chip } from '@mui/material'
 import { FaSearch, FaPlus } from 'react-icons/fa'
 import { useTheme } from '@mui/material/styles'
 import { useNavigate } from 'react-router-dom'
@@ -11,7 +11,8 @@ import { useAttendance } from '../context/AttendanceContext'
 import { getPercentage, getStatus } from '../utils/attendanceUtils'
 
 export default function Subjects() {
-  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject, isUnlocked, settings } = useAttendance()
+  const { subjects, markAttendance, addSubject, updateSubject, deleteSubject, isUnlocked, settings, switchSemester } = useAttendance()
+  const activeSemester = settings?.semester || 'Semester 3'
   const theme = useTheme()
   const navigate = useNavigate()
 
@@ -44,6 +45,29 @@ export default function Subjects() {
 
   return (
     <Box>
+      {/* 🎓 1-Click Instant Semester Switcher Bar 🎓 */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2.5, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mr: 0.5 }}>
+          Active Semester:
+        </Typography>
+        {['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4'].map((sem) => (
+          <Chip
+            key={sem}
+            label={sem}
+            onClick={() => switchSemester(sem)}
+            sx={{
+              fontWeight: 800, fontSize: '.74rem', cursor: 'pointer',
+              bgcolor: activeSemester === sem ? 'var(--aurora)' : 'rgba(255,255,255,0.08)',
+              color: '#fff',
+              border: activeSemester === sem ? 'none' : '1px solid rgba(255,255,255,0.15)',
+              transition: 'all 180ms ease',
+              boxShadow: activeSemester === sem ? '0 4px 12px rgba(99,102,241,0.4)' : 'none',
+              '&:hover': { transform: 'scale(1.06)' }
+            }}
+          />
+        ))}
+      </Box>
+
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3, alignItems: 'center' }}>
         <TextField
           size="small"

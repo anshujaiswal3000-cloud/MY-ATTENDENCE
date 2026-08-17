@@ -135,6 +135,8 @@ export function AttendanceProvider({ children }) {
     else if (activeSemester === 'Semester 2') list = sem2Subjects
     
     if (!Array.isArray(list) || list.length === 0) {
+      if (activeSemester === 'Semester 1') return SEMESTER_1_SUBJECTS
+      if (activeSemester === 'Semester 2') return SEMESTER_2_SUBJECTS
       return seedSubjects()
     }
     return list
@@ -342,9 +344,14 @@ export function AttendanceProvider({ children }) {
     const updated = { ...settings, semester: semId }
     try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updated)) } catch (e) {}
     setSettings(updated)
-    pushToCloud({ settings: updated })
+    pushToCloud({
+      settings: updated,
+      subjects: sem3Subjects,
+      sem1Subjects: sem1Subjects,
+      sem2Subjects: sem2Subjects
+    })
     notify(`Switched to ${semId} attendance records! 🎓`, 'success')
-  }, [settings, setSettings, pushToCloud, notify])
+  }, [settings, setSettings, sem3Subjects, sem1Subjects, sem2Subjects, pushToCloud, notify])
 
   // Strict Owner Authentication with MongoDB Cloud (Supports single password arg or userId+password)
   const unlockApp = useCallback(async (arg1, arg2) => {

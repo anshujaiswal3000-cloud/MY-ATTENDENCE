@@ -58,7 +58,7 @@ function parseEndTime(timeRangeStr) {
 
 export default function Dashboard() {
   const {
-    subjects, timetableSubjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify, settings, setSettings, pushToCloud
+    subjects, timetableSubjects, history, bunks, logBunkClass, deleteBunkClass, deleteHistoryEntry, timetableHeader, isUnlocked, notify, settings, setSettings, pushToCloud, switchSemester
   } = useAttendance()
 
   
@@ -220,6 +220,29 @@ export default function Dashboard() {
             <Typography variant="body2" sx={{ color: '#a5b4fc', mt: .5, fontWeight: 700 }}>
               {wishMessage}
             </Typography>
+
+            {/* 🎓 1-Click Instant Semester Switcher Bar 🎓 */}
+            <Box sx={{ display: 'flex', gap: 1, mt: 1.75, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, mr: 0.5 }}>
+                Switch Semester:
+              </Typography>
+              {['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4'].map((sem) => (
+                <Chip
+                  key={sem}
+                  label={sem}
+                  onClick={() => switchSemester(sem)}
+                  sx={{
+                    fontWeight: 800, fontSize: '.72rem', cursor: 'pointer',
+                    bgcolor: activeSemester === sem ? 'var(--aurora)' : 'rgba(255,255,255,0.08)',
+                    color: '#fff',
+                    border: activeSemester === sem ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                    transition: 'all 180ms ease',
+                    boxShadow: activeSemester === sem ? '0 4px 12px rgba(99,102,241,0.4)' : 'none',
+                    '&:hover': { transform: 'scale(1.06)' }
+                  }}
+                />
+              ))}
+            </Box>
             <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
               {attendanceExcellent && <Chip icon={<MdStar />} label="Excellent attendance" size="small" sx={{ bgcolor: 'rgba(16,185,129,.18)', color: '#6ee7b7', fontWeight: 700, fontSize: '.7rem' }} />}
               {criticalSubjects.length > 0 && <Chip icon={<MdWarning />} label={`${criticalSubjects.length} subject${criticalSubjects.length > 1 ? 's' : ''} below 75%`} size="small" sx={{ bgcolor: 'rgba(244,63,94,.18)', color: '#fb7185', fontWeight: 700, fontSize: '.7rem', cursor: 'pointer' }} onClick={() => navigate('/subjects')} />}
